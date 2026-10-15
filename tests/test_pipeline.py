@@ -70,7 +70,7 @@ def judge_reply(kw):
     picks = []
     for i, s, e in [(int(a), float(b), float(c)) for a, b, c in re.findall(r"\[id (\d+)\] (\d+)s-(\d+)s", p)][:2]:
         picks.append({"id": i, "start": s + 5, "end": s + 40,  # deliberately too short: validator must extend to >= 61s
-                      "score": 8 if i == 0 else 6, "hook": "He jumped the bridge with 4 cops behind",
+                      "score": 8 if i == 0 else 6, "hook": "he really thought the *bridge* would hold",
                       "title": "Bridge jump escape", "caption": "He really thought this would work",
                       "tags": ["chaos", "police"], "why": "clear payoff",
                       "commentary": [{"at": 1, "text": "He has 4 stars and no plan"},

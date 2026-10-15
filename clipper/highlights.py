@@ -56,7 +56,14 @@ Pick up to {max_picks} clips. Rules:
 - Score each 1-10 for how likely it is to hold attention past 60 seconds. Be strict: a 7 is genuinely good.
 
 For each pick, also write:
-- hook: on-screen text for the first 3 seconds, max 8 words, specific to the moment, no clickbait lies.
+- hook: the one line of text that sits on screen for the WHOLE clip. Its only job is to make someone keep watching to the end.
+  It sums up what the clip is about in one line, the gist people get hooked by. It is never a play-by-play of what happens.
+  Write it like a real person captioning a clip they found, not like an AI or an ad. Rules:
+  - Open a loop the clip closes: point at the payoff without giving it away ("wait for the cop at the end", "he had no idea who was in the back seat", "this is why you don't trust the getaway driver").
+  - Specific to THIS moment (a person, object, or twist in it), never generic.
+  - 4 to 9 words. Casual, lowercase in spirit, contractions fine. No emojis, no hashtags, no exclamation marks.
+  - Banned: "insane", "epic", "crazy", "you won't believe", "wait for it" on its own, "POV", "when", "this is", "moment", "absolutely", "legendary", "chaos", and anything that sounds like a headline or a trailer.
+  - Wrap the ONE word that carries the tension in *stars* (e.g. "he forgot the *cop* was still in the car"). It gets highlighted.
 - commentary: 3 to 6 short context lines (max 12 words each) with an offset in seconds from clip start. These add real context a new viewer needs: who is doing what, what went wrong, why it's funny. Write like a sharp human editor, not a hype bot. No emojis.
 - title: YouTube Shorts title, max 70 chars.
 - caption: TikTok caption, 1-2 sentences, conversational.

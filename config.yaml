@@ -30,7 +30,7 @@ clip:
   per_vod: 4                      # max clips cut from one VOD
   candidates: 30                  # loud moments sent to Claude for judging
   min_score: 7                    # Claude score (1-10) needed to post automatically
-  commentary: true                # on-screen context lines from Claude over the streamer audio. false = hook and captions only
+  commentary: false               # false = one hook stays up the whole clip. true = hook for 3s, then rotating context lines
 
 review:
   mode: auto                      # auto = post clips scoring >= clip.min_score with no human step

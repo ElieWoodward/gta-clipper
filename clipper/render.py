@@ -3,13 +3,21 @@ from pathlib import Path
 
 from .common import run
 
-FONT = "DejaVu Sans"
+FONT = "DejaVu Sans"          # captions
+HOOK_FONT = "Anton"           # top hook, bundled in fonts/
+FONTS_DIR = Path(__file__).resolve().parent.parent / "fonts"
 W, H = 1080, 1920
 YELLOW = "&H0000E5FF&"  # ASS colors are &HAABBGGRR
 
 
 def _esc(t):
     return t.replace("\\", "").replace("{", "(").replace("}", ")").replace("\n", " ")
+
+
+def _hook_text(h):
+    parts = _esc(h).upper().split("*")
+    # odd-numbered parts were inside *stars*
+    return "".join(f"{{\\c{YELLOW}}}{p}{{\\c&H00FFFFFF&}}" if i % 2 else p for i, p in enumerate(parts))
 
 
 def _ts(t):
@@ -29,14 +37,14 @@ def build_ass(pick, words, layout, out_path, commentary=True):
         "[V4+ Styles]",
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, "
         "Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-        f"Style: Hook,{FONT},70,&H00FFFFFF,&H00FFFFFF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,3,16,0,8,80,80,{top_v},1",
+        f"Style: Hook,{HOOK_FONT},84,&H00FFFFFF,&H00FFFFFF,&H00000000,&H96000000,0,0,0,0,100,100,1,0,1,7,4,8,70,70,{top_v},1",
         f"Style: Note,{FONT},52,&H00FFFFFF,&H00FFFFFF,&H40000000,&H00000000,-1,0,0,0,100,100,0,0,3,14,0,8,100,100,{top_v},1",
         f"Style: Cap,{FONT},80,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,6,2,2,60,60,{cap_v},1",
         "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
-    # Hook: first 3 seconds, black box behind white text.
-    hook_end = min(3.0, dur)
-    lines.append(f"Dialogue: 2,{_ts(0)},{_ts(hook_end)},Hook,,0,0,0,,{_esc(pick['hook']).upper()}")
+    # Hook: one line that stays up for the whole clip. Words wrapped in *stars* turn yellow.
+    hook_end = dur if not commentary else min(3.0, dur)
+    lines.append(f"Dialogue: 2,{_ts(0)},{_ts(hook_end)},Hook,,0,0,0,,{_hook_text(pick['hook'])}")
 
     # Commentary: each line shows until the next one (max 5s), never during the hook.
     notes = sorted(pick.get("commentary", []), key=lambda x: float(x["at"])) if commentary else []
@@ -77,7 +85,7 @@ def render(src, src_offset, pick, words, out, facecam=None, commentary=True):
     out = Path(out)
     layout = "stack" if facecam else "blur"
     ass = build_ass(pick, words, layout, out.with_suffix(".ass"), commentary)
-    ass_arg = str(ass).replace(":", r"\:")
+    ass_arg = str(ass).replace(":", r"\:") + "':fontsdir='" + str(FONTS_DIR).replace(":", r"\:")
     if facecam:
         f = facecam
         vf = (f"[0:v]crop=iw*{f['w']}:ih*{f['h']}:iw*{f['x']}:ih*{f['y']},"
