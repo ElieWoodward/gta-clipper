@@ -118,7 +118,9 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         verdict = {"approved": "Will post automatically.", "rejected": "Below the score bar, won't post.",
                    "queued": "Add the `approve` label to post it, or close this issue to skip it."}[clip["status"]]
         body = (f"**Score {clip['score']}/10** · {clip['streamer']} · {clip['duration']}s\n\n"
-                f"Video: {media_url}\n\n**Hook:** {clip['hook']}\n\n**Title:** {clip['title']}\n\n"
+                f"Video: {media_url}\n\n**Hook:** {clip['hook']}\n\n**Other hooks it considered:**\n"
+                + "".join(f"- {h}\n" for h in clip.get("hook_options", []) if h != clip["hook"])
+                + f"\n**Title:** {clip['title']}\n\n"
                 f"**Caption:** {clip['caption']}\n\n**Why:** {clip['why']}\n\n"
                 f"Source: {vod['url']} at {int(p['start'])}s\n\n{verdict}")
         clip["issue"] = services.gh_issue(f"[clip {clip['score']}] {clip['hook']}", body, ["clip", clip["status"]])
