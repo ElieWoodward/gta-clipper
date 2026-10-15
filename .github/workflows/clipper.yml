@@ -17,6 +17,10 @@ on:
         description: "Ignore launch date and quotas (for testing)"
         type: boolean
         default: false
+      test_source:
+        description: "Test only: a VOD link or twitch:<channel>. Makes clips you can download; posts nothing"
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -66,10 +70,20 @@ jobs:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE: ${{ inputs.force && '1' || '0' }}
+          TEST_SOURCE: ${{ inputs.test_source }}
+          DRY_RUN: ${{ inputs.test_source != '' && '1' || '0' }}
         run: python -m clipper ${{ steps.pick.outputs.job }}
 
+      - name: Upload test clips
+        if: always() && inputs.test_source != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-clips
+          path: test-output/
+          if-no-files-found: warn
+
       - name: Save state
-        if: always()
+        if: always() && inputs.test_source == ''
         run: |
           git config user.name "clipper-bot"
           git config user.email "clipper-bot@users.noreply.github.com"

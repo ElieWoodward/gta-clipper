@@ -13,6 +13,7 @@ from .common import (log, load_config, load_state, save_state, now_utc, now_loca
 
 FORCE = os.environ.get("FORCE") == "1"
 DRY_RUN = os.environ.get("DRY_RUN") == "1"
+TEST_SOURCE = os.environ.get("TEST_SOURCE", "").strip()   # a VOD URL or twitch:<channel>; test run, nothing posted
 CLIP_MAX_AGE_DAYS = 6
 
 
@@ -27,6 +28,8 @@ def _queued(state):
 # ------------------------------------------------------------------ process
 def process():
     cfg, state = load_config(), load_state()
+    if TEST_SOURCE:
+        return _test_run(cfg, state)
     if days_since_start(cfg) < -1 and not FORCE:
         log.info("before launch window; nothing to process (set FORCE=1 to test)")
         return
@@ -54,7 +57,40 @@ def _process_vod(cfg, state, vod, client=None):
         for p in picks[: cfg["clip"]["per_vod"]]:
             make_clip(cfg, state, vod, p, words, d)
     finally:
+        if DRY_RUN:  # keep the finished clips so a test run can hand them over
+            out = WORK.parent / "test-output"
+            out.mkdir(exist_ok=True)
+            for f in d.glob("*.mp4"):
+                if not f.name.endswith("_src.mp4"):
+                    shutil.copy(f, out / f.name)
         shutil.rmtree(d, ignore_errors=True)
+
+
+def _test_run(cfg, state):
+    """Process one source end to end without uploading, opening issues or posting."""
+    import json as _json
+    if TEST_SOURCE.startswith("twitch:"):
+        ch = TEST_SOURCE.split(":", 1)[1]
+        cfg = dict(cfg, streamers=[{"name": ch, "platform": "twitch", "channel": ch}], manual_urls=[])
+        cfg["fetch"] = dict(cfg["fetch"], vods_per_streamer=1, max_vod_age_days=30)
+        vods = fetch.list_new_vods(cfg, {"processed_vods": []})[:1]
+    else:
+        vods = [{"id": "test:" + TEST_SOURCE, "url": TEST_SOURCE, "title": "",
+                 "streamer": {"name": "test", "platform": "manual"}}]
+    if not vods:
+        raise RuntimeError(f"No VOD found for {TEST_SOURCE}")
+    cfg["clip"] = dict(cfg["clip"], per_vod=2)
+    scratch = {"processed_vods": [], "clips": {}, "posts": [], "pruned": []}
+    import clipper.common as common
+    common.save_state = lambda s: None  # never touch the real state in a test
+    globals()["save_state"] = lambda s: None
+    _process_vod(cfg, scratch, vods[0])
+    summary = [{k: c[k] for k in ("score", "hook", "title", "caption", "duration", "why", "status")}
+               for c in scratch["clips"].values()]
+    (WORK.parent / "test-output").mkdir(exist_ok=True)
+    (WORK.parent / "test-output" / "summary.json").write_text(_json.dumps(
+        {"source": vods[0]["url"], "title": vods[0].get("title"), "clips": summary}, indent=2))
+    log.info("test run done: %s", _json.dumps(summary, indent=2))
 
 
 def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
