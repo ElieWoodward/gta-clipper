@@ -72,7 +72,12 @@ jobs:
           FORCE: ${{ inputs.force && '1' || '0' }}
           TEST_SOURCE: ${{ inputs.test_source }}
           DRY_RUN: ${{ inputs.test_source != '' && '1' || '0' }}
-        run: python -m clipper ${{ steps.pick.outputs.job }}
+        run: |
+          set -o pipefail
+          python -m clipper ${{ steps.pick.outputs.job }} 2>&1 | tee run.log || {
+            tail -n 25 run.log | sed 's/%/%25/g' | while IFS= read -r l; do echo "::error::$l"; done
+            exit 1
+          }
 
       - name: Upload test clips
         if: always() && inputs.test_source != ''
