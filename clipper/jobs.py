@@ -177,6 +177,9 @@ def post():
 # ------------------------------------------------------------------ analytics + prune
 def analytics():
     cfg, state = load_config(), load_state()
+    if days_since_start(cfg) < 0 and not FORCE:
+        log.info("before start_date %s; nothing posted yet", cfg["start_date"])
+        return
     since = (now_utc() - timedelta(days=60)).isoformat()
     published = services.blotato_published(since)
     by_media = {}
