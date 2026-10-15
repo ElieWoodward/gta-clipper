@@ -85,7 +85,7 @@ def _test_run(cfg, state):
     common.save_state = lambda s: None  # never touch the real state in a test
     globals()["save_state"] = lambda s: None
     _process_vod(cfg, scratch, vods[0])
-    summary = [{k: c[k] for k in ("score", "hook", "title", "caption", "duration", "why", "status")}
+    summary = [{k: c.get(k) for k in ("score", "hook", "hook_options", "title", "caption", "duration", "why", "status")}
                for c in scratch["clips"].values()]
     (WORK.parent / "test-output").mkdir(exist_ok=True)
     (WORK.parent / "test-output" / "summary.json").write_text(_json.dumps(
@@ -109,7 +109,7 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         "id": cid, "vod": vod["id"], "vod_url": vod["url"], "streamer": vod["streamer"]["name"],
         "start": p["start"], "end": p["end"], "duration": round(p["end"] - p["start"], 1),
         "score": int(p["score"]), "hook": p["hook"], "title": p["title"], "caption": p["caption"],
-        "tags": p.get("tags", []), "why": p.get("why", ""), "media_url": media_url,
+        "tags": p.get("tags", []), "why": p.get("why", ""), "hook_options": p.get("hook_options", []), "media_url": media_url,
         "created": now_utc().isoformat(), "posts": {}, "issue": None, "local_file": str(out),
     }
     auto = cfg["review"]["mode"] == "auto"

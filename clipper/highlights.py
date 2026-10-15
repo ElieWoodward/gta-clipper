@@ -56,14 +56,21 @@ Pick up to {max_picks} clips. Rules:
 - Score each 1-10 for how likely it is to hold attention past 60 seconds. Be strict: a 7 is genuinely good.
 
 For each pick, also write:
-- hook: the one line of text that sits on screen for the WHOLE clip. Its only job is to make someone keep watching to the end.
-  It sums up what the clip is about in one line, the gist people get hooked by. It is never a play-by-play of what happens.
-  Write it like a real person captioning a clip they found, not like an AI or an ad. Rules:
-  - Open a loop the clip closes: point at the payoff without giving it away ("wait for the cop at the end", "he had no idea who was in the back seat", "this is why you don't trust the getaway driver").
-  - Specific to THIS moment (a person, object, or twist in it), never generic.
-  - 4 to 9 words. Casual, lowercase in spirit, contractions fine. No emojis, no hashtags, no exclamation marks.
-  - Banned: "insane", "epic", "crazy", "you won't believe", "wait for it" on its own, "POV", "when", "this is", "moment", "absolutely", "legendary", "chaos", and anything that sounds like a headline or a trailer.
-  - Wrap the ONE word that carries the tension in *stars* (e.g. "he forgot the *cop* was still in the car"). It gets highlighted.
+- hook_options: 5 different hooks for the line of text that sits on screen for the WHOLE clip. Its only job is to make a stranger scrolling past stop and watch to the end.
+  A good hook gives a reason to CARE, never a description of what's on screen. "he grabs the horse" fails: nobody cares yet. Ask: what's at stake, what goes wrong, who's about to lose it, what's the twist?
+  Use a different angle for each of the 5:
+    1. stakes: what he's about to lose or win ("one wrong turn and the whole heist is gone")
+    2. contradiction or irony ("he planned this for 3 hours and it lasted 9 seconds")
+    3. reaction: the emotion it causes, without spoiling why ("I've never heard chat go this quiet")
+    4. curiosity gap with a promise about the ending ("the last 10 seconds ruined his whole night")
+    5. relatable or a challenge to the viewer ("every GTA player has done this exactly once")
+  Rules for every hook:
+  - 4 to 10 words, sounds like a real person, casual, contractions fine. No emojis, hashtags or exclamation marks.
+  - Must be true to what actually happens in the clip. Never promise something that isn't there.
+  - Never just narrate the action on screen. Never generic enough to fit any clip.
+  - Banned: "insane", "epic", "crazy", "you won't believe", "wait for it" on its own, "POV", "this is", "moment", "absolutely", "legendary", "chaos", headline or trailer language.
+  - Wrap the ONE word that carries the tension in *stars*; it gets highlighted.
+- hook: copy the single strongest of your 5 options, judged by: would a stranger who has never heard of this streamer stop scrolling for it?
 - commentary: 3 to 6 short context lines (max 12 words each) with an offset in seconds from clip start. These add real context a new viewer needs: who is doing what, what went wrong, why it's funny. Write like a sharp human editor, not a hype bot. No emojis.
 - title: YouTube Shorts title, max 70 chars.
 - caption: TikTok caption, 1-2 sentences, conversational.
@@ -71,7 +78,7 @@ For each pick, also write:
 
 {playbook}
 
-Return ONLY JSON: {{"picks": [{{"id": int, "start": float, "end": float, "score": int, "hook": str, "title": str, "caption": str, "tags": [str], "commentary": [{{"at": float, "text": str}}], "why": str}}]}}
+Return ONLY JSON: {{"picks": [{{"id": int, "start": float, "end": float, "score": int, "hook_options": [str], "hook": str, "title": str, "caption": str, "tags": [str], "commentary": [{{"at": float, "text": str}}], "why": str}}]}}
 
 CANDIDATES:
 {candidates}
