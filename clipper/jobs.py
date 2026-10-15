@@ -66,7 +66,8 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         src = fetch.download_section(vod, dl_start, p["end"] + 2, d / f"{cid}_src.mp4")
         src_offset = p["start"] - dl_start
     out = d / f"{cid}.mp4"
-    render.render(src, src_offset, p, words, out, facecam=vod["streamer"].get("facecam"))
+    render.render(src, src_offset, p, words, out, facecam=vod["streamer"].get("facecam"),
+                  commentary=cfg["clip"].get("commentary", False))
     media_url = None if DRY_RUN else services.blotato_upload(out)
     clip = {
         "id": cid, "vod": vod["id"], "vod_url": vod["url"], "streamer": vod["streamer"]["name"],

@@ -19,7 +19,7 @@ def _ts(t):
     return f"{int(h)}:{int(m):02d}:{s:05.2f}"
 
 
-def build_ass(pick, words, layout, out_path):
+def build_ass(pick, words, layout, out_path, commentary=True):
     """words: absolute-time words; pick: has start/end/hook/commentary."""
     dur = pick["end"] - pick["start"]
     top_v = 230 if layout == "blur" else 640       # where hook/commentary sit
@@ -39,7 +39,7 @@ def build_ass(pick, words, layout, out_path):
     lines.append(f"Dialogue: 2,{_ts(0)},{_ts(hook_end)},Hook,,0,0,0,,{_esc(pick['hook']).upper()}")
 
     # Commentary: each line shows until the next one (max 5s), never during the hook.
-    notes = sorted(pick.get("commentary", []), key=lambda x: float(x["at"]))
+    notes = sorted(pick.get("commentary", []), key=lambda x: float(x["at"])) if commentary else []
     for i, n in enumerate(notes):
         s = max(float(n["at"]), hook_end)
         nxt = float(notes[i + 1]["at"]) if i + 1 < len(notes) else dur
@@ -72,11 +72,11 @@ def build_ass(pick, words, layout, out_path):
     return out_path
 
 
-def render(src, src_offset, pick, words, out, facecam=None):
+def render(src, src_offset, pick, words, out, facecam=None, commentary=True):
     """src: downloaded section; src_offset: seconds into src where the clip starts."""
     out = Path(out)
     layout = "stack" if facecam else "blur"
-    ass = build_ass(pick, words, layout, out.with_suffix(".ass"))
+    ass = build_ass(pick, words, layout, out.with_suffix(".ass"), commentary)
     ass_arg = str(ass).replace(":", r"\:")
     if facecam:
         f = facecam
