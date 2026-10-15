@@ -6,7 +6,7 @@ import subprocess
 import numpy as np
 
 from .common import log, run, PLAYBOOK_FILE
-from .transcribe import transcribe, text_between
+from .transcribe import transcribe, text_between, text_with_marks
 
 WINDOW_BEFORE = 75   # seconds of context before a spike sent for judging
 WINDOW_AFTER = 45
@@ -47,7 +47,7 @@ def find_candidates(db, n, min_gap=90):
 JUDGE_PROMPT = """You pick moments from a livestream to post as vertical clips on TikTok and YouTube Shorts.
 Streamer: {streamer}. Stream title: {title}. Game: GTA (GTA 6 when it is out).
 
-Below are candidate windows. Each has an id, absolute start/end seconds, a loudness spike score, and the transcript.
+Below are candidate windows. Each has an id, absolute start/end seconds, a loudness spike score, and the transcript with [Ns] markers giving the absolute second each stretch of speech starts. Use the markers to set exact start and end times.
 
 Pick up to {max_picks} clips. Rules:
 - Each clip must be between {min_s} and {max_s} seconds long, inside its window. Start a beat before the setup so the payoff lands; end right after the reaction.
@@ -71,6 +71,11 @@ For each pick, also write:
   - Banned: "insane", "epic", "crazy", "you won't believe", "wait for it" on its own, "POV", "this is", "moment", "absolutely", "legendary", "chaos", headline or trailer language.
   - Wrap the ONE word that carries the tension in *stars*; it gets highlighted.
 - hook: copy the single strongest of your 5 options, judged by: would a stranger who has never heard of this streamer stop scrolling for it?
+  The account owner's taste, from hooks he approved: irony and confused reactions win.
+    Approved: "he told chat to spam W way too *early*" (irony: promises a fail without saying how)
+    Approved: "he still doesn't know what he *did*" (reaction: confusion makes you watch to find out)
+    Rejected: "he said spam W if he gets the *horse*" (just describes the setup, no reason to care)
+    Rejected: "he didn't expect the *town* to just clear out" (narrates the event and gives away the ending)
 - commentary: 3 to 6 short context lines (max 12 words each) with an offset in seconds from clip start. These add real context a new viewer needs: who is doing what, what went wrong, why it's funny. Write like a sharp human editor, not a hype bot. No emojis.
 - title: YouTube Shorts title, max 70 chars.
 - caption: TikTok caption, 1-2 sentences, conversational.
@@ -146,7 +151,7 @@ def analyze(cfg, vod, wav, client=None):
         words = transcribe(wav, cfg["models"]["whisper"], start=s, end=e)
         words_all.extend(words)
         windows.append({"id": i, "start": s, "end": e, "spike": float(db[t] - np.median(db)),
-                        "text": text_between(words, s, e)})
+                        "text": text_with_marks(words, s, e)})
     if not windows:
         return [], []
     return judge(cfg, vod, windows, client), words_all

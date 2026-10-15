@@ -46,3 +46,16 @@ def transcribe(wav, model, start=0.0, end=None):
 
 def text_between(words, s, e):
     return " ".join(w["w"] for w in words if s <= w["s"] < e)
+
+
+def text_with_marks(words, s, e, every=5):
+    """Transcript with an absolute-seconds marker every few seconds, so cut points can be exact."""
+    out, next_mark = [], s
+    for w in words:
+        if not (s <= w["s"] < e):
+            continue
+        if w["s"] >= next_mark:
+            out.append(f"[{int(w['s'])}s]")
+            next_mark = w["s"] + every
+        out.append(w["w"])
+    return " ".join(out)
