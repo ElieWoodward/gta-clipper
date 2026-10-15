@@ -47,7 +47,7 @@ def download_audio(vod, dest_dir):
     """Download audio only, as 16 kHz mono wav (small and enough for analysis)."""
     dest_dir.mkdir(parents=True, exist_ok=True)
     tmpl = str(dest_dir / "audio.%(ext)s")
-    run(["yt-dlp", "-f", "bestaudio/worst", "-x", "--audio-format", "m4a", "-o", tmpl, vod["url"]])
+    run(["yt-dlp", "-N", "8", "-f", "bestaudio/worst", "-x", "--audio-format", "m4a", "-o", tmpl, vod["url"]])
     src = next(dest_dir.glob("audio.*"))
     wav = dest_dir / "audio.wav"
     run(["ffmpeg", "-y", "-loglevel", "error", "-i", src, "-ac", "1", "-ar", "16000", wav])
@@ -57,6 +57,6 @@ def download_audio(vod, dest_dir):
 def download_section(vod, start, end, dest):
     """Download just [start, end] seconds of the video at up to 1080p."""
     sec = f"*{int(start)}-{int(end) + 1}"
-    run(["yt-dlp", "-f", "bv*[height<=1080]+ba/b[height<=1080]/b", "--download-sections", sec,
+    run(["yt-dlp", "-N", "8", "-f", "bv*[height<=1080]+ba/b[height<=1080]/b", "--download-sections", sec,
          "--force-keyframes-at-cuts", "--merge-output-format", "mp4", "-o", str(dest), vod["url"]])
     return dest
