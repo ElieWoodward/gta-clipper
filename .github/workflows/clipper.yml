@@ -1,0 +1,80 @@
+name: clipper
+
+on:
+  schedule:
+    - cron: "17 */3 * * *"   # process: look for new VODs every 3 hours
+    - cron: "7 * * * *"      # post: hourly check against today's slots
+    - cron: "23 14 * * *"    # analytics + prune + dashboard: daily ~7am Pacific
+    - cron: "41 15 * * 1"    # learn: weekly on Monday
+  workflow_dispatch:
+    inputs:
+      job:
+        description: "Which job to run"
+        type: choice
+        options: [process, post, analytics, learn, accounts]
+        default: process
+      force:
+        description: "Ignore launch date and quotas (for testing)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: clipper-state
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick job
+        id: pick
+        run: |
+          case "${{ github.event.schedule }}" in
+            "17 */3 * * *") JOB=process ;;
+            "7 * * * *")    JOB=post ;;
+            "23 14 * * *")  JOB=analytics ;;
+            "41 15 * * 1")  JOB=learn ;;
+            *)              JOB="${{ inputs.job }}" ;;
+          esac
+          echo "job=$JOB" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install ffmpeg and fonts
+        if: steps.pick.outputs.job == 'process'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
+
+      - run: pip install -q -r requirements.txt
+
+      - name: Run ${{ steps.pick.outputs.job }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          BLOTATO_API_KEY: ${{ secrets.BLOTATO_API_KEY }}
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE: ${{ inputs.force && '1' || '0' }}
+        run: python -m clipper ${{ steps.pick.outputs.job }}
+
+      - name: Save state
+        if: always()
+        run: |
+          git config user.name "clipper-bot"
+          git config user.email "clipper-bot@users.noreply.github.com"
+          git add data/
+          git diff --cached --quiet && exit 0
+          git commit -m "state: ${{ steps.pick.outputs.job }} $(date -u +%FT%TZ)"
+          for i in 1 2 3; do git pull --rebase -X theirs -q && git push -q && exit 0; sleep 5; done
+          exit 1

@@ -1,0 +1,62 @@
+# GTA clipper settings. Edit this file on GitHub to change behavior; the next run picks it up.
+
+timezone: America/Los_Angeles
+start_date: "2026-11-19"          # first day posting is allowed (GTA 6 launch). Ramp is counted from here.
+
+# Streamers to clip. Only add streamers whose clipping program you've joined.
+# platform: twitch | kick | youtube
+# facecam: optional crop of the webcam as fractions of the frame (x, y, w, h).
+#          With it, clips use a stacked layout (cam on top, gameplay below).
+#          Without it, gameplay is centered over a blurred background.
+streamers:
+  - name: example_streamer
+    platform: twitch
+    channel: example_streamer
+    enabled: false
+    campaign: ""                  # optional note, e.g. the Whop campaign name
+    # facecam: {x: 0.72, y: 0.02, w: 0.26, h: 0.26}
+
+# Extra source videos to process once (campaign-provided footage, a specific VOD, etc.).
+manual_urls: []
+
+fetch:
+  vods_per_streamer: 2            # newest N past broadcasts checked each run
+  max_vod_hours: 10               # skip anything longer than this
+  max_vod_age_days: 3             # ignore old VODs
+
+clip:
+  min_seconds: 61                 # TikTok Creator Rewards needs > 60s
+  max_seconds: 90
+  per_vod: 4                      # max clips cut from one VOD
+  candidates: 30                  # loud moments sent to Claude for judging
+  min_score: 7                    # Claude score (1-10) needed to post automatically
+
+review:
+  mode: auto                      # auto = post clips scoring >= clip.min_score with no human step
+                                  # manual = every clip waits for an "approve" label on its GitHub issue
+
+posting:
+  platforms: [tiktok, youtube]
+  # Posts per day per platform, ramping up as accounts age.
+  ramp:
+    - {from_day: 0, per_day: 1}
+    - {from_day: 7, per_day: 2}
+    - {from_day: 21, per_day: 3}
+    - {from_day: 42, per_day: 4}
+  slots: ["11:00", "15:00", "18:00", "20:30"]   # local times; first N used each day
+  adaptive_slots: true            # after enough data, shift slots toward hours that perform best
+  hashtags: ["#gta6", "#gta", "#gaming"]
+  label_ai_generated: false       # set true only if you add AI voiceover
+
+prune:
+  enabled: true
+  start_after_days: 14            # don't judge anything during the first two weeks
+  judge_after_hours: 72
+  min_views: 300                  # hide if under this after judge_after_hours...
+  relative_to_median: 0.15        # ...or under 15% of the account's median
+  max_per_day: 2
+
+models:
+  judge: claude-sonnet-5-5        # picks moments, writes hooks/captions
+  learn: claude-sonnet-5-5        # weekly analysis
+  whisper: whisper-large-v3-turbo # Groq transcription model

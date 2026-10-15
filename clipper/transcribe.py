@@ -1,0 +1,48 @@
+"""Speech-to-text with word timestamps via Groq's Whisper API (OpenAI-compatible)."""
+import os
+import time
+
+import requests
+
+from .common import log, run, require_env
+
+GROQ_URL = "https://api.groq.com/openai/v1/audio/transcriptions"
+CHUNK = 600  # seconds per request, keeps each upload well under the size limit
+
+
+def _duration(path):
+    return float(run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path]).strip())
+
+
+def transcribe(wav, model, start=0.0, end=None):
+    """Return list of words [{w, s, e}] with absolute timestamps."""
+    key = require_env("GROQ_API_KEY")
+    end = end or _duration(wav)
+    words = []
+    t = start
+    while t < end:
+        seg_len = min(CHUNK, end - t)
+        chunk = wav.parent / f"chunk_{int(t)}.mp3"
+        run(["ffmpeg", "-y", "-loglevel", "error", "-ss", t, "-t", seg_len, "-i", wav, "-b:a", "48k", chunk])
+        for attempt in range(4):
+            with open(chunk, "rb") as fh:
+                r = requests.post(GROQ_URL, headers={"Authorization": f"Bearer {key}"},
+                                  files={"file": (chunk.name, fh, "audio/mpeg")},
+                                  data={"model": model, "response_format": "verbose_json",
+                                        "timestamp_granularities[]": "word", "language": "en"},
+                                  timeout=300)
+            if r.status_code == 429:
+                time.sleep(20 * (attempt + 1))
+                continue
+            r.raise_for_status()
+            break
+        for w in r.json().get("words", []):
+            words.append({"w": w["word"].strip(), "s": round(w["start"] + t, 2), "e": round(w["end"] + t, 2)})
+        os.remove(chunk)
+        t += seg_len
+    log.info("transcribed %d words", len(words))
+    return words
+
+
+def text_between(words, s, e):
+    return " ".join(w["w"] for w in words if s <= w["s"] < e)
