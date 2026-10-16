@@ -21,6 +21,7 @@ CHAT_DELAY = 6          # chat reacts a few seconds after the moment happens on 
 # Laugh emotes are often channel-specific ("lysLaff", "xqcL"), so match laugh fragments anywhere in a word.
 LAUGH = re.compile(r"lul|kek|laff|laugh|lmao|lmfao|icant|omega|\blo+l\b|\bha(ha)+|\bxd+\b|\bbruh+\b|\bwtf\b|"
                    r"\bayo+\b|no shot|😂|🤣|💀|😭", re.I)
+RAID = re.compile(r"raid|hype|welcome|subscribed|gifted|bits|cheer", re.I)
 _warned = set()
 STATS = {}   # debugging counters for the probe
 
@@ -142,6 +143,8 @@ def laugh_curve(msgs, length):
     """Per-second laugh count and message count, shifted back by the chat delay."""
     laughs, total = np.zeros(int(length) + 1), np.zeros(int(length) + 1)
     for t, text in msgs:
+        if RAID.search(text):
+            continue   # raid/sub-train spam isn't a reaction to anything on screen
         i = max(0, min(int(length), t - CHAT_DELAY))
         total[i] += 1
         if LAUGH.search(text):
@@ -158,7 +161,10 @@ def chat_peaks(laughs, total, n, min_gap=60):
     tw = np.convolve(total, np.ones(k), mode="same")
     base_l = max(1.0, float(np.median(lw[tw > 0])) if (tw > 0).any() else 1.0)
     base_t = max(1.0, float(np.median(tw[tw > 0])) if (tw > 0).any() else 1.0)
-    strength = lw / base_l + 0.5 * (tw / base_t)
+    # Laughter is what counts; a busy chat alone only adds a little (greetings and spam make chat busy too).
+    strength = lw / base_l + np.minimum(3.0, 0.3 * tw / base_t)
+    strength[: min(300, int(len(strength) * 0.05))] = 0         # stream intro: hellos and emote spam
+    strength[len(strength) - min(120, int(len(strength) * 0.03)):] = 0      # outro / raid out
     picks = []
     for t in np.argsort(strength)[::-1]:
         if strength[t] < 4:
