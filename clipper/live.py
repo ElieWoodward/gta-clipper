@@ -174,8 +174,8 @@ def make_live_clip(cfg, state, vod, t, label, chat_msgs, client=None):
     d = WORK / f"live_{vod['id'].split(':')[-1]}_{a}"
     d.mkdir(parents=True, exist_ok=True)
     try:
-        src = cut_live(vod, a, b, d / "src.mp4")
-        wav = d / "src.wav"
+        src = cut_live(vod, a, b, d / "moment_src.mp4")
+        wav = d / "moment.wav"
         run(["ffmpeg", "-y", "-loglevel", "error", "-i", src, "-vn", "-ac", "1", "-ar", "16000", wav])
         words = [dict(w, s=w["s"] + a, e=w["e"] + a)
                  for w in highlights.transcribe(wav, cfg["models"]["whisper"], start=0.0, end=b - a)]
