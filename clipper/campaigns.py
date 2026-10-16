@@ -77,7 +77,12 @@ def list_campaigns(max_pages=25):
     out, seen = [], set()
     for page in range(1, max_pages + 1):
         p = _Cards()
-        p.feed(_get(f"{BASE}/campaigns" if page == 1 else f"{BASE}/campaigns/page/{page}"))
+        try:
+            p.feed(_get(f"{BASE}/campaigns" if page == 1 else f"{BASE}/campaigns/page/{page}"))
+        except requests.HTTPError as e:
+            if page > 1 and e.response is not None and e.response.status_code == 404:
+                break   # past the last page
+            raise
         new = [(t, h) for t, h in p.cards if h and h not in seen]
         if not new:
             break

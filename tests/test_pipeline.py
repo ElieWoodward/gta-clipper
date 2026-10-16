@@ -545,3 +545,19 @@ assert len(sent) == n + 1, "claim email only once"
 tt_uploads[:] = []
 twitch.list_archives, twitch.chapters = _orig_la, _orig_ch
 print("CAMPAIGNS OK")
+
+# ---------- 12. the directory's "page past the end" 404 just ends the listing ----------
+import requests as _rq  # noqa: E402
+
+
+def _get404(url):
+    if "/page/" in url:
+        r = _rq.Response()
+        r.status_code = 404
+        raise _rq.HTTPError("404", response=r)
+    return LIST_HTML
+
+
+campaigns._get = _get404
+assert len(campaigns.list_campaigns()) == 4
+print("CAMPAIGN PAGES OK")
