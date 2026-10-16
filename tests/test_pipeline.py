@@ -237,3 +237,13 @@ im = Image.open(prev[0])
 assert im.width == 1500 and im.height > 500, im.size
 shutil.copy(prev[0], TMP / "preview_sample.jpg")
 print("PREVIEWS OK")
+
+# ---------- 6. streams that start in Just Chatting and switch to GTA ----------
+from clipper import fetch as _fetch, twitch as _tw  # noqa: E402
+_orig = _tw.chapters
+_tw.chapters = lambda vid: [(0.0, 2418.0, "Just Chatting"), (2418.0, None, "Grand Theft Auto V")]
+assert _fetch.twitch_game("twitch:1") == ("Grand Theft Auto V", [[2418.0, None]])
+_tw.chapters = lambda vid: [(0.0, None, "Just Chatting")]
+assert _fetch.twitch_game("twitch:1") == ("Just Chatting", [])
+_tw.chapters = _orig
+print("CHAPTERS OK")

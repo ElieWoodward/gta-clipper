@@ -41,15 +41,16 @@ def list_new_vods(cfg, state):
             if ts and datetime.fromtimestamp(ts, timezone.utc) < datetime.now(timezone.utc) - timedelta(days=f["max_vod_age_days"]):
                 continue
             pat = f.get("title_match") or ""
-            game = twitch_game(vid) if s["platform"] == "twitch" else None
+            game, ranges = (twitch_game(vid, f.get("game_match") or "grand theft auto|gta")
+                            if s["platform"] == "twitch" else (None, None))
             if pat and game:
-                if not re.search(f.get("game_match") or "grand theft auto|gta", game, re.I):
+                if not ranges:
                     log.info("skipping %s: category is %s", vid, game)
-                    continue  # Twitch says it's another game
+                    continue  # Twitch says it's another game for the whole stream
             elif pat and not re.search(pat, e.get("title") or "", re.I):
                 continue  # title doesn't look like GTA
             out.append({"id": vid, "url": e.get("url") or e.get("webpage_url"), "title": e.get("title", ""),
-                        "game": game, "streamer": s})
+                        "game": game, "gta_ranges": ranges, "streamer": s})
     for u in cfg.get("manual_urls") or []:
         vid = f"manual:{u}"
         if vid not in seen:
@@ -57,14 +58,19 @@ def list_new_vods(cfg, state):
     return out
 
 
-def twitch_game(vid):
-    """The category Twitch has on the VOD (e.g. "Grand Theft Auto V"), or None if it can't tell."""
+def twitch_game(vid, game_match="grand theft auto|gta"):
+    """(category, gta_ranges): the stream's main category and the [start, end] stretches (seconds, end None = to the
+    end) Twitch has under GTA. (None, None) if Twitch can't tell."""
     from . import twitch
     try:
-        info = twitch.video_info(twitch.video_id({"id": vid}))
-        return ((info or {}).get("game") or {}).get("name")
+        ch = twitch.chapters(twitch.video_id({"id": vid}))
     except Exception:
-        return None
+        return None, None
+    if not ch:
+        return None, None
+    ranges = [[s, e] for s, e, g in ch if re.search(game_match, g or "", re.I)]
+    game = next((g for _, _, g in ch if re.search(game_match, g or "", re.I)), ch[0][2])
+    return game, ranges
 
 
 class StillLive(Exception):

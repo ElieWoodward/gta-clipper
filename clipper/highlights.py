@@ -324,7 +324,14 @@ def analyze(cfg, vod, wav, client=None):
     db = loudness_curve(wav)
     max_picks, n_cands = clip_budget(cfg, len(db))
     sig = twitch.signals(vod, len(db)) if cfg.get("signals", {}).get("twitch", True) else {}
-    cands = merge_candidates(db, sig, n_cands)
+    ranges = vod.get("gta_ranges")
+    if ranges:   # only the GTA part of the stream (big streamers often open with an hour of Just Chatting)
+        def in_gta(t):
+            return any(s + 20 <= t <= (e if e is not None else len(db)) - 5 for s, e in ranges)
+        cands = [c for c in merge_candidates(db, sig, n_cands * 3) if in_gta(c["t"])]
+        cands = sorted(sorted(cands, key=lambda c: -c["strength"])[:n_cands], key=lambda c: c["t"])
+    else:
+        cands = merge_candidates(db, sig, n_cands)
     kinds = {k: sum(1 for c in cands if c["signals"][0].startswith(k)) for k in ("viewers", "chat", "loud")}
     log.info("%s: %.1f h stream, %d candidates %s, up to %d clips", vod["id"], len(db) / 3600, len(cands), kinds, max_picks)
     print(f"::notice::{len(db) / 3600:.1f} h stream, judging {len(cands)} moments "

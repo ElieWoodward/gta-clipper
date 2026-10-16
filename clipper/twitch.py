@@ -59,6 +59,25 @@ def video_info(vid):
     return v or None
 
 
+def chapters(vid):
+    """[(start_s, end_s or None, game)] from the VOD's chapter markers; [] if Twitch doesn't say.
+    Big streamers often start in Just Chatting and switch to GTA later, so the VOD's own category isn't enough."""
+    q = ('query { video(id: "%s") { lengthSeconds game { name } moments(momentRequestType: VIDEO_CHAPTER_MARKERS) '
+         '{ edges { node { positionMilliseconds durationMilliseconds description '
+         'details { ... on GameChangeMomentDetails { game { displayName } } } } } } } }' % vid)
+    v = (((_gql({"query": q}) or {}).get("data") or {}).get("video")) or {}
+    out = []
+    for e in ((v.get("moments") or {}).get("edges") or []):
+        n = e.get("node") or {}
+        game = ((n.get("details") or {}).get("game") or {}).get("displayName") or n.get("description") or ""
+        s = (n.get("positionMilliseconds") or 0) / 1000
+        d = (n.get("durationMilliseconds") or 0) / 1000
+        out.append((s, s + d if d else None, game))
+    if not out and (v.get("game") or {}).get("name"):
+        out = [(0.0, None, v["game"]["name"])]
+    return out
+
+
 CLIP_CRITERIA = ["{filter: %s}", "{period: %s, sort: VIEWS_DESC}"]
 
 
