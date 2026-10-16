@@ -54,7 +54,11 @@ def _process_vod(cfg, state, vod, client=None):
         wav = fetch.download_audio(vod, d)
         picks, words = highlights.analyze(cfg, vod, wav, client)
         log.info("%s: %d picks", vod["id"], len(picks))
-        for p in picks[: cfg["clip"]["per_vod"]]:
+        bar = cfg["clip"]["min_score"]
+        for p in picks:
+            # Below the quality bar never gets rendered or posted (test runs keep them so you can compare).
+            if cfg["review"]["mode"] == "auto" and int(p["score"]) < bar and not TEST_SOURCE:
+                continue
             make_clip(cfg, state, vod, p, words, d)
     finally:
         if DRY_RUN:  # keep the finished clips so a test run can hand them over
@@ -79,7 +83,7 @@ def _test_run(cfg, state):
                  "streamer": {"name": "test", "platform": "manual"}}]
     if not vods:
         raise RuntimeError(f"No VOD found for {TEST_SOURCE}")
-    cfg["clip"] = dict(cfg["clip"], per_vod=2)
+    cfg["clip"] = dict(cfg["clip"], max_per_vod=min(6, cfg["clip"].get("max_per_vod", 16)))
     scratch = {"processed_vods": [], "clips": {}, "posts": [], "pruned": []}
     import clipper.common as common
     common.save_state = lambda s: None  # never touch the real state in a test

@@ -96,7 +96,7 @@ services.blotato_wait = lambda sub: ("published", f"https://www.youtube.com/shor
 
 # ---------- 1. process ----------
 cfg, state = common.load_config(), common.load_state()
-cfg["clip"]["per_vod"] = 2
+cfg["clip"]["min_per_vod"] = 2
 vod = {"id": "twitch:123", "url": "https://twitch.tv/videos/123", "title": "GTA 6 day 1",
        "streamer": {"name": "teststreamer", "platform": "twitch"}}
 claude = FakeClaude(judge_reply)

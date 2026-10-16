@@ -27,8 +27,11 @@ fetch:
 clip:
   min_seconds: 61                 # TikTok Creator Rewards needs > 60s
   max_seconds: 90
-  per_vod: 4                      # max clips cut from one VOD
-  candidates: 30                  # loud moments sent to Claude for judging
+  clips_per_hour: 2               # longer streams get more clips: an 8-hour stream yields up to 16
+  min_per_vod: 3
+  max_per_vod: 16
+  candidates_per_hour: 6          # loud moments sent to Claude for judging, scaled the same way
+  max_candidates: 70
   min_score: 7                    # Claude score (1-10) needed to post automatically
   commentary: false               # false = one hook stays up the whole clip. true = hook for 3s, then rotating context lines
 

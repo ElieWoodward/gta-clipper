@@ -49,7 +49,7 @@ Streamer: {streamer}. Stream title: {title}. Game: GTA (GTA 6 when it is out).
 
 Below are candidate windows. Each has an id, absolute start/end seconds, a loudness spike score, and the transcript with [Ns] markers giving the absolute second each stretch of speech starts. Use the markers to set exact start and end times.
 
-Pick up to {max_picks} clips. Rules:
+Pick up to {max_picks} clips. That is a ceiling, not a target: only include moments that are genuinely good. Returning 2, or even 0, is better than padding with weak clips. Rules:
 - Each clip must be between {min_s} and {max_s} seconds long, inside its window. Start a beat before the setup so the payoff lands; end right after the reaction.
 - A clip has to work for someone who has never seen this streamer: a clear setup, an escalation, a payoff (chaos, a fail, a huge win, a funny line, a reaction).
 - Skip: dead air, menus, reading chat, sponsor reads, gambling, anything sexual, slurs or hateful content, real personal info (addresses, phone numbers), anything involving minors, or content that would get the account flagged.
@@ -90,7 +90,15 @@ CANDIDATES:
 """
 
 
-def judge(cfg, vod, windows, client=None):
+def clip_budget(cfg, seconds):
+    """How many candidates to judge and clips to keep, scaled by stream length."""
+    c, hours = cfg["clip"], seconds / 3600
+    picks = int(min(c.get("max_per_vod", 16), max(c.get("min_per_vod", 3), round(c.get("clips_per_hour", 2) * hours))))
+    cands = int(min(c.get("max_candidates", 70), max(picks * 3, round(c.get("candidates_per_hour", 6) * hours))))
+    return picks, cands
+
+
+def judge(cfg, vod, windows, client=None, max_picks=None):
     import anthropic
     client = client or anthropic.Anthropic()
     playbook = PLAYBOOK_FILE.read_text() if PLAYBOOK_FILE.exists() else ""
@@ -101,12 +109,12 @@ def judge(cfg, vod, windows, client=None):
         for w in windows)
     c = cfg["clip"]
     prompt = JUDGE_PROMPT.format(streamer=vod["streamer"]["name"], title=vod.get("title", ""),
-                                 max_picks=c["per_vod"], min_s=c["min_seconds"], max_s=c["max_seconds"],
+                                 max_picks=max_picks or c.get("min_per_vod", 3), min_s=c["min_seconds"], max_s=c["max_seconds"],
                                  playbook=playbook, candidates=cand_txt)
     msg = client.messages.create(model=cfg["models"]["judge"], max_tokens=4000,
                                  messages=[{"role": "user", "content": prompt}])
     text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
-    return validate_picks(parse_json(text), windows, c)
+    return validate_picks(parse_json(text), windows, c)[: max_picks or len(windows)]
 
 
 def parse_json(text):
@@ -137,14 +145,20 @@ def validate_picks(data, windows, c):
         p["start"], p["end"] = round(s, 2), round(e, 2)
         p["commentary"] = [x for x in p.get("commentary", []) if 0 <= float(x["at"]) < e - s]
         good.append(p)
-    return sorted(good, key=lambda p: -p["score"])
+    # Best first, and drop any clip that mostly overlaps a better one.
+    kept = []
+    for p in sorted(good, key=lambda p: -p["score"]):
+        if all(min(p["end"], k["end"]) - max(p["start"], k["start"]) < 0.4 * (p["end"] - p["start"]) for k in kept):
+            kept.append(p)
+    return kept
 
 
 def analyze(cfg, vod, wav, client=None):
     """Full pass for one VOD: loudness -> candidate windows -> transcripts -> Claude picks."""
     db = loudness_curve(wav)
-    peaks = find_candidates(db, cfg["clip"]["candidates"])
-    log.info("%s: %d loudness candidates", vod["id"], len(peaks))
+    max_picks, n_cands = clip_budget(cfg, len(db))
+    peaks = find_candidates(db, n_cands)
+    log.info("%s: %.1f h stream, %d loudness candidates, up to %d clips", vod["id"], len(db) / 3600, len(peaks), max_picks)
     windows, words_all = [], []
     for i, t in enumerate(peaks):
         s, e = max(0, t - WINDOW_BEFORE), min(len(db), t + WINDOW_AFTER)
@@ -154,4 +168,4 @@ def analyze(cfg, vod, wav, client=None):
                         "text": text_with_marks(words, s, e)})
     if not windows:
         return [], []
-    return judge(cfg, vod, windows, client), words_all
+    return judge(cfg, vod, windows, client, max_picks=max_picks), words_all
