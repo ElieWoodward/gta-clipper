@@ -32,6 +32,7 @@ clip:
   max_per_vod: 16
   candidates_per_hour: 6          # loud moments sent to Claude for judging, scaled the same way
   max_candidates: 70
+  transcribe_minutes: 50          # audio sent for transcription per stream; keeps long streams fast and inside Groq's hourly limit
   min_score: 7                    # Claude score (1-10) needed to post automatically
   commentary: false               # false = one hook stays up the whole clip. true = hook for 3s, then rotating context lines
 

@@ -95,6 +95,8 @@ def clip_budget(cfg, seconds):
     c, hours = cfg["clip"], seconds / 3600
     picks = int(min(c.get("max_per_vod", 16), max(c.get("min_per_vod", 3), round(c.get("clips_per_hour", 2) * hours))))
     cands = int(min(c.get("max_candidates", 70), max(picks * 3, round(c.get("candidates_per_hour", 6) * hours))))
+    window = WINDOW_BEFORE + WINDOW_AFTER
+    cands = min(cands, max(6, int(c.get("transcribe_minutes", 50) * 60 // window)))
     return picks, cands
 
 
@@ -159,6 +161,7 @@ def analyze(cfg, vod, wav, client=None):
     max_picks, n_cands = clip_budget(cfg, len(db))
     peaks = find_candidates(db, n_cands)
     log.info("%s: %.1f h stream, %d loudness candidates, up to %d clips", vod["id"], len(db) / 3600, len(peaks), max_picks)
+    print(f"::notice::{len(db) / 3600:.1f} h stream, judging {len(peaks)} moments, up to {max_picks} clips", flush=True)
     windows, words_all = [], []
     for i, t in enumerate(peaks):
         s, e = max(0, t - WINDOW_BEFORE), min(len(db), t + WINDOW_AFTER)

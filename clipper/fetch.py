@@ -1,5 +1,6 @@
 """Find new VODs and download only what's needed: full audio for analysis, video just for chosen clips."""
 import json
+import time
 from datetime import datetime, timedelta, timezone
 
 from .common import log, run, WORK
@@ -47,7 +48,9 @@ def download_audio(vod, dest_dir):
     """Download audio only, as 16 kHz mono wav (small and enough for analysis)."""
     dest_dir.mkdir(parents=True, exist_ok=True)
     tmpl = str(dest_dir / "audio.%(ext)s")
-    run(["yt-dlp", "-N", "8", "-f", "bestaudio/worst", "-x", "--audio-format", "m4a", "-o", tmpl, vod["url"]])
+    t0 = time.time()
+    run(["yt-dlp", "-N", "16", "-f", "bestaudio/worst", "-x", "--audio-format", "m4a", "-o", tmpl, vod["url"]])
+    print(f"::notice::audio downloaded in {time.time() - t0:.0f}s", flush=True)
     src = next(dest_dir.glob("audio.*"))
     wav = dest_dir / "audio.wav"
     run(["ffmpeg", "-y", "-loglevel", "error", "-i", src, "-ac", "1", "-ar", "16000", wav])

@@ -32,10 +32,14 @@ def transcribe(wav, model, start=0.0, end=None):
                                         "timestamp_granularities[]": "word", "language": "en"},
                                   timeout=300)
             if r.status_code == 429:
-                time.sleep(20 * (attempt + 1))
+                wait = float(r.headers.get("retry-after") or 20 * (attempt + 1))
+                log.warning("Groq rate limit, waiting %.0fs", wait)
+                time.sleep(min(wait, 120))
                 continue
             r.raise_for_status()
             break
+        else:
+            raise RuntimeError("Groq kept rate-limiting; try again later or lower clip.transcribe_minutes")
         for w in r.json().get("words", []):
             words.append({"w": w["word"].strip(), "s": round(w["start"] + t, 2), "e": round(w["end"] + t, 2)})
         os.remove(chunk)
