@@ -195,7 +195,9 @@ def _check_accounts(cfg):
     if acct.get("tiktok"):
         try:
             ups = clipqueue.tiktok_uploads(acct["tiktok"])
-            print(f"::notice::TikTok page readable: {len(ups)} recent upload(s)", flush=True)
+            top = ups[0] if ups else {}
+            print(f"::notice::TikTok page readable: {len(ups)} recent upload(s); latest has {top.get('views')} views, "
+                  f"{top.get('likes')} likes", flush=True)
         except Exception as e:
             print(f"::warning::TikTok page not readable from GitHub ({str(e)[-160:]}); "
                   "posted clips will be detected from your email replies instead", flush=True)

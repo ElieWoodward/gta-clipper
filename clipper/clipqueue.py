@@ -257,12 +257,22 @@ def _int(x):
 def tiktok_uploads(handle, n=30):
     """Latest TikTok uploads via yt-dlp: [{text, timestamp, duration, url, views, likes, comments, shares}].
     Raises if TikTok blocks the request."""
-    try:
-        raw = run(["yt-dlp", "--flat-playlist", "-J", "--playlist-end", str(n), f"https://www.tiktok.com/@{handle}"])
-    except RuntimeError as e:
-        if "does not have any videos" in str(e):
-            return []   # a brand new account: readable, just empty
-        raise
+    errors = []
+    for extra in (["--impersonate", "chrome"], []):
+        try:
+            raw = run(["yt-dlp", *extra, "--flat-playlist", "-J", "--playlist-end", str(n),
+                       f"https://www.tiktok.com/@{handle}"])
+            break
+        except RuntimeError as e:
+            if "does not have any videos" in str(e):
+                return []   # a brand new account: readable, just empty
+            errors.append(str(e)[-200:])
+    else:
+        try:
+            return tikwm_uploads(handle, n)   # TikTok often blocks GitHub's servers; this public reader usually doesn't
+        except Exception as e:
+            errors.append(f"tikwm: {e}")
+            raise RuntimeError(" | ".join(errors))
     out = []
     for e in json.loads(raw).get("entries") or []:
         out.append({"text": " ".join(x for x in (e.get("title"), e.get("description")) if x),
@@ -270,6 +280,24 @@ def tiktok_uploads(handle, n=30):
                     "url": e.get("url") or e.get("webpage_url"), "views": _int(e.get("view_count")),
                     "likes": _int(e.get("like_count")), "comments": _int(e.get("comment_count")),
                     "shares": _int(e.get("repost_count"))})
+    return out
+
+
+def tikwm_uploads(handle, n=30):
+    """Public TikTok post list and stats via tikwm.com (free, no key)."""
+    r = requests.get("https://www.tikwm.com/api/user/posts", params={"unique_id": handle, "count": min(n, 35), "cursor": 0},
+                     headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
+    r.raise_for_status()
+    data = r.json()
+    if data.get("code") not in (0, None):
+        raise RuntimeError(data.get("msg") or f"code {data.get('code')}")
+    out = []
+    for v in ((data.get("data") or {}).get("videos") or []):
+        vid = v.get("video_id") or v.get("aweme_id")
+        out.append({"text": v.get("title") or "", "timestamp": v.get("create_time"), "duration": v.get("duration"),
+                    "url": f"https://www.tiktok.com/@{handle}/video/{vid}", "views": _int(v.get("play_count")),
+                    "likes": _int(v.get("digg_count")), "comments": _int(v.get("comment_count")),
+                    "shares": _int(v.get("share_count"))})
     return out
 
 
