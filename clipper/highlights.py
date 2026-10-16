@@ -173,15 +173,23 @@ def ask_json(client, model, prompt, key, max_tokens=4000):
                                             "properties": {key: {"type": "array", "items": {"type": "object"}}}}, max_tokens)
 
 
-def ask_tool(client, model, prompt, schema, max_tokens=4000):
-    tool = {"name": "submit", "description": "Submit the answer.", "input_schema": schema}
-    msg = client.messages.create(model=model, max_tokens=max_tokens, tools=[tool],
-                                 tool_choice={"type": "tool", "name": "submit"},
-                                 messages=[{"role": "user", "content": prompt}])
-    for b in msg.content:
-        if getattr(b, "type", "") == "tool_use" and isinstance(getattr(b, "input", None), dict):
-            return b.input
-    return parse_json("".join(b.text for b in msg.content if getattr(b, "type", "") == "text"))
+def ask_tool(client, model, prompt, schema, max_tokens=4000, attempts=3):
+    """Get a JSON object from Claude through a tool call (valid JSON even when hooks are full of quotes and emojis).
+    Falls back to parsing a JSON reply, and asks again if neither works."""
+    tool = {"name": "submit", "description": "Submit the answer. Always answer by calling this tool.", "input_schema": schema}
+    last = None
+    for _ in range(attempts):
+        msg = client.messages.create(model=model, max_tokens=max_tokens, tools=[tool], tool_choice={"type": "auto"},
+                                     messages=[{"role": "user", "content": prompt + "\n\nAnswer by calling the submit tool."}])
+        for b in msg.content:
+            if getattr(b, "type", "") == "tool_use" and isinstance(getattr(b, "input", None), dict) and b.input:
+                return b.input
+        try:
+            return parse_json("".join(b.text for b in msg.content if getattr(b, "type", "") == "text"))
+        except ValueError as e:   # JSONDecodeError is a ValueError
+            last = e
+            log.warning("unreadable reply from Claude (%s); asking again", e)
+    raise RuntimeError(f"Claude never returned readable JSON: {last}")
 
 
 def parse_json(text):
