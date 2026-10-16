@@ -257,3 +257,32 @@ assert lst[0]["id"] == "v2900842637" and lst[0]["duration"] == 43425 and lst[0][
 assert _tw.video_id({"id": "twitch:" + lst[0]["id"]}) == "2900842637"
 _tw._gql = _g
 print("LISTING OK")
+
+# ---------- 8. live: spike detection, viewer clip clusters, state merge ----------
+from clipper import live as _live  # noqa: E402
+now = 1_000_000.0
+calm = [(now - 600 + i * 0.5, "chatting about cars") for i in range(1170)]          # 2 msgs/s for ~10 min
+boom = [(now - 14 + i * 0.1, "KEKW NO WAY") for i in range(140)]                   # 10 msgs/s, laughing
+assert _live.chat_spike(calm, now) is None
+r = _live.chat_spike(calm + boom, now)
+assert r and r > 3, r
+assert _live.chat_spike(calm[-200:] + boom, now) is None, "needs 3+ minutes of history"
+raid = [(now - 14 + i * 0.1, "raid hype welcome raiders") for i in range(140)]
+assert _live.chat_spike(calm + raid, now) is None, "raid spam isn't a reaction"
+hit = _live.viewer_clip_cluster([{"offset": 1000, "duration": 30}, {"offset": 1010, "duration": 30},
+                                 {"offset": 3000, "duration": 30}])
+assert hit and 1015 < hit[0] < 1035 and hit[1] == 2, hit
+assert _live.viewer_clip_cluster([{"offset": 1000, "duration": 30}]) is None
+# the live watcher writes only data/live.json; the other jobs see its clips and posts
+os.environ["CLIPPER_LIVE"] = "1"
+st = common.load_state()
+st["clips"]["livex"] = {"id": "livex", "live": True, "vod": "twitch:v9", "start": 100, "end": 130, "status": "posted",
+                        "score": 9, "posts": {"tiktok": {"date": "2026-10-16"}}, "created": "2026-10-16T00:00:00+00:00"}
+before = common.STATE_FILE.read_text() if common.STATE_FILE.exists() else None
+common.save_state(st)
+assert (common.STATE_FILE.read_text() if common.STATE_FILE.exists() else None) == before, "live must not touch state.json"
+os.environ.pop("CLIPPER_LIVE")
+merged = common.load_state()
+assert merged["clips"]["livex"]["posts"]["tiktok"]["date"] == "2026-10-16"
+assert jobs.overlaps_existing(merged, "twitch:v9", 105, 140) and not jobs.overlaps_existing(merged, "twitch:v9", 200, 240)
+print("LIVE OK")

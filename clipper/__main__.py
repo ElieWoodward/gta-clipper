@@ -40,8 +40,13 @@ def probe():
         print("::error::no Twitch signals came back; the picker will fall back to loudness", flush=True)
 
 
+def _live():
+    from . import live
+    live.watch()
+
+
 CMDS = {"process": jobs.process, "post": jobs.post, "analytics": jobs.analytics, "learn": jobs.learn,
-        "accounts": lambda: print(services.blotato_accounts()), "probe": probe, "preflight": jobs.preflight_only}
+        "accounts": lambda: print(services.blotato_accounts()), "probe": probe, "preflight": jobs.preflight_only, "live": _live}
 
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in CMDS:

@@ -25,17 +25,47 @@ def load_config():
         return yaml.safe_load(f)
 
 
+LIVE_FILE = DATA / "live.json"   # written only by the live watcher, which runs alongside the other jobs
+
+
+def _merge_live(state):
+    """Fold the live watcher's clips (and the posts it made) into the main state."""
+    if not LIVE_FILE.exists():
+        return state
+    try:
+        live = json.loads(LIVE_FILE.read_text())
+    except ValueError:
+        return state
+    for cid, clip in (live.get("clips") or {}).items():
+        mine = state["clips"].get(cid)
+        if mine is None:
+            state["clips"][cid] = clip
+        else:
+            for platform, post in (clip.get("posts") or {}).items():
+                mine.setdefault("posts", {}).setdefault(platform, post)
+            if clip.get("posts") and mine.get("status") == "approved":
+                mine["status"] = "posted"
+    return state
+
+
 def load_state():
     if STATE_FILE.exists():
-        return json.loads(STATE_FILE.read_text())
-    return {"processed_vods": [], "clips": {}, "posts": [], "pruned": []}
+        state = json.loads(STATE_FILE.read_text())
+    else:
+        state = {"processed_vods": [], "clips": {}, "posts": [], "pruned": []}
+    return _merge_live(state)
 
 
 def save_state(state):
     DATA.mkdir(parents=True, exist_ok=True)
-    tmp = STATE_FILE.with_suffix(".tmp")
+    if os.environ.get("CLIPPER_LIVE") == "1":   # the live watcher only ever writes its own file
+        target = LIVE_FILE
+        state = {"clips": {k: v for k, v in state["clips"].items() if v.get("live")}}
+    else:
+        target = STATE_FILE
+    tmp = target.with_suffix(".tmp")
     tmp.write_text(json.dumps(state, indent=2, sort_keys=True))
-    tmp.replace(STATE_FILE)
+    tmp.replace(target)
 
 
 def load_json(path, default):

@@ -75,3 +75,12 @@ models:
   learn: claude-sonnet-5-5        # weekly analysis
   whisper: whisper-large-v3-turbo # Groq model for scanning streams (fast)
   captions: whisper-large-v3      # Groq model for on-screen captions (more accurate)
+
+live:
+  enabled: true                   # clip big moments while the stream is still going
+  chat_ratio: 3.0                 # chat must suddenly run this many times its normal rate
+  min_viewer_clips: 2             # or this many viewers clip the same moment
+  cooldown_minutes: 8             # at most one live clip per streamer this often
+  max_per_stream: 6
+  post_now_score: 8               # live clips scoring this or more post right away instead of waiting for a slot
+  extra_posts_per_day: 1          # live posts allowed on top of the daily ramp

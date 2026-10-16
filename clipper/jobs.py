@@ -76,20 +76,26 @@ def _process_vod(cfg, state, vod, client=None):
             # Below the quality bar never gets rendered or posted (test runs keep them so you can compare).
             if cfg["review"]["mode"] == "auto" and int(p["score"]) < bar and not TEST_SOURCE:
                 continue
+            if overlaps_existing(state, vod["id"], p["start"], p["end"]):
+                log.info("skipping %s-%s: already clipped live", p["start"], p["end"])
+                continue
             make_clip(cfg, state, vod, p, words, d)
     finally:
         if DRY_RUN:  # keep the finished clips so a test run can hand them over
-            out = WORK.parent / "test-output"
-            out.mkdir(exist_ok=True)
-            (out / "previews").mkdir(exist_ok=True)
-            for f in d.glob("*.mp4"):
-                if not f.name.endswith("_src.mp4"):
-                    shutil.copy(f, out / f.name)
-                    try:
-                        contact_sheet(f, out / "previews" / f"{f.stem}.jpg")
-                    except Exception as e:
-                        log.warning("preview for %s failed: %s", f.name, e)
+            export_test_clips(d)
         shutil.rmtree(d, ignore_errors=True)
+
+
+def export_test_clips(d):
+    out = WORK.parent / "test-output"
+    (out / "previews").mkdir(parents=True, exist_ok=True)
+    for f in d.glob("*.mp4"):
+        if not f.name.endswith("_src.mp4"):
+            shutil.copy(f, out / f.name)
+            try:
+                contact_sheet(f, out / "previews" / f"{f.stem}.jpg")
+            except Exception as e:
+                log.warning("preview for %s failed: %s", f.name, e)
 
 
 def contact_sheet(video, dest, n=5):
@@ -332,23 +338,47 @@ def post():
         # Best score first, facecam clips win ties (a visible reaction holds viewers), then the newest.
         clip = sorted(ready, key=lambda c: (c["score"] + (0.5 if c.get("facecam") else 0), c["created"]),
                       reverse=True)[0]
-        try:
-            acct = services.blotato_account_id(platform)
-            sub = services.blotato_post(platform, acct, clip["media_url"], _caption(cfg, clip, platform),
-                                        title=clip["title"], ai_label=cfg["posting"].get("label_ai_generated"))
-            status, info = services.blotato_wait(sub)
-        except Exception as e:
-            log.exception("post to %s failed: %s", platform, e)
+        post_clip(cfg, state, clip, platform)
+
+
+def post_clip(cfg, state, clip, platform):
+    """Publish one clip to one platform now and record it. Returns the Blotato status, or None on error."""
+    now = now_local(cfg)
+    try:
+        acct = services.blotato_account_id(platform)
+        sub = services.blotato_post(platform, acct, clip["media_url"], _caption(cfg, clip, platform),
+                                    title=clip["title"], ai_label=cfg["posting"].get("label_ai_generated"))
+        status, info = services.blotato_wait(sub)
+    except Exception as e:
+        log.exception("post to %s failed: %s", platform, e)
+        return None
+    clip["posts"][platform] = {"submission": sub, "status": status, "url": info if status == "published" else None,
+                               "error": info if status == "failed" else None, "date": now.date().isoformat(),
+                               "posted_at": now_utc().isoformat(), "hour": now.strftime("%H:00"),
+                               "views": None, "history": []}
+    clip["status"] = "posted"
+    if clip.get("issue"):
+        services.gh_comment(clip["issue"], f"Posted to {platform}: {status} {info or ''}")
+    log.info("posted %s to %s: %s", clip["id"], platform, status)
+    print(f"::notice::posted to {platform}: {status} {info or ''} | {clip['hook']}", flush=True)
+    save_state(state)
+    return status
+
+
+def posted_today(cfg, state, platform):
+    today = now_local(cfg).date().isoformat()
+    return sum(1 for c in state["clips"].values() if c["posts"].get(platform, {}).get("date") == today)
+
+
+def overlaps_existing(state, vod_id, start, end, min_share=0.5):
+    """True if a clip already made from this stream covers most of [start, end] (live and VOD runs overlap)."""
+    for c in state["clips"].values():
+        if c.get("vod") != vod_id:
             continue
-        clip["posts"][platform] = {"submission": sub, "status": status, "url": info if status == "published" else None,
-                                   "error": info if status == "failed" else None, "date": today,
-                                   "posted_at": now_utc().isoformat(), "hour": now.strftime("%H:00"),
-                                   "views": None, "history": []}
-        clip["status"] = "posted"
-        if clip.get("issue"):
-            services.gh_comment(clip["issue"], f"Posted to {platform}: {status} {info or ''}")
-        log.info("posted %s to %s: %s", clip["id"], platform, status)
-        save_state(state)
+        inter = min(end, c["end"]) - max(start, c["start"])
+        if inter > min_share * min(end - start, c["end"] - c["start"]):
+            return True
+    return False
 
 
 # ------------------------------------------------------------------ analytics + prune

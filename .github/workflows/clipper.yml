@@ -11,14 +11,14 @@ on:
       job:
         description: "Which job to run"
         type: choice
-        options: [process, post, analytics, learn, accounts, probe, preflight]
+        options: [process, post, analytics, learn, accounts, probe, preflight, live]
         default: process
       force:
         description: "Ignore launch date and quotas (for testing)"
         type: boolean
         default: false
       test_source:
-        description: "Test only: a VOD link or twitch:<channel>. Makes clips you can download; posts nothing"
+        description: "Test only: a VOD link, twitch:<channel>, or live:<channel> (with job=live). Makes clips you can download; posts nothing"
         type: string
         default: ""
 
@@ -55,7 +55,7 @@ jobs:
           cache: pip
 
       - name: Install ffmpeg and fonts
-        if: steps.pick.outputs.job == 'process' || steps.pick.outputs.job == 'probe' || steps.pick.outputs.job == 'preflight'
+        if: steps.pick.outputs.job == 'process' || steps.pick.outputs.job == 'probe' || steps.pick.outputs.job == 'preflight' || steps.pick.outputs.job == 'live'
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core fonts-noto-color-emoji
 
       - run: pip install -q -r requirements.txt
