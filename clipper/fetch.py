@@ -38,14 +38,30 @@ def list_new_vods(cfg, state):
             if ts and datetime.fromtimestamp(ts, timezone.utc) < datetime.now(timezone.utc) - timedelta(days=f["max_vod_age_days"]):
                 continue
             pat = f.get("title_match") or ""
-            if pat and not re.search(pat, e.get("title") or "", re.I):
-                continue  # not a GTA stream
-            out.append({"id": vid, "url": e.get("url") or e.get("webpage_url"), "title": e.get("title", ""), "streamer": s})
+            game = twitch_game(vid) if s["platform"] == "twitch" else None
+            if pat and game:
+                if not re.search(f.get("game_match") or "grand theft auto|gta", game, re.I):
+                    log.info("skipping %s: category is %s", vid, game)
+                    continue  # Twitch says it's another game
+            elif pat and not re.search(pat, e.get("title") or "", re.I):
+                continue  # title doesn't look like GTA
+            out.append({"id": vid, "url": e.get("url") or e.get("webpage_url"), "title": e.get("title", ""),
+                        "game": game, "streamer": s})
     for u in cfg.get("manual_urls") or []:
         vid = f"manual:{u}"
         if vid not in seen:
             out.append({"id": vid, "url": u, "title": "", "streamer": {"name": "manual", "platform": "manual"}})
     return out
+
+
+def twitch_game(vid):
+    """The category Twitch has on the VOD (e.g. "Grand Theft Auto V"), or None if it can't tell."""
+    from . import twitch
+    try:
+        info = twitch.video_info(twitch.video_id({"id": vid}))
+        return ((info or {}).get("game") or {}).get("name")
+    except Exception:
+        return None
 
 
 class StillLive(Exception):

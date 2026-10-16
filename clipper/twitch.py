@@ -54,7 +54,7 @@ def video_id(vod):
 
 
 def video_info(vid):
-    data = _gql({"query": 'query { video(id: "%s") { id lengthSeconds createdAt owner { login } } }' % vid})
+    data = _gql({"query": 'query { video(id: "%s") { id lengthSeconds createdAt owner { login } game { name } } }' % vid})
     v = ((data or {}).get("data") or {}).get("video")
     return v or None
 
