@@ -62,6 +62,19 @@ def live_info(login):
             "vod_id": v["id"], "vod_created": _ts(v["createdAt"])}
 
 
+def top_gta_channel(game="Grand Theft Auto V", n=15):
+    """Most-watched channel live on GTA right now that has a recording VOD (for live:auto tests)."""
+    q = ('query { game(name: "%s") { streams(first: %d) { edges { node { viewersCount broadcaster { login '
+         'videos(first: 1, type: ARCHIVE, sort: TIME) { edges { node { status } } } } } } } } }' % (game, n))
+    edges = (((((twitch._gql({"query": q}) or {}).get("data") or {}).get("game") or {}).get("streams") or {}).get("edges")) or []
+    for e in edges:
+        b = (e.get("node") or {}).get("broadcaster") or {}
+        vids = ((b.get("videos") or {}).get("edges") or [])
+        if vids and (vids[0].get("node") or {}).get("status") == "RECORDING":
+            return b["login"]
+    return None
+
+
 def _ts(iso):
     return datetime.fromisoformat(iso.replace("Z", "+00:00")).timestamp()
 
@@ -264,6 +277,12 @@ def watch():
     test = jobs.TEST_SOURCE.startswith("live:")
     if test:
         ch = jobs.TEST_SOURCE.split(":", 1)[1]
+        if ch == "auto":
+            ch = top_gta_channel()
+            if not ch:
+                print("::warning::nobody with a VOD is live on GTA right now; nothing to test", flush=True)
+                return
+            print(f"::notice::testing on {ch}, the most-watched GTA stream right now", flush=True)
         streamers = [{"name": ch, "platform": "twitch", "channel": ch}]
         minutes = TEST_MINUTES
     else:
@@ -306,6 +325,9 @@ def watch():
                     log.info("%s is no longer live on GTA", login)
             if not watching and not test:
                 log.info("nobody is live on GTA right now")
+                return
+            if not watching and test:
+                print(f"::warning::{streamers[0]['channel']} isn't live on GTA right now; nothing to test", flush=True)
                 return
         for login, w in watching.items():
             vod = w["vod"]
