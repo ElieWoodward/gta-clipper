@@ -184,7 +184,28 @@ def preflight_only():
     if TEST_SOURCE:
         cfg, vods = _test_vods(cfg)
         vod = vods[0]
+    if clipqueue.email_mode(cfg):
+        _check_accounts(cfg)
     preflight.run_all(cfg, vod)
+
+
+def _check_accounts(cfg):
+    """Report (never fail) whether your TikTok and YouTube pages can be read from here."""
+    acct = cfg.get("accounts") or {}
+    if acct.get("tiktok"):
+        try:
+            ups = clipqueue.tiktok_uploads(acct["tiktok"])
+            print(f"::notice::TikTok page readable: {len(ups)} recent upload(s)", flush=True)
+        except Exception as e:
+            print(f"::warning::TikTok page not readable from GitHub ({str(e)[-160:]}); "
+                  "posted clips will be detected from your email replies instead", flush=True)
+    if acct.get("youtube"):
+        try:
+            cid = clipqueue.youtube_channel_id(acct["youtube"])
+            ups = clipqueue.youtube_uploads(cid)
+            print(f"::notice::YouTube channel readable ({cid}): {len(ups)} recent upload(s)", flush=True)
+        except Exception as e:
+            print(f"::warning::YouTube channel not readable ({str(e)[-160:]})", flush=True)
 
 
 def _test_run(cfg, state):
