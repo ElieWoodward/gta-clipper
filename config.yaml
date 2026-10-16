@@ -1,17 +1,17 @@
 # GTA clipper settings. Edit this file on GitHub to change behavior; the next run picks it up.
 
 timezone: America/Los_Angeles
-start_date: "2026-11-19"          # first day posting is allowed (GTA 6 launch). Ramp is counted from here.
+start_date: "2026-10-16"          # first day posting is allowed. Warming up on GTA V RP until GTA 6 (Nov 19).
 
 # Streamers to clip. Only add streamers whose clipping program you've joined.
 # platform: twitch | kick | youtube
 # facecam: optional crop of the webcam as fractions of the frame (x, y, w, h). Usually not needed: each clip's
 #          frames are checked and the webcam is found automatically. Streamers with a webcam get priority.
 streamers:
-  - name: example_streamer
+  - name: xQc
     platform: twitch
-    channel: example_streamer
-    enabled: false
+    channel: xqc
+    enabled: true
     campaign: ""                  # optional note, e.g. the Whop campaign name
     # facecam: {x: 0.72, y: 0.02, w: 0.26, h: 0.26}
 

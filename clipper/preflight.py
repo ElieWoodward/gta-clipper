@@ -4,6 +4,7 @@ Runs before the long audio download, so a broken key, an API change, a missing f
 the run in about a minute instead of after 10+ minutes of work. Each check prints a line on the run page.
 """
 import json
+import os
 import subprocess
 import tempfile
 import time
@@ -108,7 +109,16 @@ def _twitch(vod):
     return f"video {vid} ({(info.get('game') or {}).get('name')}), chat replay {'ok' if msgs else 'empty'}"
 
 
-def run_all(cfg, vod=None, client=None):
+def _blotato(cfg):
+    from . import services
+    names = {}
+    for platform in cfg["posting"]["platforms"]:
+        acct = services.blotato_account_id(platform)   # raises with a clear message if not connected
+        names[platform] = acct
+    return "connected: " + ", ".join(f"{p} ({a})" for p, a in names.items())
+
+
+def run_all(cfg, vod=None, client=None, posting=False):
     import anthropic
     client = client or anthropic.Anthropic()
     results = []
@@ -121,6 +131,8 @@ def run_all(cfg, vod=None, client=None):
         _check("render", lambda: _render(d), results)
         if vod:
             _check("Twitch", lambda: _twitch(vod), results)
+        if posting or os.environ.get("BLOTATO_API_KEY"):
+            _check("Blotato (posting)", lambda: _blotato(cfg), results)
     bad = [r for r in results if not r[1]]
     if bad:
         raise PreflightFailed("; ".join(f"{n}: {m}" for n, _, m in bad))

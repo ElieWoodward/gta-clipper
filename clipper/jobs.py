@@ -26,10 +26,20 @@ def _queued(state):
 
 
 # ------------------------------------------------------------------ process
+def _posting_ready():
+    """False (with a note on the run page) until the Blotato key is added, so scheduled runs wait instead of failing."""
+    if DRY_RUN or os.environ.get("BLOTATO_API_KEY"):
+        return True
+    print("::notice::Posting isn't set up yet: add the BLOTATO_API_KEY secret. Nothing was done this run.", flush=True)
+    return False
+
+
 def process():
     cfg, state = load_config(), load_state()
     if TEST_SOURCE:
         return _test_run(cfg, state)
+    if not _posting_ready():
+        return
     if days_since_start(cfg) < -1 and not FORCE:
         log.info("before launch window; nothing to process (set FORCE=1 to test)")
         return
@@ -40,7 +50,7 @@ def process():
     vods = fetch.list_new_vods(cfg, state)
     if vods:
         from . import preflight
-        preflight.run_all(cfg)   # stop before downloading anything if a service or the renderer is broken
+        preflight.run_all(cfg, vods[0], posting=not DRY_RUN)   # stop before downloading if anything is broken
     for vod in vods:
         try:
             _process_vod(cfg, state, vod)
@@ -295,6 +305,8 @@ def _refresh_manual_approvals(state):
 
 
 def post():
+    if not _posting_ready():
+        return
     cfg, state = load_config(), load_state()
     if days_since_start(cfg) < 0 and not FORCE:
         log.info("before start_date %s; not posting", cfg["start_date"])
