@@ -167,7 +167,7 @@ def chat_peaks(laughs, total, n, min_gap=60):
     strength[len(strength) - min(120, int(len(strength) * 0.03)):] = 0      # outro / raid out
     picks = []
     for t in np.argsort(strength)[::-1]:
-        if strength[t] < 4:
+        if strength[t] < 2.5:
             break
         if all(abs(t - p) >= min_gap for p, _ in picks):
             picks.append((int(t), float(strength[t])))
