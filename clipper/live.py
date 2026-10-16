@@ -22,7 +22,7 @@ from collections import deque
 from datetime import datetime
 
 from . import fetch, highlights, jobs, twitch
-from .common import log, load_config, load_state, save_state, run, now_utc, WORK
+from .common import log, load_config, load_state, save_state, run, WORK
 
 LIVE_DEFAULTS = {
     "enabled": True,
@@ -125,8 +125,9 @@ def _weight(text):
     return 2 if twitch.LAUGH.search(text) else 1
 
 
-def chat_spike(msgs, now, ratio=3.0, min_rate=1.5, window=15, history=600):
-    """How many times above normal chat is right now (None if it isn't spiking or there's too little history)."""
+def chat_spike(msgs, now, ratio=3.0, min_rate=1.5, window=15, history=600, level_only=False):
+    """How many times above normal chat is right now (None if it isn't spiking or there's too little history).
+    level_only: return the ratio even when it isn't a spike (tests use it to find the liveliest moment)."""
     recent = sum(_weight(t) for ts, t in msgs if now - window <= ts <= now) / window
     older = [(ts, t) for ts, t in msgs if now - history <= ts < now - window]
     if not older or now - older[0][0] < 180:
@@ -138,6 +139,8 @@ def chat_spike(msgs, now, ratio=3.0, min_rate=1.5, window=15, history=600):
     span = int((now - window - older[0][0]) // window) + 1
     rates = [buckets.get(int(older[0][0] // window) + i, 0) / window for i in range(span)]
     base = max(statistics.median(rates), 0.2)
+    if level_only:
+        return recent / base if recent > 0 else None
     if recent >= ratio * base and recent >= min_rate:
         return recent / base
     return None
@@ -335,6 +338,10 @@ def watch():
             msgs = list(w["chat"].msgs)
             # 1. chat explosion
             r = chat_spike(msgs, now, s["chat_ratio"], s["chat_min_per_sec"])
+            if test:
+                lvl = chat_spike(msgs, now, level_only=True)
+                if lvl and (w["best"] is None or lvl > w["best"][0]):
+                    w["best"] = (lvl, offset_now - 7 - twitch.CHAT_DELAY)
             if r:
                 t = offset_now - 7 - twitch.CHAT_DELAY
                 if w["best"] is None or r > w["best"][0]:
