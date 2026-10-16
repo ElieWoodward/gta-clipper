@@ -467,3 +467,13 @@ common.save_state(st)
 os.environ.pop("CLIPPER_LIVE")
 assert common.load_state()["clips"]["lv"]["emailed_at"]
 print("EMAIL QUEUE OK")
+
+# ---------- 10. an empty TikTok account is readable, not an error ----------
+import importlib  # noqa: E402
+import clipper.clipqueue as _cq  # noqa: E402
+_cq = importlib.reload(_cq)
+_run = _cq.run
+_cq.run = lambda cmd, **kw: (_ for _ in ()).throw(RuntimeError("yt-dlp failed (1): ERROR: [tiktok:user] x: This account does not have any videos posted"))
+assert _cq.tiktok_uploads("x") == []
+_cq.run = _run
+print("TIKTOK EMPTY OK")

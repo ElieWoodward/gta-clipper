@@ -217,7 +217,12 @@ def match_uploads(state, uploads, platform):
 
 def tiktok_uploads(handle, n=15):
     """Latest TikTok uploads via yt-dlp: [{text, timestamp, duration, url}]. Raises if TikTok blocks the request."""
-    raw = run(["yt-dlp", "--flat-playlist", "-J", "--playlist-end", str(n), f"https://www.tiktok.com/@{handle}"])
+    try:
+        raw = run(["yt-dlp", "--flat-playlist", "-J", "--playlist-end", str(n), f"https://www.tiktok.com/@{handle}"])
+    except RuntimeError as e:
+        if "does not have any videos" in str(e):
+            return []   # a brand new account: readable, just empty
+        raise
     out = []
     for e in json.loads(raw).get("entries") or []:
         out.append({"text": " ".join(x for x in (e.get("title"), e.get("description")) if x),
