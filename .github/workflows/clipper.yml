@@ -87,6 +87,16 @@ jobs:
           path: test-output/
           if-no-files-found: warn
 
+      - name: Publish previews
+        if: always() && inputs.test_source != '' && hashFiles('test-output/summary.json') != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/pv && cp -r test-output/summary.json test-output/previews /tmp/pv/ 2>/dev/null || true
+          cd /tmp/pv && git init -q && git checkout -q -b test-previews && git add -A
+          git -c user.name=clipper-bot -c user.email=clipper-bot@users.noreply.github.com commit -qm "previews for run ${{ github.run_id }}"
+          git push -qf "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" test-previews
+
       - name: Save state
         if: always() && inputs.test_source == ''
         run: |

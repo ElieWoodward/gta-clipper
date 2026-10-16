@@ -71,10 +71,34 @@ def _process_vod(cfg, state, vod, client=None):
         if DRY_RUN:  # keep the finished clips so a test run can hand them over
             out = WORK.parent / "test-output"
             out.mkdir(exist_ok=True)
+            (out / "previews").mkdir(exist_ok=True)
             for f in d.glob("*.mp4"):
                 if not f.name.endswith("_src.mp4"):
                     shutil.copy(f, out / f.name)
+                    try:
+                        contact_sheet(f, out / "previews" / f"{f.stem}.jpg")
+                    except Exception as e:
+                        log.warning("preview for %s failed: %s", f.name, e)
         shutil.rmtree(d, ignore_errors=True)
+
+
+def contact_sheet(video, dest, n=5):
+    """One image with n frames across the clip, so a test run can be checked without downloading the video."""
+    from .common import run
+    dur = float(run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", video]).strip())
+    frames = []
+    for i in range(n):
+        t = dur * (0.03 + 0.94 * i / (n - 1))
+        fp = dest.with_name(f"{dest.stem}_{i}.png")
+        run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{t:.2f}", "-i", video, "-frames:v", "1", "-vf", "scale=300:-2", fp])
+        frames.append(fp)
+    args = []
+    for fp in frames:
+        args += ["-i", fp]
+    run(["ffmpeg", "-y", "-loglevel", "error", *args, "-filter_complex", f"hstack={n}", "-q:v", "3", dest])
+    for fp in frames:
+        fp.unlink()
+    return dest
 
 
 def _test_vods(cfg):
@@ -128,7 +152,7 @@ def _test_run(cfg, state):
     else:
         raise RuntimeError("All recent streams are still live; try again later")
     summary = [{k: c.get(k) for k in ("score", "hook", "hook_score", "hook_options", "punch_text", "punch_at", "title", "caption", "duration", "why",
-                         "status", "facecam", "layout", "framing")}
+                         "status", "facecam", "layout", "framing", "said", "file", "start")}
                for c in scratch["clips"].values()]
     (WORK.parent / "test-output").mkdir(exist_ok=True)
     (WORK.parent / "test-output" / "summary.json").write_text(_json.dumps(
@@ -167,6 +191,7 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         "tags": p.get("tags", []), "why": p.get("why", ""), "hook_options": p.get("hook_options", []), "hook_score": p.get("hook_score"),
         "punch_text": p.get("punch_text", ""), "punch_at": p.get("punch_at", 0), "media_url": media_url,
         "facecam": bool(facecam), "layout": "cam+" + layout if facecam else layout, "framing": look["why"],
+        "said": " ".join(w["w"] for w in words if p["start"] <= w["s"] < p["end"])[:600], "file": out.name,
         "created": now_utc().isoformat(), "posts": {}, "issue": None, "local_file": str(out),
     }
     auto = cfg["review"]["mode"] == "auto"

@@ -220,3 +220,15 @@ assert "clips of 14-28 seconds have been doing best" in claude.prompts[-1]
 print("learn loop ok")
 print("ALL TESTS PASSED")
 print("artifacts in", TMP)
+
+# ---------- 5. test-run output: clips + contact-sheet previews ----------
+vod3 = dict(vod, id="twitch:789")
+jobs._process_vod(cfg, common.load_state(), vod3, client=FakeClaude(judge_reply))
+prev = sorted((TMP / "test-output" / "previews").glob("*.jpg"))
+print("previews:", [p.name for p in prev])
+assert prev, "no previews"
+from PIL import Image  # noqa: E402
+im = Image.open(prev[0])
+assert im.width == 1500 and im.height > 500, im.size
+shutil.copy(prev[0], TMP / "preview_sample.jpg")
+print("PREVIEWS OK")
