@@ -206,27 +206,42 @@ def build_ass(pick, words, out_path, commentary=False):
 
 
 # ------------------------------------------------------------------ render
-def render(src, src_offset, pick, words, out, facecam=None, commentary=False, layout="fill"):
+def _game(label, h, mode, fx, src="[0:v]"):
+    """Gameplay area W x h. fill: tall crop centered on the action. wide: a 4:3 slice of the frame (most of the
+    screen stays visible) over a blurred copy, for clips where the important stuff is spread out."""
+    def crop(aspect_w):  # crop width aspect_w*ih around fx, clamped inside the frame
+        return f"crop='min(iw,{aspect_w}*ih)':ih:'max(0,min(iw-ow,iw*{fx:.3f}-ow/2))':0"
+    if mode == "wide":
+        fg_h = min(h, int(W * 3 / 4))
+        return (f"{src}split[{label}a][{label}b];"
+                f"[{label}a]scale={W}:{h}:force_original_aspect_ratio=increase,crop={W}:{h},boxblur=20:2,eq=brightness=-0.15[{label}bg];"
+                f"[{label}b]{crop(4 / 3)},scale={W}:{fg_h}[{label}fg];"
+                f"[{label}bg][{label}fg]overlay=0:(H-h)/2[{label}]")
+    return f"{src}{crop(W / h)},scale={W}:{h}[{label}]"
+
+
+def render(src, src_offset, pick, words, out, facecam=None, commentary=False, layout="fill", focus_x=0.5):
     """src: downloaded section; src_offset: seconds into src where the clip starts.
-    layout: fill (gameplay cropped to fill the screen), blur (whole frame over a blurred copy),
-    or stack (automatic when the streamer has a facecam crop configured: cam on top, gameplay below)."""
+    layout: fill (gameplay fills the screen, cropped around focus_x), wide (more of the frame visible),
+    blur (whole frame over a blurred copy). With a facecam box the cam goes on top and gameplay below."""
     out = Path(out)
-    if facecam:
-        layout = "stack"
     ass = build_ass(pick, words, out.with_suffix(".ass"), commentary)
     hook_png = hook_image(pick["hook"], out.with_suffix(".hook.png"))
     ass_arg = str(ass).replace(":", r"\:") + "':fontsdir='" + str(FONTS_DIR).replace(":", r"\:")
-    if layout == "stack":
+    mode = "wide" if layout == "wide" else "fill"
+    if facecam:
         f = facecam
-        base = (f"[0:v]crop=iw*{f['w']}:ih*{f['h']}:iw*{f['x']}:ih*{f['y']},"
+        base = (f"[0:v]split[c0][g0];[c0]crop=iw*{f['w']}:ih*{f['h']}:iw*{f['x']}:ih*{f['y']},"
                 f"scale={W}:608:force_original_aspect_ratio=increase,crop={W}:608[cam];"
-                f"[0:v]crop='min(iw,ih*{W}/1312)':ih,scale={W}:1312[game];[cam][game]vstack[base]")
+                + _game("game", H - 608, mode, focus_x, "[g0]") + ";[cam][game]vstack[base]")
+        top = 560   # on the seam between cam and gameplay
     elif layout == "blur":
-        base = (f"[0:v]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},boxblur=20:2,"
-                f"eq=brightness=-0.12[bg];[0:v]scale={W}:-2[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2[base]")
-    else:  # fill
-        base = f"[0:v]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}[base]"
-    top = 560 if layout == "stack" else HOOK_TOP   # stack: sit on the seam between cam and gameplay
+        base = (f"[0:v]split[b0][b1];[b0]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},boxblur=20:2,"
+                f"eq=brightness=-0.12[bg];[b1]scale={W}:-2[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2[base]")
+        top = HOOK_TOP
+    else:
+        base = _game("base", H, mode, focus_x)
+        top = HOOK_TOP
     vf = (f"{base};[base][1:v]overlay=(W-w)/2:{top}[hk];"
           f"[hk]ass='{ass_arg}',fps=30,format=yuv420p[v]")
     dur = pick["end"] - pick["start"]

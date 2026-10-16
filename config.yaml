@@ -5,9 +5,8 @@ start_date: "2026-11-19"          # first day posting is allowed (GTA 6 launch).
 
 # Streamers to clip. Only add streamers whose clipping program you've joined.
 # platform: twitch | kick | youtube
-# facecam: optional crop of the webcam as fractions of the frame (x, y, w, h).
-#          With it, clips use a stacked layout (cam on top, gameplay below).
-#          Without it, clips use clip.layout below.
+# facecam: optional crop of the webcam as fractions of the frame (x, y, w, h). Usually not needed: each clip's
+#          frames are checked and the webcam is found automatically. Streamers with a webcam get priority.
 streamers:
   - name: example_streamer
     platform: twitch
@@ -31,7 +30,9 @@ clip:
   # Once the TikTok account qualifies for Creator Rewards (1k followers + 100k weekly views), switch to 61 / 90.
   min_seconds: 8
   max_seconds: 59
-  layout: fill                    # fill = gameplay fills the screen (viral GTA RP style); blur = whole frame over a blurred copy
+  layout: auto                    # auto = Claude looks at each clip's frames: finds the webcam (cam on top, gameplay below)
+                                  # and picks fill (tight crop on the action) or wide (more of the screen) so nothing
+                                  # important is cut off. Or force: fill | wide | blur
   clips_per_hour: 2               # longer streams get more clips: an 8-hour stream yields up to 16
   min_per_vod: 3
   max_per_vod: 16

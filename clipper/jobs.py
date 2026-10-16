@@ -7,7 +7,7 @@ import statistics
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 
-from . import fetch, highlights, render, services
+from . import fetch, highlights, render, services, vision
 from .common import (log, load_config, load_state, save_state, now_utc, now_local, days_since_start,
                      WORK, PLAYBOOK_FILE, INSIGHTS_FILE, load_json)
 
@@ -104,14 +104,15 @@ def _test_run(cfg, state):
             log.info("%s still live, trying the previous stream", vod["id"])
     else:
         raise RuntimeError("All recent streams are still live; try again later")
-    summary = [{k: c.get(k) for k in ("score", "hook", "hook_score", "hook_options", "punch_text", "punch_at", "title", "caption", "duration", "why", "status")}
+    summary = [{k: c.get(k) for k in ("score", "hook", "hook_score", "hook_options", "punch_text", "punch_at", "title", "caption", "duration", "why",
+                         "status", "facecam", "layout", "framing")}
                for c in scratch["clips"].values()]
     (WORK.parent / "test-output").mkdir(exist_ok=True)
     (WORK.parent / "test-output" / "summary.json").write_text(_json.dumps(
         {"source": vods[0]["url"], "title": vods[0].get("title"), "clips": summary}, indent=2))
     log.info("test run done: %s", _json.dumps(summary, indent=2))
     for c in summary:  # visible on the run page, so hooks can be reviewed without downloading anything
-        print(f"::notice::[{c['status']} {c['score']}/10, {c['duration']}s] {c['hook']}"
+        print(f"::notice::[{c['status']} {c['score']}/10, {c['duration']}s, {c['layout']}] {c['hook']}"
               + (f"  | punchline: {c['punch_text']}" if c.get("punch_text") else "") + f"  | {c['why']}", flush=True)
 
 
@@ -125,8 +126,16 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         src_offset = p["start"] - dl_start
     out = d / f"{cid}.mp4"
     words = caption_words(cfg, src, src_offset, p, d / f"{cid}_cap.wav", fallback=words)
-    render.render(src, src_offset, p, words, out, facecam=vod["streamer"].get("facecam"),
-                  commentary=cfg["clip"].get("commentary", False), layout=cfg["clip"].get("layout", "fill"))
+    # Look at the frames first: find the webcam and where the action is, so the vertical crop keeps what matters.
+    look = vision.analyze_frames(cfg, src, src_offset, p["end"] - p["start"], d)
+    facecam = vod["streamer"].get("facecam") or look["facecam"]
+    layout = cfg["clip"].get("layout", "auto")
+    if layout == "auto":
+        layout = look["layout"]
+    render.render(src, src_offset, p, words, out, facecam=facecam, focus_x=look["focus_x"],
+                  commentary=cfg["clip"].get("commentary", False), layout=layout)
+    if facecam:  # remember which streamers show their face; their clips get priority
+        state.setdefault("streamers", {}).setdefault(vod["streamer"]["name"], {})["facecam"] = True
     media_url = None if DRY_RUN else services.blotato_upload(out)
     clip = {
         "id": cid, "vod": vod["id"], "vod_url": vod["url"], "streamer": vod["streamer"]["name"],
@@ -134,6 +143,7 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         "score": int(p["score"]), "hook": p["hook"], "title": p["title"], "caption": p["caption"],
         "tags": p.get("tags", []), "why": p.get("why", ""), "hook_options": p.get("hook_options", []), "hook_score": p.get("hook_score"),
         "punch_text": p.get("punch_text", ""), "punch_at": p.get("punch_at", 0), "media_url": media_url,
+        "facecam": bool(facecam), "layout": "cam+" + layout if facecam else layout, "framing": look["why"],
         "created": now_utc().isoformat(), "posts": {}, "issue": None, "local_file": str(out),
     }
     auto = cfg["review"]["mode"] == "auto"
@@ -236,8 +246,9 @@ def post():
         if not ready:
             log.info("%s: nothing ready to post", platform)
             continue
-        # Best score first; ties go to the newest.
-        clip = sorted(ready, key=lambda c: (c["score"], c["created"]), reverse=True)[0]
+        # Best score first, facecam clips win ties (a visible reaction holds viewers), then the newest.
+        clip = sorted(ready, key=lambda c: (c["score"] + (0.5 if c.get("facecam") else 0), c["created"]),
+                      reverse=True)[0]
         try:
             acct = services.blotato_account_id(platform)
             sub = services.blotato_post(platform, acct, clip["media_url"], _caption(cfg, clip, platform),
@@ -345,15 +356,20 @@ def _status_issue(cfg, state):
 # ------------------------------------------------------------------ learn
 LEARN_PROMPT = """You manage a short-form clip account (GTA streamer clips on TikTok and YouTube Shorts).
 Here is performance data for every posted clip (views measured at the latest check, age in hours).
-Find what separates winners from losers: streamer, category tags, hook wording, clip length, posting hour, platform.
+Find what separates winners from losers: streamer, category tags, hook wording, clip length, whether the
+streamer's webcam was on screen, posting hour, platform. Likes and shares per view show what people found funny;
+views relative to the account's median show what held attention.
 
 Write a playbook of at most 12 concrete rules the clip picker should follow next week (what to pick more of,
-what to stop picking, hook styles that worked with real examples). Then a 3-sentence plain-English summary
-for the account owner.
+what to stop picking, what kind of humor worked, hook styles that worked with real examples). Then a 3-sentence
+plain-English summary for the account owner.
+
+Also return target_seconds: the [shortest, longest] clip length range that performed best, if the data supports it
+(at least a few clips on each side), else null.
 
 Also return the 4 best posting times (HH:MM, local) if the data supports it, else an empty list.
 
-Return ONLY JSON: {{"playbook": "markdown string", "summary": "string", "best_slots": ["HH:MM"]}}
+Return ONLY JSON: {{"playbook": "markdown string", "summary": "string", "best_slots": ["HH:MM"], "target_seconds": [int, int] or null}}
 
 DATA:
 {data}
@@ -370,6 +386,7 @@ def learn(client=None):
                 continue
             rows.append({"platform": pl, "streamer": c["streamer"], "tags": c["tags"], "hook": c["hook"],
                          "seconds": c["duration"], "score": c["score"], "hour": p.get("hour"),
+                         "webcam": c.get("facecam", False),
                          "views": p["views"], "likes": p.get("likes"), "shares": p.get("shares"),
                          "age_h": round(_age_hours(p))})
     if len(rows) < 6:
@@ -380,7 +397,15 @@ def learn(client=None):
                                  messages=[{"role": "user", "content": LEARN_PROMPT.format(data=json.dumps(rows))}])
     out = highlights.parse_json("".join(b.text for b in msg.content if getattr(b, "type", "") == "text"))
     PLAYBOOK_FILE.write_text(out["playbook"])
-    INSIGHTS_FILE.write_text(json.dumps({"best_slots": out.get("best_slots") or [], "updated": now_utc().isoformat()}))
+    ts = out.get("target_seconds")
+    lo_hi = cfg["clip"]["min_seconds"], cfg["clip"]["max_seconds"]
+    if not (isinstance(ts, list) and len(ts) == 2 and all(isinstance(x, (int, float)) for x in ts) and ts[0] < ts[1]):
+        ts = None
+    else:  # keep it inside the configured limits
+        ts = [int(max(lo_hi[0], ts[0])), int(min(lo_hi[1], ts[1]))]
+        ts = ts if ts[0] < ts[1] else None
+    INSIGHTS_FILE.write_text(json.dumps({"best_slots": out.get("best_slots") or [], "target_seconds": ts,
+                                         "updated": now_utc().isoformat()}))
     if not DRY_RUN:
         services.gh_upsert_pinned("weekly-report", f"Weekly report {now_local(cfg):%b %d}",
                                   f"{out['summary']}\n\n### Playbook the picker now follows\n\n{out['playbook']}")

@@ -61,7 +61,13 @@ class FakeClaude:
         self.prompts = []
 
     def create(self, **kw):
-        self.prompts.append(kw["messages"][0]["content"])
+        content = kw["messages"][0]["content"]
+        if isinstance(content, list):  # frame check: images + question
+            assert content[0]["type"] == "image" and "facecam" in content[-1]["text"]
+            self.vision_calls = getattr(self, "vision_calls", 0) + 1
+            return SimpleNamespace(content=[SimpleNamespace(type="text", text=json.dumps(VISION.pop(0) if VISION else
+                                   {"facecam": None, "focus_x": 0.5, "layout": "fill", "why": "default"}))])
+        self.prompts.append(content)
         return SimpleNamespace(content=[SimpleNamespace(type="text", text=self.reply(kw))])
 
 
@@ -85,6 +91,16 @@ def judge_reply(kw):
     return json.dumps({"picks": picks})
 
 
+VISION = [  # first clip: webcam found top-right + wide; second: tight crop on the left
+    {"facecam": {"x": 0.72, "y": 0.03, "w": 0.25, "h": 0.25}, "focus_x": 0.4, "layout": "wide", "why": "two players far apart"},
+    {"facecam": None, "focus_x": 0.2, "layout": "fill", "why": "action on the left"},
+    {"facecam": {"x": 0.9, "y": 0.9, "w": 0.5, "h": 0.5}, "focus_x": 3, "layout": "nonsense"},  # invalid -> cleaned
+]
+import clipper.vision as vision  # noqa: E402
+vision.anthropic = None
+_real_analyze = vision.analyze_frames
+CLAUDE = None
+jobs.vision.analyze_frames = lambda cfg, src, off, dur, d, client=None: _real_analyze(cfg, src, off, dur, d, client=CLAUDE)
 highlights.transcribe = fake_transcribe
 
 # Fake Twitch: one viewer clip near the second loud moment, and chat laughing near the first.
@@ -115,6 +131,7 @@ cfg["clip"]["min_per_vod"] = 2
 vod = {"id": "twitch:123", "url": "https://twitch.tv/videos/123", "title": "GTA 6 day 1",
        "streamer": {"name": "teststreamer", "platform": "twitch"}}
 claude = FakeClaude(judge_reply)
+CLAUDE = claude
 d = TMP / "work" / "vod"
 d.mkdir(parents=True)
 wav = fake_audio(vod, d)
@@ -135,6 +152,10 @@ jobs.make_clip(cfg, state, vod2, picks[0], words, d)
 
 state = common.load_state()
 assert len(state["clips"]) == 3
+layouts = sorted(c["layout"] for c in state["clips"].values())
+print("layouts:", layouts)
+assert layouts == ["cam+fill", "cam+wide", "fill"], layouts  # 3rd: bad vision answer -> cleaned to fill, config cam
+assert state["streamers"]["teststreamer"]["facecam"] is True
 for c in state["clips"].values():
     out = json.loads(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=width,height,codec_type:format=duration",
                                      "-of", "json", c["local_file"]], capture_output=True, text=True).stdout)
@@ -186,7 +207,7 @@ for i in range(6):  # pad with history so learn has enough rows
                                                       "posted_at": (common.now_utc() - timedelta(days=5)).isoformat()}}}
 common.save_state(state)
 learn_claude = FakeClaude(lambda kw: json.dumps({"playbook": "- Police chases win\n- Menus lose", "summary": "Chases do best.",
-                                                 "best_slots": ["12:00", "19:00"]}))
+                                                 "best_slots": ["12:00", "19:00"], "target_seconds": [14, 28]}))
 os.environ["DRY_RUN"] = "1"
 jobs.DRY_RUN = True
 jobs.learn(client=learn_claude)
@@ -195,6 +216,7 @@ assert jobs._slots(cfg, 2) == ["12:00", "19:00"]
 # Playbook now feeds the judge prompt
 highlights.judge(cfg, vod, [{"id": 0, "start": 0, "end": 120, "spike": 5, "text": "x"}], client=claude)
 assert "Police chases win" in claude.prompts[-1]
+assert "clips of 14-28 seconds have been doing best" in claude.prompts[-1]
 print("learn loop ok")
 print("ALL TESTS PASSED")
 print("artifacts in", TMP)

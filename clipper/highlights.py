@@ -81,6 +81,16 @@ burst out laughing, or it got loud), real chat messages from that moment when av
 markers giving the absolute second each stretch of speech starts. Use the markers to set exact cut points.
 "Viewers clipped this" and "chat laughed" are strong evidence that something good happened there; loudness alone is weak.
 
+WHAT'S ACTUALLY FUNNY (what makes people laugh, rewatch and send it to a friend):
+- someone losing their composure: the streamer breaking character laughing, screaming, or going dead silent
+- a quick comeback, roast or deadpan one-liner, especially one that shuts someone down
+- a plan, flex or threat that fails instantly or backfires on the person doing it
+- a misunderstanding that keeps escalating, or someone committing way too hard to a bit
+- a character doing something absurd with a straight face; other players' stunned reactions
+- chaos that spirals: one small mistake turning into a disaster
+NOT funny on its own: people just talking, inside jokes that need the backstory, menus, driving around, a mildly
+amusing comment with no reaction. If chat didn't react and nobody on stream laughed, it probably isn't funny.
+
 WHAT TO PICK: streamer reactions, fails, RP drama and storylines, chaotic action, funny lines. Pick up to {max_picks}
 clips. That is a ceiling, not a target: only include moments that are genuinely funny or gripping to someone who has
 never seen this streamer. Returning 2, or even 0, is better than padding with weak clips.
@@ -88,7 +98,8 @@ never seen this streamer. Returning 2, or even 0, is better than padding with we
 LENGTH: {min_s}-{max_s} seconds, inside its window. Find the shortest cut that still makes sense to a stranger: start
 1-3 seconds before the action kicks off (only as much setup as needed to get it), end right after the reaction or
 punchline lands. Most great clips are 15-35 seconds. Cut warm-up, menus, and the chatter after the moment is over.
-People should watch to the very end and feel the length was right.
+End within about 2 seconds of the biggest laugh or reaction; a clip that keeps going after the payoff loses people.
+People should watch to the very end and feel the length was right.{length_note}
 
 SKIP: dead air, menus, reading chat, sponsor reads, gambling, anything sexual, slurs or hateful content, real personal
 info, anything involving minors, or content that would get the account flagged.
@@ -141,7 +152,14 @@ def judge(cfg, vod, windows, client=None, max_picks=None):
         + f"Transcript: {w['text'] or '(no speech)'}"
         for w in windows)
     c = cfg["clip"]
-    prompt = JUDGE_PROMPT.format(streamer=vod["streamer"]["name"], title=vod.get("title", ""),
+    from .common import INSIGHTS_FILE, load_json
+    ins = load_json(INSIGHTS_FILE, {})
+    length_note = ""
+    if ins.get("target_seconds"):
+        lo, hi = ins["target_seconds"]
+        length_note = (f"\nOn this account, clips of {lo}-{hi} seconds have been doing best so far: aim for that "
+                       f"unless the moment truly needs more or less.")
+    prompt = JUDGE_PROMPT.format(length_note=length_note, streamer=vod["streamer"]["name"], title=vod.get("title", ""),
                                  max_picks=max_picks or c.get("min_per_vod", 3), min_s=c["min_seconds"], max_s=c["max_seconds"],
                                  hook_guide=HOOK_GUIDE, playbook=playbook, candidates=cand_txt)
     msg = client.messages.create(model=cfg["models"]["judge"], max_tokens=4000,
