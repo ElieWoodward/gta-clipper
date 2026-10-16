@@ -63,9 +63,10 @@ def parse_card(text, href):
     rate = re.search(r"\$([\d.]+) per 1K views", text)
     left = re.search(r"\$([\d.,]+K?) of \$([\d.,]+K?) left", text)
     plats = re.search(r"Platforms ([A-Za-z, ]+?)(?:CLIPPING|MUSIC|UGC|LOGO|CPM|$)", text)
-    name = re.sub(r"^.*?(?:Board: )?\S+?(?:LOW|FAIR|SOLID|ALPHA|SCORING)\d*", "", text.split("Platforms")[0]).strip()
-    name = re.sub(r"^(Footage after you join|Brief after you join|Application required|After joining)\.?\s*", "",
-                  name, flags=re.I).strip() or text.split("Platforms")[0][-80:].strip()
+    head = text.split("Platforms")[0]
+    m = list(re.finditer(r"(?:LOW|FAIR|SOLID|ALPHA|SCORING)\s*\d*\s*", head))
+    name = head[m[-1].end():].strip() if m else re.sub(r"^Board:\s*\S+(\s+Rewards)?\s*", "", head).strip()
+    name = name or head[-80:].strip()
     return {"id": href.strip("/").replace("campaigns/", "").replace("/", "__"), "url": BASE + href, "name": name[:120],
             "rate": float(rate.group(1)) if rate else None, "left": left.group(1) if left else None,
             "budget": left.group(2) if left else None, "platforms": plats.group(1).strip() if plats else "",
@@ -99,12 +100,16 @@ def detail(card):
     text = " ".join(re.sub(r"<[^>]+>", " ", text).split())
     i = text.find("THRESHOLDS AND CAPS")
     brief = text[i:i + 1400] if i >= 0 else text[:800]
-    join = re.search(r'href="(https?://(?:www\.)?(?:whop\.com|vyro\.com|clipster\.[a-z]+|promote\.fun|clipstake\.[a-z]+|'
-                     r'clipfarm\.[a-z]+)[^"]*)"', html)
+    join = re.search(r'href="((?:https://clippingalpha\.com)?/go/\d+[^"]*)"', html) or \
+        re.search(r'href="(https?://(?:www\.)?(?:whop\.com|vyro\.com|clipster\.[a-z]+|promote\.fun|clipstake\.[a-z]+|'
+                  r'clipfarm\.[a-z]+)[^"]*)"', html)
     twitch = re.findall(r"twitch\.tv/([A-Za-z0-9_]{3,25})", html, re.I)
     kick = re.findall(r"kick\.com/([A-Za-z0-9_]{3,25})", html, re.I)
     bad = {"videos", "directory", "settings", "p", "login", "signup"}
-    return {"brief": brief, "join_url": join.group(1) if join else card["url"],
+    join_url = join.group(1).replace("&amp;", "&") if join else card["url"]
+    if join_url.startswith("/"):
+        join_url = BASE + join_url
+    return {"brief": brief, "join_url": join_url,
             "twitch": [t.lower() for t in twitch if t.lower() not in bad], "kick": [k.lower() for k in kick]}
 
 
@@ -216,6 +221,8 @@ def scan(cfg, state):
         if dry:
             print(f"::notice::[dry run] would email: {rec['name']} | {rec.get('rate')}/1K | twitch={rec.get('twitch_login')} "
                   f"| join={rec.get('join_url')}", flush=True)
+        elif not rec["auto_clip"]:
+            rec["status"] = "noted"   # GTA edit/music campaigns: recorded, not emailed (the bot can't make those)
         elif mail.configured() and sent < MAX_EMAILS_PER_SCAN:
             rec["email_message_id"] = notify(state, m)
             rec["status"] = "notified"

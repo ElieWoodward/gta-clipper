@@ -487,7 +487,7 @@ clipqueue.youtube_uploads = lambda cid: []
 LIST_HTML = """<html><body>
 <article><a href="/campaigns/clippedin/big-rp">x</a>Board: Content RewardsFAIR50$2,000 Bigrp Streamer Clipping Campaign
 Platforms TikTok, Instagram, YouTubeCLIPPINGCPM$1.50$1.50 per 1K views$1.2K of $2K left</article>
-<article><a href="/campaigns/clipster/flower">x</a>Board: ClipsterFAIR45Flower In A Hurricane [GTA 6 CLIPPING]
+<article><a href="/campaigns/clipster/flower">x</a>Board: Clipster FAIR 43 Flower In A Hurricane [GTA 6 CLIPPING]
 Platforms TikTok, Instagram, YouTubeMUSICCPM$1.00$1.00 per 1K views$1.6K of $1.6K left</article>
 <article><a href="/campaigns/boxabl/clipping">x</a>Board: Content RewardsLOW10Boxabl Official Clipping
 Platforms TikTokCLIPPINGCPM$0.50$0.50 per 1K views$64K of $85K left</article>
@@ -496,7 +496,7 @@ Platforms TikTokCLIPPINGCPM$1.00$1.00 per 1K views$500 of $1K left</article>
 </body></html>"""
 DETAIL = {"/campaigns/clippedin/big-rp": '<a href="https://whop.com/big-rp/">Join</a> THRESHOLDS AND CAPS MIN VIEWS 2K '
           'Clip from twitch.tv/bigrp_live VODs. Use #bigrp in every caption.',
-          "/campaigns/clipster/flower": '<a href="https://whop.com/clipster/">Join</a> THRESHOLDS AND CAPS Niche: GTA VI trailer edits',
+          "/campaigns/clipster/flower": '<a href="https://clippingalpha.com/go/1063378?via=detail">Join on Clipster</a> THRESHOLDS AND CAPS Niche: GTA VI trailer edits',
           "/campaigns/clippedin/fortnite-guy": '<a href="https://whop.com/fg/">Join</a> THRESHOLDS AND CAPS twitch.tv/fortniteguy'}
 campaigns._get = lambda url: LIST_HTML if url.endswith("/campaigns") else ("" if "/page/" in url else DETAIL[url.replace(campaigns.BASE, "")])
 _orig_la, _orig_ch = twitch.list_archives, twitch.chapters
@@ -514,9 +514,12 @@ assert len(found) == 2 and any("Bigrp" in x for x in names) and any("Flower" in 
 big = next(f for f in found if "Bigrp" in f["name"])
 flower = next(f for f in found if "Flower" in f["name"])
 assert big["auto_clip"] and big["twitch_login"] == "bigrp_live" and not flower["auto_clip"]
-assert len(sent) == n + 2 and all(x["subject"].startswith("Campaign:") for x in sent[n:])
-assert 'Reply "join"' in sent[n]["text"] or 'Reply "join"' in sent[n + 1]["text"]
-assert campaigns.scan(cfg, st) == [] and len(sent) == n + 2, "a campaign is only emailed once"
+assert flower["name"] == "Flower In A Hurricane [GTA 6 CLIPPING]", flower["name"]
+assert flower["join_url"] == "https://clippingalpha.com/go/1063378?via=detail", flower["join_url"]
+assert len(sent) == n + 1 and sent[n]["subject"].startswith("Campaign:") and "Bigrp" in sent[n]["subject"]
+assert 'Reply "join"' in sent[n]["text"] and "bigrp_live" in sent[n]["text"]
+assert st["campaigns"][flower["id"]]["status"] == "noted", "edit campaigns are recorded, not emailed"
+assert campaigns.scan(cfg, st) == [] and len(sent) == n + 1, "a campaign is only emailed once"
 # replying "join" adds the streamer to the ones the bot clips
 replies[:] = [(big["email_message_id"], "join")]
 clipqueue.refresh_posted(cfg, st)
