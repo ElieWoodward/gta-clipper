@@ -23,7 +23,7 @@ emails you one ready-to-post clip at each posting time. Everything runs on GitHu
 |---|---|---|
 | clipper: process | every 3 hours | Checks finished streams for clips while the queue has room |
 | clipper: post | hourly | Checks TikTok/YouTube/replies, expires old clips, emails a clip when a slot is due |
-| clipper: analytics | daily | Dashboard issue |
+| clipper: analytics | daily ~7am Pacific | Scans paid clipping campaigns; emails you any that pay for a streamer who plays GTA (reply `join` to start clipping them) |
 | clipper: learn | Mondays | Claude studies what worked and updates `data/playbook.md` |
 | live | every 20 minutes | Watches streamers who are live on GTA and clips big moments within minutes |
 

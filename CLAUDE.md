@@ -19,6 +19,9 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
   - `preflight.py`: one-minute check of every service before any long run.
   - `clipqueue.py`: the queue (max size, expiry), the posting-email package, TikTok/YouTube posted detection.
   - `mail.py`: Gmail SMTP/IMAP with an app password. `health.py`: failure counting and alert emails.
+  - `campaigns.py`: daily scan of ClippingAlpha's campaign directory (no Claude calls). Emails campaigns that pay for
+    a Twitch streamer with recent GTA streams; reply "join" adds them to the clipped streamers (via state, merged in
+    `load_config`); posting emails for their clips carry the claim link, and a "Claim" email goes out once posted.
   - `common.py`: config, state. `data/state.json` is the main state; `data/live.json` is written only by the live
     watcher and merged in on load.
 - `.github/workflows/clipper.yml`: scheduled process, post, analytics, learn, plus manual runs and test runs.
