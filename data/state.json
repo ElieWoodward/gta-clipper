@@ -955,6 +955,7 @@
       "why": "Peer pressure from a cop buddy, xQc folds instantly, admits it, then panics about the photo; chat called it corrupting the cop."
     },
     "d564c855ac": {
+      "asset_deleted": true,
       "asset_id": 647832827,
       "caption": "the 'hello senorita' while getting pulled over \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-16T15:59:46.401508+00:00",
@@ -980,15 +981,26 @@
       "layout": "cam+fill",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/02279cbb8e/d564c855ac.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/d564c855ac.mp4",
-      "posts": {},
+      "posts": {
+        "youtube": {
+          "date": "2026-10-16",
+          "history": [],
+          "match": 1.0,
+          "seen_at": "2026-10-16T21:12:13.954365+00:00",
+          "status": "published",
+          "url": "https://www.youtube.com/shorts/h-i9oBUzpow",
+          "views": null
+        }
+      },
       "punch_at": 44.32,
       "punch_text": "It's coming back stolen",
+      "reply": "posted",
       "said": "So what? I'll put it on speaker. Look. Put it on speaker. Put it on speaker. Wait, hold on. I gotta go back. My wife's calling me. Can I put my wife on speaker? Yeah. Alright, I can do that. Hello? Hello, senorita. Hi. You okay, babe? I'm on the way to get the medicine. Now ma'am, do you know that your vehicle is coming back as stolen? Hey, what? Babe? It's coming down stolen. Well, what the heck? It's coming back stolen. Hey, what?",
       "score": 7,
       "sent_caption": "the 'hello senorita' while getting pulled over \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
       "sent_title": "Pulled over and the car comes back stolen \ud83d\udc80 #shorts",
       "start": 34655.0,
-      "status": "approved",
+      "status": "posted",
       "streamer": "xQc",
       "tags": [
         "rp_drama",
@@ -1069,7 +1081,8 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-16T18:26:43.261018+00:00"
+      "at": "2026-10-16T21:12:13.734645+00:00",
+      "error": "yt-dlp failed (1): ERROR: wantedlevelclips8: Failed to parse JSON (caused by JSONDecodeError(\"Expecting value in '': line 1 column 1 (char 0)\")); please report this issue on  https://github.com/yt-dlp"
     }
   },
   "posts": [],
