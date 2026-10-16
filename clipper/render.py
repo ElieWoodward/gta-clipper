@@ -232,13 +232,15 @@ def render(src, src_offset, pick, words, out, facecam=None, commentary=False, la
     if facecam:
         f = facecam
         cam_crop = f"crop=iw*{f['w']}:ih*{f['h']}:iw*{f['x']}:ih*{f['y']}"
+        # Size the cam panel to the webcam's own shape so heads don't get cut off (assumes a 16:9 stream).
+        cam_h = int(min(760, max(420, W / ((f["w"] * 16) / (f["h"] * 9))))) // 2 * 2
         # The cam is already on top, so blur it out of the gameplay underneath instead of showing it twice.
         base = (f"[0:v]split=3[c0][g0][g1];[c0]{cam_crop},"
-                f"scale={W}:608:force_original_aspect_ratio=increase,crop={W}:608[cam];"
+                f"scale={W}:{cam_h}:force_original_aspect_ratio=increase,crop={W}:{cam_h}:(iw-ow)/2:0[cam];"
                 f"[g1]{cam_crop},boxblur=40:3,eq=brightness=-0.2[camblur];"
                 f"[g0][camblur]overlay=main_w*{f['x']}:main_h*{f['y']}[gclean];"
-                + _game("game", H - 608, mode, focus_x, "[gclean]") + ";[cam][game]vstack[base]")
-        top = 560   # on the seam between cam and gameplay
+                + _game("game", H - cam_h, mode, focus_x, "[gclean]") + ";[cam][game]vstack[base]")
+        top = cam_h - 48   # on the seam between cam and gameplay
     elif layout == "blur":
         base = (f"[0:v]split[b0][b1];[b0]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},boxblur=20:2,"
                 f"eq=brightness=-0.12[bg];[b1]scale={W}:-2[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2[base]")
