@@ -238,6 +238,8 @@ def update_stats(state, uploads, platform, tz="UTC"):
         if not u or u.get("views") is None:
             continue
         p.update(views=int(u["views"]), likes=u.get("likes"), comments=u.get("comments"), shares=u.get("shares"))
+        if not p.get("posted_at") and u.get("timestamp"):
+            p["posted_at"] = datetime.fromtimestamp(u["timestamp"], timezone.utc).isoformat()
         if not p.get("hour") and p.get("posted_at"):
             p["hour"] = datetime.fromisoformat(p["posted_at"]).astimezone(ZoneInfo(tz)).strftime("%H:00")
         hist = p.setdefault("history", [])
