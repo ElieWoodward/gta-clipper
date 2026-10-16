@@ -982,6 +982,25 @@
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/02279cbb8e/d564c855ac.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/d564c855ac.mp4",
       "posts": {
+        "tiktok": {
+          "comments": 0,
+          "date": "2026-10-16",
+          "history": [
+            [
+              "2026-10-16T21:39:01.036071+00:00",
+              523
+            ]
+          ],
+          "hour": "11:00",
+          "likes": 31,
+          "match": 1.1,
+          "posted_at": "2026-10-16T18:43:42+00:00",
+          "seen_at": "2026-10-16T21:39:01.035782+00:00",
+          "shares": 0,
+          "status": "published",
+          "url": "https://www.tiktok.com/@wantedlevelclips8/video/7697338138603031821",
+          "views": 523
+        },
         "youtube": {
           "comments": null,
           "date": "2026-10-16",
@@ -1089,8 +1108,7 @@
   },
   "health": {
     "tiktok_check": {
-      "at": "2026-10-16T21:30:30.363677+00:00",
-      "error": "yt-dlp failed (1): ERROR: wantedlevelclips8: Failed to parse JSON (caused by JSONDecodeError(\"Expecting value in '': line 1 column 1 (char 0)\")); please report this issue on  https://github.com/yt-dlp"
+      "ok": "2026-10-16T21:39:01.036079+00:00"
     }
   },
   "posts": [],
