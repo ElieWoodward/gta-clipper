@@ -481,6 +481,9 @@ print("TIKTOK EMPTY OK")
 
 # ---------- 11. paid campaign scan: match GTA streamers, email, "join", clip them, claim links ----------
 from clipper import campaigns  # noqa: E402
+clipqueue.tiktok_uploads = lambda handle, n=15: list(tt_uploads)   # section 10 reloaded the module; fake again
+clipqueue.youtube_channel_id = lambda handle: "UC" + "x" * 22
+clipqueue.youtube_uploads = lambda cid: []
 LIST_HTML = """<html><body>
 <article><a href="/campaigns/clippedin/big-rp">x</a>Board: Content RewardsFAIR50$2,000 Bigrp Streamer Clipping Campaign
 Platforms TikTok, Instagram, YouTubeCLIPPINGCPM$1.50$1.50 per 1K views$1.2K of $2K left</article>
@@ -524,9 +527,6 @@ cfg2 = common.load_config()
 assert any(s["channel"] == "bigrp_live" and s.get("campaign") for s in cfg2["streamers"]), cfg2["streamers"]
 assert mail.reply_verdict("join") == "join"
 # a clip of that streamer: the email says how to claim, and a claim email goes out once it's posted
-clipqueue.tiktok_uploads = lambda handle, n=15: list(tt_uploads)   # section 10 reloaded the module; fake again
-clipqueue.youtube_channel_id = lambda handle: "UC" + "x" * 22
-clipqueue.youtube_uploads = lambda cid: []
 st = common.load_state()
 cc = fake_clip("camp", 9, 0.5, "bigrp caption for the campaign clip 💀")
 cc["streamer"] = "bigrp_live"
