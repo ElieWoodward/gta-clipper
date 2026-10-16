@@ -1,1 +1,186 @@
-{"clips": {}, "posts": [], "processed_vods": [], "pruned": []}
+{
+  "clips": {
+    "150849d268": {
+      "asset_id": 647826701,
+      "caption": "the confidence before the disaster \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-16T15:57:24.512606+00:00",
+      "duration": 47.0,
+      "end": 17657.0,
+      "facecam": true,
+      "file": "150849d268.mp4",
+      "framing": "The player character in the center talks with NPCs by the tow truck, and the burning helicopter and the license and admin menus sit off to the sides, so a wider view works better.",
+      "hook": "When you hire a guy to fix it and he makes it worse \ud83d\ude2d",
+      "hook_options": [
+        "When the guy you hired to fix it makes it worse \ud83d\ude2d",
+        "Bro was told to fix the helicopter and did THIS \ud83d\udc80",
+        "POV: your mechanic breaks it even harder",
+        "He said he can fix it \ud83d\udc80",
+        "Nobody told him the chopper was already fragile \ud83d\ude2d",
+        "Bro was told to fix the helicopter and did THIS \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "150849d268",
+      "issue": 2,
+      "layout": "cam+wide",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/02279cbb8e/150849d268.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/150849d268.mp4",
+      "posts": {},
+      "punch_at": 6.04,
+      "punch_text": "He made it worse",
+      "said": "I can put oh oh son of a bitch oh he made it worse god damn it I expected this thing to be repaired to a hundred percent condition What the hell? What the hell did you do? You son of a bitch! Well, there's your problem. Blew up. You know what? Ness is not gonna let you go. You deal with him, I'm getting the camera replacement, goddammit. What the fuck did you do, you cunt? Alright, listen. You broke the goddamn game. You broke the goddamn game. I've set a little bit of fault here.",
+      "score": 7,
+      "start": 17610,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "fail",
+        "chaos",
+        "rp_drama"
+      ],
+      "title": "He said he could fix the helicopter \ud83d\udc80",
+      "vod": "twitch:v2901708053",
+      "vod_url": "https://www.twitch.tv/videos/2901708053",
+      "why": "A repair attempt backfires instantly, the chopper catches fire and the group scrambles to blame and haggle on fees."
+    },
+    "921330081b": {
+      "asset_id": 647819499,
+      "caption": "the speed he gave in lmaooo \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-16T15:54:32.971702+00:00",
+      "duration": 34.0,
+      "end": 5483.0,
+      "facecam": true,
+      "file": "921330081b.mp4",
+      "framing": "Two characters stand apart (about 0.35 and 0.63), then a phone UI appears at the right and a car drives, so a wider crop is needed.",
+      "hook": "xQc folds to peer pressure in like two seconds \ud83d\udc80",
+      "hook_options": [
+        "POV: you cave to peer pressure and he snaps the photo",
+        "He caved WAY too fast and got caught \ud83d\udc80",
+        "When you say you're not a bitch and then immediately fold \ud83d\ude2d",
+        "Bro got pressured into one puff on camera \ud83d\udc80",
+        "I tried to delete the evidence before it spread \ud83d\ude2d",
+        "He caved WAY too fast and got caught \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "921330081b",
+      "issue": 1,
+      "layout": "cam+wide",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/02279cbb8e/921330081b.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/921330081b.mp4",
+      "posts": {},
+      "punch_at": 24.2,
+      "punch_text": "Delete that photo!",
+      "said": "Oh, don't be a pussy. Smoke it. Will you be a pop-top pussy, I swear? Come on, brother. Okay, one pop it and stuff it. I got a call from Mr. Beef. Just one. I think tomorrow or Saturday, they're going to put an effect in with jank. So they're going to start charging. I'm a bitch! Hey! Delete that photo! Out, out, out, out, out. Delete that photo! I didn't get the photo he did it too fast",
+      "score": 7,
+      "start": 5449.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "reaction",
+        "rp_drama",
+        "funny_line"
+      ],
+      "title": "He folded instantly and then begged to delete the photo \ud83d\udc80",
+      "vod": "twitch:v2901708053",
+      "vod_url": "https://www.twitch.tv/videos/2901708053",
+      "why": "Peer pressure from a cop buddy, xQc folds instantly, admits it, then panics about the photo; chat called it corrupting the cop."
+    },
+    "d564c855ac": {
+      "asset_id": 647832827,
+      "caption": "the 'hello senorita' while getting pulled over \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-16T15:59:46.401508+00:00",
+      "duration": 48.0,
+      "end": 34703.0,
+      "facecam": true,
+      "file": "d564c855ac.mp4",
+      "framing": "The police officer and the car window he's talking into sit together in the center, so a narrow slice around x=0.5 covers the action. The facecam is the top-left rectangle.",
+      "hook": "POV: cop makes you put your wife on speaker mid-stop \ud83d\udc80",
+      "hook_options": [
+        "When you're getting pulled over and the cop wants your wife on speaker \ud83d\ude2d",
+        "POV: you get stopped and the car comes back stolen \ud83d\udc80",
+        "Bro filmed himself 'in case anything happens' \ud83d\ude2d",
+        "He got pulled over on the way to get medicine \ud83d\udc80",
+        "Why would I put my phone on speaker, it's America \ud83e\udd23",
+        "POV: you get stopped and the car comes back stolen \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "d564c855ac",
+      "issue": 3,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/02279cbb8e/d564c855ac.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/d564c855ac.mp4",
+      "posts": {},
+      "punch_at": 44.32,
+      "punch_text": "It's coming back stolen",
+      "said": "So what? I'll put it on speaker. Look. Put it on speaker. Put it on speaker. Wait, hold on. I gotta go back. My wife's calling me. Can I put my wife on speaker? Yeah. Alright, I can do that. Hello? Hello, senorita. Hi. You okay, babe? I'm on the way to get the medicine. Now ma'am, do you know that your vehicle is coming back as stolen? Hey, what? Babe? It's coming down stolen. Well, what the heck? It's coming back stolen. Hey, what?",
+      "score": 7,
+      "start": 34655.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "rp_drama",
+        "police",
+        "funny_line"
+      ],
+      "title": "Pulled over and the car comes back stolen \ud83d\udc80",
+      "vod": "twitch:v2901708053",
+      "vod_url": "https://www.twitch.tv/videos/2901708053",
+      "why": "A cop makes him put his wife on speaker mid-stop, his sweet-talk call is interrupted by the car coming back stolen; chat spammed LOL."
+    },
+    "f62ddcbe99": {
+      "asset_id": 647860254,
+      "caption": "the emotional rollercoaster in his voice \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-16T16:10:21.689929+00:00",
+      "duration": 48.0,
+      "end": 27411.0,
+      "facecam": true,
+      "file": "f62ddcbe99.mp4",
+      "framing": "Three characters are clustered together near center-left, and the streamer's webcam is in the top-left corner.",
+      "hook": "POV: you don't have to sacrifice your car... actually you do \ud83d\udc80",
+      "hook_options": [
+        "When the boss says you have to chop your car, then you don't, then you do",
+        "POV: they give you false hope for your dream and snatch it back",
+        "They sent him on a ride of emotions \ud83d\ude2d\ud83d\udc80",
+        "Bro found out the car plan was real again \ud83d\ude2d",
+        "Chat, he thought he was off the hook \ud83d\udc80",
+        "POV: they give you false hope for your dream and snatch it back \ud83d\ude2d"
+      ],
+      "hook_score": 8,
+      "id": "f62ddcbe99",
+      "issue": 4,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/c75c41d11d/f62ddcbe99.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/f62ddcbe99.mp4",
+      "posts": {},
+      "punch_at": 0,
+      "punch_text": "",
+      "said": "Like, you just sent me on like a, like a ride of emotions and told me I had to do it to get my dream. And now you're telling me I don't have to do it to get my dream. Which one is it? Marty? Well, here's the thing. I don't know what X is saying. I have no idea why he's saying it, but you have to. Otherwise, we can't go into cars. What, actually? what the fuck is happening you have to I find me this is really to the TV means is not life right now bro I'm depressed",
+      "score": 7,
+      "start": 27363.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "reaction",
+        "rp_drama",
+        "funny_line"
+      ],
+      "title": "They gave him false hope and took it back instantly \ud83d\ude2d",
+      "vod": "twitch:v2900842637",
+      "vod_url": "https://www.twitch.tv/videos/2900842637",
+      "why": "He is told he doesn't have to sacrifice his car, then that he does, and his confused, betrayed reaction ('are you fucking with me?') has chat spamming laughs."
+    }
+  },
+  "posts": [],
+  "processed_vods": [
+    "twitch:v2901708053",
+    "twitch:v2900842637"
+  ],
+  "pruned": [],
+  "spend": {
+    "2026-10-16": 0.1561
+  },
+  "streamers": {
+    "xQc": {
+      "facecam": true
+    }
+  }
+}
