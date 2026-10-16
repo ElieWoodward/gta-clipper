@@ -23,6 +23,7 @@ fetch:
   vods_per_streamer: 2            # newest N past broadcasts checked each run
   max_vod_hours: 10               # skip anything longer than this
   max_vod_age_days: 3             # ignore old VODs
+  title_match: "gta|grand theft|nopixel|np ?v|roleplay|\\brp\\b|leonida|vice city"   # only clip streams whose title looks like GTA; set to "" to allow any
 
 clip:
   min_seconds: 61                 # TikTok Creator Rewards needs > 60s

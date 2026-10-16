@@ -79,8 +79,12 @@ def _test_run(cfg, state):
     if TEST_SOURCE.startswith("twitch:"):
         ch = TEST_SOURCE.split(":", 1)[1]
         cfg = dict(cfg, streamers=[{"name": ch, "platform": "twitch", "channel": ch}], manual_urls=[])
-        cfg["fetch"] = dict(cfg["fetch"], vods_per_streamer=3, max_vod_age_days=30)
-        vods = fetch.list_new_vods(cfg, {"processed_vods": []})[:3]
+        cfg["fetch"] = dict(cfg["fetch"], vods_per_streamer=10, max_vod_age_days=30)
+        vods = fetch.list_new_vods(cfg, {"processed_vods": []})[:3]  # GTA-titled streams first
+        if not vods:  # no GTA streams lately: take any recent one
+            cfg["fetch"] = dict(cfg["fetch"], title_match="")
+            vods = fetch.list_new_vods(cfg, {"processed_vods": []})[:3]
+        print(f"::notice::test source: {vods[0]['title'] if vods else 'none'}", flush=True)
     else:
         vods = [{"id": "test:" + TEST_SOURCE, "url": TEST_SOURCE, "title": "",
                  "streamer": {"name": "test", "platform": "manual"}}]

@@ -1,5 +1,6 @@
 """Find new VODs and download only what's needed: full audio for analysis, video just for chosen clips."""
 import json
+import re
 import time
 from datetime import datetime, timedelta, timezone
 
@@ -36,6 +37,9 @@ def list_new_vods(cfg, state):
             ts = e.get("timestamp")
             if ts and datetime.fromtimestamp(ts, timezone.utc) < datetime.now(timezone.utc) - timedelta(days=f["max_vod_age_days"]):
                 continue
+            pat = f.get("title_match") or ""
+            if pat and not re.search(pat, e.get("title") or "", re.I):
+                continue  # not a GTA stream
             out.append({"id": vid, "url": e.get("url") or e.get("webpage_url"), "title": e.get("title", ""), "streamer": s})
     for u in cfg.get("manual_urls") or []:
         vid = f"manual:{u}"
