@@ -110,6 +110,9 @@ def _test_run(cfg, state):
     (WORK.parent / "test-output" / "summary.json").write_text(_json.dumps(
         {"source": vods[0]["url"], "title": vods[0].get("title"), "clips": summary}, indent=2))
     log.info("test run done: %s", _json.dumps(summary, indent=2))
+    for c in summary:  # visible on the run page, so hooks can be reviewed without downloading anything
+        print(f"::notice::[{c['status']} {c['score']}/10, {c['duration']}s] {c['hook']}"
+              + (f"  | punchline: {c['punch_text']}" if c.get("punch_text") else "") + f"  | {c['why']}", flush=True)
 
 
 def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
