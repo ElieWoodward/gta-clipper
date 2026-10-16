@@ -676,6 +676,38 @@ LEARN_SCHEMA = {"type": "object", "required": ["playbook", "summary"],
                                "target_seconds": {"type": ["array", "null"], "items": {"type": "number"}}}}
 
 
+def _weekly_email(cfg, rows, out):
+    """Monday email: best and worst clips by views, and what the picker will do differently (email mode only)."""
+    from . import mail
+    if not clipqueue.email_mode(cfg) or not mail.configured() or DRY_RUN:
+        return
+    if not rows:
+        return   # nothing posted with numbers yet; no point emailing
+
+    def line(r):
+        extra = f", {r['likes']} likes" if r.get("likes") is not None else ""
+        return f"- {r['views']:,} views{extra} on {r['platform']}: {r['hook']} ({r['seconds']:.0f}s, posted {r.get('hour') or '?'})"
+    ranked = sorted(rows, key=lambda r: r["views"], reverse=True)
+    total = sum(r["views"] for r in rows)
+    text = [f"{len(rows)} posts with numbers, {total:,} views in total.", "", "Best:"]
+    text += [line(r) for r in ranked[:3]]
+    if len(ranked) > 3:
+        text += ["", "Worst:"] + [line(r) for r in ranked[-3:][::-1]]
+    if out:
+        text += ["", "What's working:", out["summary"], "", "Rules the clip picker follows this week:", out["playbook"]]
+        if out.get("best_slots"):
+            text += ["", f"Posting emails will now come at: {', '.join(out['best_slots'])} (Pacific)."]
+        if out.get("target_seconds"):
+            lo, hi = out["target_seconds"]
+            text += [f"Clip length it will aim for: {lo} to {hi} seconds."]
+    else:
+        text += ["", "Not enough posts yet to change anything (it needs 6 with view counts). Keep posting."]
+    try:
+        mail.send(f"Weekly: {total:,} views from {len(rows)} posts", "\n".join(text))
+    except Exception as e:
+        log.warning("weekly email failed: %s", e)
+
+
 def learn(client=None):
     import anthropic
     cfg, state = load_config(), load_state()
@@ -691,6 +723,7 @@ def learn(client=None):
                          "age_h": round(_age_hours(p))})
     if len(rows) < 6:
         log.info("only %d posts with data; skipping learn", len(rows))
+        _weekly_email(cfg, rows, None)
         return
     client = client or anthropic.Anthropic()
     out = highlights.ask_tool(client, cfg["models"]["learn"], LEARN_PROMPT.format(data=json.dumps(rows)), LEARN_SCHEMA,
@@ -705,6 +738,7 @@ def learn(client=None):
         ts = ts if ts[0] < ts[1] else None
     INSIGHTS_FILE.write_text(json.dumps({"best_slots": out.get("best_slots") or [], "target_seconds": ts,
                                          "updated": now_utc().isoformat()}))
+    _weekly_email(cfg, rows, dict(out, target_seconds=ts))
     if not DRY_RUN:
         services.gh_upsert_pinned("weekly-report", f"Weekly report {now_local(cfg):%b %d}",
                                   f"{out['summary']}\n\n### Playbook the picker now follows\n\n{out['playbook']}")

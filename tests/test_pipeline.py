@@ -570,3 +570,30 @@ def _get404(url):
 campaigns._get = _get404
 assert len(campaigns.list_campaigns()) == 4
 print("CAMPAIGN PAGES OK")
+
+# ---------- 13. view counts from TikTok/YouTube feed the weekly report ----------
+st = common.load_state()
+for cid in ("w1", "w2", "w3", "w4", "w5", "w6", "w7"):
+    c = fake_clip(cid, 8, 30, f"caption number {cid} for the weekly test")
+    c["emailed_at"] = (common.now_utc() - timedelta(hours=29)).isoformat()
+ts0 = (common.now_utc() - timedelta(hours=28)).timestamp()
+tt_uploads[:] = [{"text": f"caption number {cid} for the weekly test #gtarp", "timestamp": ts0, "duration": 25.0,
+                  "url": f"https://www.tiktok.com/@wantedlevelclips8/video/{i}", "views": 1000 * i, "likes": 10 * i}
+                 for i, cid in enumerate(("w1", "w2", "w3", "w4", "w5", "w6", "w7"), 1)]
+clipqueue.refresh_posted(cfg, st)
+assert st["clips"]["w7"]["posts"]["tiktok"]["views"] == 7000 and st["clips"]["w7"]["posts"]["tiktok"]["hour"]
+assert st["clips"]["w1"]["posts"]["tiktok"]["likes"] == 10
+tt_uploads[0]["views"] = 1500   # numbers grow on the next check
+clipqueue.refresh_posted(cfg, st)
+assert st["clips"]["w1"]["posts"]["tiktok"]["views"] == 1500 and len(st["clips"]["w1"]["posts"]["tiktok"]["history"]) == 2
+assert clipqueue._vid_key("https://www.youtube.com/watch?v=abcdefghijk") == "abcdefghijk"
+common.save_state(st)
+tt_uploads[:] = []
+learn_reply = {"playbook": "- more peer-pressure moments", "summary": "Peer pressure clips won.",
+               "best_slots": ["12:00"], "target_seconds": [20, 35]}
+n = len(sent)
+jobs.learn(client=FakeClaude(lambda kw: json.dumps(learn_reply)))
+wk = sent[n:]
+assert len(wk) == 1 and wk[0]["subject"].startswith("Weekly:") and "Best:" in wk[0]["text"], [x["subject"] for x in wk]
+assert "7,000 views" in wk[0]["text"] and "Peer pressure clips won." in wk[0]["text"] and "12:00" in wk[0]["text"]
+print("WEEKLY STATS OK")

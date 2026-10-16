@@ -211,15 +211,52 @@ def match_uploads(state, uploads, platform):
             if score > best:
                 best, best_u = score, u
         if best >= MATCH_THRESHOLD:
+            posted = (datetime.fromtimestamp(best_u["timestamp"], timezone.utc) if best_u.get("timestamp") else now_utc())
             c.setdefault("posts", {})[platform] = {"status": "published", "url": best_u.get("url"), "seen_at": now_utc().isoformat(),
-                                                  "date": now_utc().date().isoformat(), "match": round(best, 2),
-                                                  "views": None, "history": []}
+                                                  "date": posted.date().isoformat(), "posted_at": posted.isoformat(),
+                                                  "match": round(best, 2), "views": None, "history": []}
             hits.append(c)
     return hits
 
 
-def tiktok_uploads(handle, n=15):
-    """Latest TikTok uploads via yt-dlp: [{text, timestamp, duration, url}]. Raises if TikTok blocks the request."""
+def _vid_key(url):
+    """The part of a post URL that identifies the video (TikTok id or YouTube id)."""
+    m = re.search(r"/video/(\d+)|[?&]v=([\w-]{11})|/shorts/([\w-]{11})", url or "")
+    return next((g for g in m.groups() if g), None) if m else (url or None)
+
+
+def update_stats(state, uploads, platform, tz="UTC"):
+    """Copy view/like/comment/share counts from the page onto the clips we know were posted. Returns how many."""
+    from zoneinfo import ZoneInfo
+    by_key = {_vid_key(u.get("url")): u for u in uploads if u.get("url")}
+    n = 0
+    for c in state["clips"].values():
+        p = (c.get("posts") or {}).get(platform)
+        if not p or not p.get("url"):
+            continue
+        u = by_key.get(_vid_key(p["url"]))
+        if not u or u.get("views") is None:
+            continue
+        p.update(views=int(u["views"]), likes=u.get("likes"), comments=u.get("comments"), shares=u.get("shares"))
+        if not p.get("hour") and p.get("posted_at"):
+            p["hour"] = datetime.fromisoformat(p["posted_at"]).astimezone(ZoneInfo(tz)).strftime("%H:00")
+        hist = p.setdefault("history", [])
+        if not hist or hist[-1][1] != p["views"]:
+            p["history"] = (hist + [[now_utc().isoformat(), p["views"]]])[-60:]
+        n += 1
+    return n
+
+
+def _int(x):
+    try:
+        return int(x)
+    except (TypeError, ValueError):
+        return None
+
+
+def tiktok_uploads(handle, n=30):
+    """Latest TikTok uploads via yt-dlp: [{text, timestamp, duration, url, views, likes, comments, shares}].
+    Raises if TikTok blocks the request."""
     try:
         raw = run(["yt-dlp", "--flat-playlist", "-J", "--playlist-end", str(n), f"https://www.tiktok.com/@{handle}"])
     except RuntimeError as e:
@@ -230,7 +267,9 @@ def tiktok_uploads(handle, n=15):
     for e in json.loads(raw).get("entries") or []:
         out.append({"text": " ".join(x for x in (e.get("title"), e.get("description")) if x),
                     "timestamp": e.get("timestamp"), "duration": e.get("duration"),
-                    "url": e.get("url") or e.get("webpage_url")})
+                    "url": e.get("url") or e.get("webpage_url"), "views": _int(e.get("view_count")),
+                    "likes": _int(e.get("like_count")), "comments": _int(e.get("comment_count")),
+                    "shares": _int(e.get("repost_count"))})
     return out
 
 
@@ -255,8 +294,12 @@ def youtube_uploads(channel_id):
         desc = e.findtext("m:group/m:description", "", ns)
         pub = e.findtext("a:published", "", ns)
         link = e.find("a:link", ns)
+        stats = e.find("m:group/m:community/m:statistics", ns)
+        rating = e.find("m:group/m:community/m:starRating", ns)
         out.append({"text": f"{title} {desc}", "url": link.get("href") if link is not None else None,
-                    "timestamp": datetime.fromisoformat(pub).timestamp() if pub else None})
+                    "timestamp": datetime.fromisoformat(pub).timestamp() if pub else None,
+                    "views": _int(stats.get("views")) if stats is not None else None,
+                    "likes": _int(rating.get("count")) if rating is not None else None})
     return out
 
 
@@ -287,11 +330,13 @@ def refresh_posted(cfg, state):
     if tt:
         for attempt in (1, 2):
             try:
-                for c in match_uploads(state, tiktok_uploads(tt), "tiktok"):
+                ups = tiktok_uploads(tt)
+                for c in match_uploads(state, ups, "tiktok"):
                     if c["status"] == "approved":
                         c["status"] = "posted"
                     notes.append(f"seen on TikTok: {c['hook']}")
                     claim_email(cfg, state, c, "tiktok")
+                update_stats(state, ups, "tiktok", cfg.get("timezone", "UTC"))
                 state.setdefault("health", {})["tiktok_check"] = {"ok": now_utc().isoformat()}
                 break
             except Exception as e:
@@ -307,8 +352,10 @@ def refresh_posted(cfg, state):
             ids = state.setdefault("accounts", {})
             if not ids.get("youtube_channel_id"):
                 ids["youtube_channel_id"] = youtube_channel_id(yt)
-            for c in match_uploads(state, youtube_uploads(ids["youtube_channel_id"]), "youtube"):
+            yups = youtube_uploads(ids["youtube_channel_id"])
+            for c in match_uploads(state, yups, "youtube"):
                 notes.append(f"seen on YouTube: {c['hook']}")
+            update_stats(state, yups, "youtube", cfg.get("timezone", "UTC"))
             for c in state["clips"].values():
                 if c.get("posts", {}).get("youtube") and not c.get("claim_sent", {}).get("youtube"):
                     claim_email(cfg, state, c, "youtube")
