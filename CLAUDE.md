@@ -4,7 +4,8 @@ This repo is Elie's clip channel bot ("Wanted Level", @wantedlevelclips8 on TikT
 big moments in GTA RP Twitch streams, cuts them into vertical clips with the streamer's webcam on top, a hook and
 captions, and gets them posted. Everything runs on GitHub Actions so Elie's computer can stay off.
 
-Read `docs/BUILD_PROMPT.md` for the current build task and its definition of done.
+The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/clipqueue.py`, `clipper/mail.py`,
+`clipper/health.py`). Use that file's definition of done when checking or extending it.
 
 ## How it is laid out
 
@@ -16,6 +17,8 @@ Read `docs/BUILD_PROMPT.md` for the current build task and its definition of don
   - `vision.py`: Claude looks at frames to find the webcam and the action.
   - `twitch.py`: Twitch GQL (VOD list, chapters, viewer clips, chat replay). `fetch.py`: yt-dlp downloads.
   - `preflight.py`: one-minute check of every service before any long run.
+  - `clipqueue.py`: the queue (max size, expiry), the posting-email package, TikTok/YouTube posted detection.
+  - `mail.py`: Gmail SMTP/IMAP with an app password. `health.py`: failure counting and alert emails.
   - `common.py`: config, state. `data/state.json` is the main state; `data/live.json` is written only by the live
     watcher and merged in on load.
 - `.github/workflows/clipper.yml`: scheduled process, post, analytics, learn, plus manual runs and test runs.
@@ -47,8 +50,11 @@ Read `docs/BUILD_PROMPT.md` for the current build task and its definition of don
 - Test runs (`test_source` set) post nothing (DRY_RUN) and publish `summary.json` plus contact-sheet previews to the
   `test-previews` branch. Fetch it with `git fetch origin test-previews` and look at the JPGs before calling a
   render good.
-- `test_source` values: a VOD URL, `twitch:<channel>` (latest GTA VOD), or `live:<channel>` with job `live`
-  (watches for 10 minutes, then clips the liveliest moment).
+- `test_source` values: a VOD URL, `twitch:<channel>` (latest GTA VOD), `live:<channel>` or `live:auto` with job
+  `live` (watches for 10 minutes, then clips the liveliest moment), or `email` with job `post` (sends ONE real test
+  email to NOTIFY_EMAIL; ask Elie before running it).
+- TikTok's page needs yt-dlp's impersonation add-on (`yt-dlp[curl-cffi]` in requirements). An account with no
+  videos makes yt-dlp error; that's treated as an empty list.
 - The Twitch "failed integrity check" warning on one viewer-clips query shape is normal; the code falls back to the
   other shape.
 - Big streamers start in Just Chatting and switch to GTA later; `twitch.chapters()` handles that. Streams run 12 to
