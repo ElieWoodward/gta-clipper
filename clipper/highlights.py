@@ -177,10 +177,15 @@ def ask_tool(client, model, prompt, schema, max_tokens=4000, attempts=3):
     """Get a JSON object from Claude through a tool call (valid JSON even when hooks are full of quotes and emojis).
     Falls back to parsing a JSON reply, and asks again if neither works."""
     tool = {"name": "submit", "description": "Submit the answer. Always answer by calling this tool.", "input_schema": schema}
+    ask = "\n\nAnswer by calling the submit tool."
+    if isinstance(prompt, list):   # images + text
+        content = prompt[:-1] + [dict(prompt[-1], text=prompt[-1]["text"] + ask)]
+    else:
+        content = prompt + ask
     last = None
     for _ in range(attempts):
         msg = client.messages.create(model=model, max_tokens=max_tokens, tools=[tool], tool_choice={"type": "auto"},
-                                     messages=[{"role": "user", "content": prompt + "\n\nAnswer by calling the submit tool."}])
+                                     messages=[{"role": "user", "content": content}])
         for b in msg.content:
             if getattr(b, "type", "") == "tool_use" and isinstance(getattr(b, "input", None), dict) and b.input:
                 return b.input

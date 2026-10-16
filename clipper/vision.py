@@ -4,7 +4,6 @@ Claude sees a few frames and reports: is there a webcam overlay (and where), whe
 important stuff is spread across the screen (then the clip keeps a wider view instead of a tight crop).
 """
 import base64
-import json
 
 from .common import log, run
 
@@ -20,7 +19,13 @@ video, so most of the width gets cropped away. Tell me how to crop it so nothing
    "wide" if it's spread out (two people far apart, a chase across the screen, important on-screen text or menus), so
    the clip should show more of the frame.
 
-Return ONLY JSON: {{"facecam": {{"x": float, "y": float, "w": float, "h": float}} or null, "focus_x": float, "layout": "fill" or "wide", "why": str}}"""
+Submit facecam (an object with x, y, w, h, or null), focus_x, layout ("fill" or "wide") and why (one short sentence)."""
+
+SCHEMA = {"type": "object", "required": ["focus_x", "layout"],
+          "properties": {"facecam": {"type": ["object", "null"],
+                                     "properties": {k: {"type": "number"} for k in ("x", "y", "w", "h")}},
+                         "focus_x": {"type": "number"}, "layout": {"type": "string", "enum": ["fill", "wide"]},
+                         "why": {"type": "string"}}}
 
 
 def frames(src, offset, dur, out_dir, n=3):
@@ -63,11 +68,8 @@ def analyze_frames(cfg, src, offset, dur, work_dir, client=None, strict=False):
         content = [{"type": "image", "source": {"type": "base64", "media_type": "image/jpeg",
                                                  "data": base64.b64encode(p.read_bytes()).decode()}} for p in imgs]
         content.append({"type": "text", "text": PROMPT.format(n=len(imgs))})
-        msg = client.messages.create(model=cfg["models"]["judge"], max_tokens=400,
-                                     messages=[{"role": "user", "content": content}])
-        text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
-        start, end = text.find("{"), text.rfind("}")
-        return _clean(json.loads(text[start:end + 1]))
+        from .highlights import ask_tool
+        return _clean(ask_tool(client, cfg["models"]["judge"], content, SCHEMA, max_tokens=600))
     except Exception as e:
         if strict:
             raise
