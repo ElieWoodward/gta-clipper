@@ -959,6 +959,8 @@
       "caption": "the 'hello senorita' while getting pulled over \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-16T15:59:46.401508+00:00",
       "duration": 48.0,
+      "email_message_id": "<179217524785.3703.18104866851362461740@gmail.com>",
+      "emailed_at": "2026-10-16T18:27:48.077034+00:00",
       "end": 34703.0,
       "facecam": true,
       "file": "d564c855ac.mp4",
@@ -983,6 +985,8 @@
       "punch_text": "It's coming back stolen",
       "said": "So what? I'll put it on speaker. Look. Put it on speaker. Put it on speaker. Wait, hold on. I gotta go back. My wife's calling me. Can I put my wife on speaker? Yeah. Alright, I can do that. Hello? Hello, senorita. Hi. You okay, babe? I'm on the way to get the medicine. Now ma'am, do you know that your vehicle is coming back as stolen? Hey, what? Babe? It's coming down stolen. Well, what the heck? It's coming back stolen. Hey, what?",
       "score": 7,
+      "sent_caption": "the 'hello senorita' while getting pulled over \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
+      "sent_title": "Pulled over and the car comes back stolen \ud83d\udc80 #shorts",
       "start": 34655.0,
       "status": "approved",
       "streamer": "xQc",
@@ -1053,12 +1057,19 @@
         "date": "2026-10-16",
         "subject": "Post now: POV: you don't have to sacrifice your car... actually you do \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-10-16T18:27:48.077034+00:00",
+        "clip": "d564c855ac",
+        "date": "2026-10-16",
+        "subject": "Post now: POV: cop makes you put your wife on speaker mid-stop \ud83d\udc80 (7/10)",
+        "test": false
       }
     ]
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-16T18:19:36.924745+00:00"
+      "ok": "2026-10-16T18:26:43.261018+00:00"
     }
   },
   "posts": [],
