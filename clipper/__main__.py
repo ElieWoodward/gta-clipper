@@ -46,4 +46,8 @@ CMDS = {"process": jobs.process, "post": jobs.post, "analytics": jobs.analytics,
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in CMDS:
         sys.exit(f"usage: python -m clipper [{'|'.join(CMDS)}]")
-    CMDS[sys.argv[1]]()
+    try:
+        CMDS[sys.argv[1]]()
+    except Exception as e:  # put the real reason at the top of the run page
+        print(f"::error::{type(e).__name__}: {str(e)[:600]}", flush=True)
+        raise

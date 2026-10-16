@@ -75,7 +75,7 @@ jobs:
         run: |
           set -o pipefail
           python -m clipper ${{ steps.pick.outputs.job }} 2>&1 | tee run.log || {
-            tail -n 25 run.log | sed 's/%/%25/g' | while IFS= read -r l; do echo "::error::$l"; done
+            tail -n 8 run.log | sed 's/%/%25/g' | while IFS= read -r l; do echo "::error::$l"; done
             exit 1
           }
 
