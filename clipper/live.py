@@ -203,8 +203,13 @@ def make_live_clip(cfg, state, vod, t, label, chat_msgs, client=None):
         picks = highlights.judge(cfg, vod, [window], client, max_picks=1)
         picks = highlights.edit_hooks(cfg, picks, [window], client)
         if not picks:
-            log.info("live moment at %ss: judge passed on it", t)
-            return None
+            print(f"::notice::live moment at {t / 3600:.2f}h ({label}): Claude found nothing clip-worthy", flush=True)
+            if not jobs.DRY_RUN:
+                return None
+            # test run: render it anyway so the cutting and rendering get checked
+            picks = [{"start": max(a, t - 25), "end": min(b, t + 10), "score": 0, "hook": "TEST: nothing clip-worthy here",
+                      "punch_text": "", "punch_at": 0, "title": "test", "caption": "test", "tags": [], "why": "test render",
+                      "commentary": []}]
         p = picks[0]
         print(f"::notice::live moment at {t / 3600:.2f}h ({label}): score {p['score']}/10 | {p['hook']}", flush=True)
         if int(p["score"]) < cfg["clip"]["min_score"] and not jobs.DRY_RUN:
