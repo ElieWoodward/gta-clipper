@@ -63,10 +63,9 @@ I'm going to post clips myself on TikTok and YouTube instead of paying for an au
      logic for tiktok).
   2. YouTube title: under 100 characters, includes `#shorts`.
   3. YouTube description: the caption, the streamer credit with a link to their Twitch, then the hashtags.
-  4. YouTube tags: comma-separated.
-  5. What's in the clip: one line, plus score and length.
-  6. Source: the Twitch VOD link with the timestamp, so I can check it.
-  7. What's still in the queue: one line per clip (hook, score, age).
+  4. What's in the clip: one line, plus score and length.
+  5. Source: the Twitch VOD link with the timestamp, so I can check it.
+  6. What's still in the queue: one line per clip (hook, score, age).
 - Also send a plain-text version of the same email.
 
 ### Detecting that I posted
@@ -134,7 +133,7 @@ All of these are true, and you've shown me the evidence:
 
 - The offline test passes with the new section markers.
 - `preflight` passes on Actions, including the email and release checks.
-- A real test email arrived with the clip attached, all seven blocks filled in, and under 25 MB. Ask me to confirm.
+- A real test email arrived with the clip attached, all six blocks filled in, and under 25 MB. Ask me to confirm.
 - A `process` test run on `twitch:xqc` and a `live:` test run on a channel that's live on GTA both produce clean clips
   (you looked at the previews).
 - The scheduled workflows have run on their own for at least 3 hours with no failures, and the queue state in

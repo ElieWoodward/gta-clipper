@@ -100,9 +100,6 @@ def package(cfg, clip, queue_now):
     from . import jobs
     tiktok_caption = jobs._caption(cfg, clip, "tiktok")
     channel = streamer_channel(cfg, clip["streamer"])
-    tags = list(dict.fromkeys(
-        [t.lstrip("#") for t in cfg["posting"]["hashtags"]] + [channel, "gta rp", "nopixel", "gta 5 rp", "funny moments"]
-        + [str(t).lstrip("#") for t in clip.get("tags") or []]))
     title = clip["title"].strip()
     yt_title = (title if "#shorts" in title.lower() else f"{title} #shorts")[:100]
     hashtags = " ".join(dict.fromkeys(list(cfg["posting"]["hashtags"]) + ["#" + re.sub(r"[^a-z0-9]", "", channel)]))
@@ -116,7 +113,6 @@ def package(cfg, clip, queue_now):
         ("TikTok caption", tiktok_caption),
         ("YouTube title", yt_title),
         ("YouTube description", yt_desc),
-        ("YouTube tags", ", ".join(tags)),
         ("What's in it", f"{clip.get('why') or clip['hook']}\nScore {clip['score']}/10, {clip['duration']:.0f} seconds, "
                          f"on-screen hook: {clip['hook']}"),
         ("Source", source or "(manual upload)"),

@@ -374,9 +374,10 @@ jobs.email_post(cfg)
 st = common.load_state()
 assert len(sent) == 1 and sent[0]["subject"] == "Post now: hook b (9/10)", sent[0]["subject"]
 assert st["clips"]["b"]["emailed_at"] and st["clips"]["b"]["email_message_id"] == "<mid1@example.com>"
-for label in ("TIKTOK CAPTION", "YOUTUBE TITLE", "YOUTUBE DESCRIPTION", "YOUTUBE TAGS", "WHAT'S IN IT", "SOURCE",
+for label in ("TIKTOK CAPTION", "YOUTUBE TITLE", "YOUTUBE DESCRIPTION", "WHAT'S IN IT", "SOURCE",
               "STILL IN THE QUEUE"):
     assert f"=== {label} ===" in sent[0]["text"], label
+assert "YOUTUBE TAGS" not in sent[0]["text"]
 assert "#shorts" in sent[0]["text"] and "Streamer:" in sent[0]["text"] and "twitch.tv/" in sent[0]["text"]
 assert 0 < sent[0]["size"] <= mail.ATTACH_LIMIT and "user-select:all" in sent[0]["html"]
 fake_clip("d", 7, 0.1, "brand new moment after the email 💀")   # newer than the last email beats an older 8
