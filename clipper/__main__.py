@@ -16,7 +16,10 @@ def probe():
         ch = src.split(":", 1)[1]
         raw = json.loads(run(["yt-dlp", "--flat-playlist", "-J", "--playlist-end", "3",
                               f"https://www.twitch.tv/{ch}/videos?filter=archives&sort=time"]))
-        e = (raw.get("entries") or [])[0]
+        if not raw.get("entries"):
+            print(f"::error::no past broadcasts found for twitch.tv/{ch}", flush=True)
+            return
+        e = raw["entries"][0]
         vod = {"id": f"twitch:{e['id']}", "url": e.get("url"), "title": e.get("title"), "streamer": {"channel": ch}}
     else:
         vod = {"id": "probe", "url": src, "title": "", "streamer": {}}
@@ -25,6 +28,8 @@ def probe():
     print(f"::notice::probe video {vid}: {info}", flush=True)
     length = int((info or {}).get("lengthSeconds") or 3600)
     sig = twitch.signals(vod, length)
+    print(f"::notice::clips scanned on the channel: {twitch.STATS.get('clips_seen', 0)}, from this VOD: {len(sig['clips'])}",
+          flush=True)
     for c in sig["clips"][:8]:
         print(f"::notice::viewer clip at {c['offset']:.0f}s, {c['views']} views: {c['title']}", flush=True)
     if sig["laughs"] is not None:

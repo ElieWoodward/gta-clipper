@@ -18,8 +18,11 @@ HEADERS = {"Client-Id": "kimne78kx3ncx6brgo4mv6wki5h1ko", "Content-Type": "text/
 CHAT_HASH = "b70a3591ff0f4e0313d126c6a1502d79a1c02baebb288227c582044aa76adf6a"
 CHAT_DELAY = 6          # chat reacts a few seconds after the moment happens on stream
 # Laughs plus shock reactions ("wtf", "ayo"): both mean something just happened worth clipping.
-LAUGH = re.compile(r"\b(lul|lulw|kekw|kek|omegalul|icant|lmao+|lmfao|lol+|haha+|xd+|pepelaugh|kekl|omegakek|"
-                   r"bruh+|wtf|ayo+|no shot)\b|😂|🤣|💀|😭", re.I)
+# Laugh emotes are often channel-specific ("lysLaff", "xqcL"), so match laugh fragments anywhere in a word.
+LAUGH = re.compile(r"lul|kek|laff|laugh|lmao|lmfao|icant|omega|\blo+l\b|\bha(ha)+|\bxd+\b|\bbruh+\b|\bwtf\b|"
+                   r"\bayo+\b|no shot|😂|🤣|💀|😭", re.I)
+_warned = set()
+STATS = {}   # debugging counters for the probe
 
 
 def _gql(body, timeout=15):
@@ -27,7 +30,12 @@ def _gql(body, timeout=15):
         try:
             r = requests.post(GQL, json=body, headers=HEADERS, timeout=timeout)
             if r.status_code == 200:
-                return r.json()
+                data = r.json()
+                errs = data.get("errors") if isinstance(data, dict) else None
+                if errs and str(errs)[:80] not in _warned:
+                    _warned.add(str(errs)[:80])
+                    print(f"::warning::twitch api: {str(errs)[:300]}", flush=True)
+                return data
             log.info("twitch gql %s: %s", r.status_code, r.text[:200])
         except requests.RequestException as e:
             log.info("twitch gql error: %s", e)
@@ -50,16 +58,34 @@ def video_info(vid):
     return v or None
 
 
-def viewer_clips(login, vid, period="LAST_MONTH", pages=5):
+CLIP_CRITERIA = ["{filter: %s}", "{period: %s, sort: VIEWS_DESC}"]
+
+
+def viewer_clips(login, vid, periods=("LAST_WEEK", "LAST_MONTH")):
     """Clips viewers made from this VOD: [{offset, duration, views, title}] sorted by views."""
+    for period in periods:
+        for shape in CLIP_CRITERIA:
+            got = _viewer_clips(login, vid, shape % period)
+            if got is None:
+                continue   # query shape rejected; try the next one
+            if got:
+                return got
+            break
+    return []
+
+
+def _viewer_clips(login, vid, criteria, pages=5):
     out, after = [], None
     for _ in range(pages):
-        q = ('query { user(login: "%s") { clips(first: 100%s, criteria: {period: %s, sort: VIEWS_DESC}) '
+        q = ('query { user(login: "%s") { clips(first: 100%s, criteria: %s) '
              '{ pageInfo { hasNextPage } edges { cursor node { title viewCount durationSeconds videoOffsetSeconds '
-             'video { id } } } } } }') % (login, f', after: "{after}"' if after else "", period)
+             'video { id } } } } } }') % (login, f', after: "{after}"' if after else "", criteria)
         data = _gql({"query": q})
+        if data is None or (isinstance(data, dict) and data.get("errors") and not (data.get("data") or {}).get("user")):
+            return None if not out else out
         clips = ((((data or {}).get("data") or {}).get("user") or {}).get("clips")) or {}
         edges = clips.get("edges") or []
+        STATS["clips_seen"] = STATS.get("clips_seen", 0) + len(edges)
         for e in edges:
             n = e.get("node") or {}
             if str((n.get("video") or {}).get("id")) == str(vid) and n.get("videoOffsetSeconds") is not None:
@@ -75,9 +101,9 @@ def viewer_clips(login, vid, period="LAST_MONTH", pages=5):
 
 def _chat_part(vid, start, stop, max_pages=400):
     """Messages with offset in [start, stop): [(second, text)]."""
-    msgs, cursor = [], None
+    msgs, offset, seen = [], int(start), set()
     for _ in range(max_pages):
-        var = {"videoID": vid, "cursor": cursor} if cursor else {"videoID": vid, "contentOffsetSeconds": int(start)}
+        var = {"videoID": vid, "contentOffsetSeconds": offset}
         data = _gql({"operationName": "VideoCommentsByOffsetOrCursor", "variables": var,
                      "extensions": {"persistedQuery": {"version": 1, "sha256Hash": CHAT_HASH}}})
         if isinstance(data, list):
@@ -86,21 +112,21 @@ def _chat_part(vid, start, stop, max_pages=400):
         edges = com.get("edges") or []
         if not edges:
             break
-        last = start
+        last = offset
         for e in edges:
             n = e.get("node") or {}
             t = n.get("contentOffsetSeconds")
-            if t is None:
+            key = n.get("id") or (t, str(n.get("message"))[:60])
+            if t is None or key in seen:
                 continue
-            last = t
+            seen.add(key)
+            last = max(last, int(t))
             if start <= t < stop:
                 text = "".join(f.get("text") or "" for f in ((n.get("message") or {}).get("fragments") or []))
                 msgs.append((int(t), text.strip()))
         if last >= stop or not (com.get("pageInfo") or {}).get("hasNextPage"):
             break
-        cursor = edges[-1].get("cursor")
-        if not cursor:
-            break
+        offset = last if last > offset else offset + 1   # next page starts where this one ended
     return msgs
 
 
