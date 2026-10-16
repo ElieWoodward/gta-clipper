@@ -1,23 +1,32 @@
-"""Turn a source section into a finished 1080x1920 clip with hook, commentary and word-by-word captions."""
+"""Turn a source section into a finished 1080x1920 clip in the style of viral GTA RP clips:
+gameplay filling the frame, the hook in a white box at the top (TikTok's own text style, with color emoji),
+word-by-word captions, and an optional big punchline at the bottom when the payoff lands."""
+import glob
+import re
 from pathlib import Path
 
 from .common import run
 
-FONT = "DejaVu Sans"          # captions
-HOOK_FONT = "Anton"           # top hook, bundled in fonts/
+FONT = "DejaVu Sans"          # captions (libass)
+PUNCH_FONT = "Anton"          # bottom punchline (libass), bundled in fonts/
 FONTS_DIR = Path(__file__).resolve().parent.parent / "fonts"
+HOOK_FONT_FILE = FONTS_DIR / "TikTokSans.ttf"
+EMOJI_FONT_CANDIDATES = ["/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
+                         "/usr/share/fonts/noto/NotoColorEmoji.ttf", str(FONTS_DIR / "NotoColorEmoji.ttf")]
 W, H = 1080, 1920
 YELLOW = "&H0000E5FF&"  # ASS colors are &HAABBGGRR
+
+HOOK_TOP = 250          # px from the top: clear of TikTok's top bar
+HOOK_MAX_W = 980
+CAP_FROM_BOTTOM = 470   # captions sit above TikTok's caption/username area
+PUNCH_FROM_BOTTOM = 700
+
+EMOJI_RE = re.compile("[\U0001F000-\U0001FAFF☀-➿⬀-⯿←-⇿⌀-⏿]")
+JOINERS = "‍️︎"
 
 
 def _esc(t):
     return t.replace("\\", "").replace("{", "(").replace("}", ")").replace("\n", " ")
-
-
-def _hook_text(h):
-    parts = _esc(h).upper().split("*")
-    # odd-numbered parts were inside *stars*
-    return "".join(f"{{\\c{YELLOW}}}{p}{{\\c&H00FFFFFF&}}" if i % 2 else p for i, p in enumerate(parts))
 
 
 def _ts(t):
@@ -27,33 +36,149 @@ def _ts(t):
     return f"{int(h)}:{int(m):02d}:{s:05.2f}"
 
 
-def build_ass(pick, words, layout, out_path, commentary=True):
-    """words: absolute-time words; pick: has start/end/hook/commentary."""
+def strip_emoji(t):
+    return re.sub(r"\s+", " ", EMOJI_RE.sub("", "".join(ch for ch in t if ch not in JOINERS)).replace("\U0001F3FB", "")).strip()
+
+
+# ------------------------------------------------------------------ hook image
+def _emoji_font():
+    from PIL import ImageFont
+    for path in EMOJI_FONT_CANDIDATES + glob.glob("/usr/share/fonts/**/NotoColorEmoji*.ttf", recursive=True):
+        try:
+            return ImageFont.truetype(path, 109)   # CBDT bitmap font: only size 109 works
+        except OSError:
+            continue
+    return None
+
+
+def _runs(token):
+    """Split a word into text and emoji runs: [("t", "bro"), ("e", "😭")]."""
+    out = []
+    for ch in token:
+        if ch in JOINERS or "\U0001F3FB" <= ch <= "\U0001F3FF":   # joiners and skin tones: drop
+            continue
+        kind = "e" if EMOJI_RE.match(ch) else "t"
+        if kind == "t" and out and out[-1][0] == "t":
+            out[-1] = ("t", out[-1][1] + ch)
+        else:
+            out.append((kind, ch))
+    return out
+
+
+def hook_image(text, out_path, size=76):
+    """Render the hook TikTok-style: black bold text on white rounded boxes, one per line, color emoji inline."""
+    from PIL import Image, ImageDraw, ImageFont
+    efont = _emoji_font()
+    if efont is None:
+        text = strip_emoji(text)
+    text = re.sub(r"\s+", " ", text.replace("*", "")).strip()
+    while True:
+        font = ImageFont.truetype(str(HOOK_FONT_FILE), size)
+        try:
+            font.set_variation_by_name("ExtraBold")
+        except Exception:
+            pass
+        asc, desc = font.getmetrics()
+        line_h = asc + desc
+        esize = int(size * 1.08)
+        EGAP = int(size * 0.08)
+        space = font.getlength(" ")
+
+        def width(tok):
+            return sum(font.getlength(v) if k == "t" else esize + EGAP for k, v in _runs(tok))
+
+        toks = []
+        for tok in text.split(" "):   # keep emojis on the same line as the word before them
+            if toks and all(k == "e" for k, _ in _runs(tok)) and _runs(tok):
+                toks[-1] += " " + tok
+            else:
+                toks.append(tok)
+        def wrap(limit):
+            out, cur = [], []
+            for tok in toks:
+                if cur and width(" ".join(cur + [tok])) > limit:
+                    out.append(cur)
+                    cur = []
+                cur.append(tok)
+            return out + [cur] if cur else out
+
+        lines = wrap(HOOK_MAX_W - 60)
+        # balance the lines so the last one isn't a lonely word
+        limit = width(" ".join(toks)) / len(lines)
+        while limit < HOOK_MAX_W - 60:
+            trial = wrap(limit)
+            if len(trial) <= len(lines):
+                lines = trial
+                break
+            limit += 12
+        if len(lines) <= 3 or size <= 46:
+            break
+        size -= 4
+
+    pad_x, pad_y, gap = 30, 16, 0
+    box_h = line_h + 2 * pad_y
+    img = Image.new("RGBA", (W, len(lines) * (box_h + gap) + 10), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    widths = [sum(width(t) for t in ln) + space * (len(ln) - 1) for ln in lines]
+    # boxes first, so neighbouring lines merge into one shape like TikTok's text background
+    for i, lw in enumerate(widths):
+        x0 = (W - lw) / 2 - pad_x
+        y0 = i * (box_h + gap)
+        d.rounded_rectangle([x0, y0, x0 + lw + 2 * pad_x, y0 + box_h], radius=22, fill=(255, 255, 255, 255))
+    for i, (ln, lw) in enumerate(zip(lines, widths)):
+        x = (W - lw) / 2
+        y = i * (box_h + gap) + pad_y
+        for j, tok in enumerate(ln):
+            for k, v in _runs(tok):
+                if k == "t":
+                    d.text((x, y), v, font=font, fill=(0, 0, 0, 255))
+                    x += font.getlength(v)
+                else:
+                    em = Image.new("RGBA", (140, 140), (0, 0, 0, 0))
+                    ImageDraw.Draw(em).text((0, 0), v, font=efont, embedded_color=True)
+                    bb = em.getbbox()
+                    if bb:
+                        em = em.crop(bb).resize((esize, int(esize * (bb[3] - bb[1]) / max(1, bb[2] - bb[0]))),
+                                                Image.LANCZOS)
+                        img.alpha_composite(em, (int(x + EGAP), int(y + (line_h - em.height) / 2 + desc * 0.15)))
+                    x += esize + EGAP
+            if j < len(ln) - 1:
+                x += space
+    img = img.crop(img.getbbox() or (0, 0, W, 10))
+    canvas = Image.new("RGBA", (W, img.height), (0, 0, 0, 0))
+    canvas.alpha_composite(img, ((W - img.width) // 2, 0))
+    canvas.save(out_path)
+    return out_path
+
+
+# ------------------------------------------------------------------ captions + punchline
+def build_ass(pick, words, out_path, commentary=False):
+    """words: absolute-time words; pick: start/end, optional punch_text/punch_at (seconds from clip start)."""
     dur = pick["end"] - pick["start"]
-    top_v = 230 if layout == "blur" else 640       # where hook/commentary sit
-    cap_v = 430 if layout == "blur" else 260       # caption distance from bottom
+    punch = strip_emoji(pick.get("punch_text") or "").upper()
+    punch_at = float(pick.get("punch_at") or 0)
     lines = [
         "[Script Info]", "ScriptType: v4.00+", f"PlayResX: {W}", f"PlayResY: {H}", "WrapStyle: 0", "",
         "[V4+ Styles]",
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, "
         "Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-        f"Style: Hook,{HOOK_FONT},84,&H00FFFFFF,&H00FFFFFF,&H00000000,&H96000000,0,0,0,0,100,100,1,0,1,7,4,8,70,70,{top_v},1",
-        f"Style: Note,{FONT},52,&H00FFFFFF,&H00FFFFFF,&H40000000,&H00000000,-1,0,0,0,100,100,0,0,3,14,0,8,100,100,{top_v},1",
-        f"Style: Cap,{FONT},80,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,6,2,2,60,60,{cap_v},1",
+        f"Style: Cap,{FONT},76,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,6,2,2,60,60,{CAP_FROM_BOTTOM},1",
+        f"Style: Punch,{PUNCH_FONT},124,{YELLOW},{YELLOW},&H00000000,&H96000000,0,0,0,0,100,100,1,0,1,8,4,2,60,60,{PUNCH_FROM_BOTTOM},1",
+        f"Style: Note,{FONT},52,&H00FFFFFF,&H00FFFFFF,&H40000000,&H00000000,-1,0,0,0,100,100,0,0,3,14,0,8,100,100,520,1",
         "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
-    # Hook: one line that stays up for the whole clip. Words wrapped in *stars* turn yellow.
-    hook_end = dur if not commentary else min(3.0, dur)
-    lines.append(f"Dialogue: 2,{_ts(0)},{_ts(hook_end)},Hook,,0,0,0,,{_hook_text(pick['hook'])}")
+    if punch and punch_at < dur - 0.5:
+        # pops in slightly oversized, then settles
+        lines.append(f"Dialogue: 3,{_ts(punch_at)},{_ts(dur)},Punch,,0,0,0,,"
+                     f"{{\\fscx120\\fscy120\\t(0,150,\\fscx100\\fscy100)}}{_esc(punch)}")
 
-    # Commentary: each line shows until the next one (max 5s), never during the hook.
-    notes = sorted(pick.get("commentary", []), key=lambda x: float(x["at"])) if commentary else []
-    for i, n in enumerate(notes):
-        s = max(float(n["at"]), hook_end)
-        nxt = float(notes[i + 1]["at"]) if i + 1 < len(notes) else dur
-        e = min(s + 8.0, nxt, dur)
-        if e - s >= 1.0:
-            lines.append(f"Dialogue: 1,{_ts(s)},{_ts(e)},Note,,0,0,0,,{_esc(n['text'])}")
+    if commentary:  # optional context lines (off by default)
+        notes = sorted(pick.get("commentary", []), key=lambda x: float(x["at"]))
+        for i, n in enumerate(notes):
+            s = float(n["at"])
+            e = min(s + 8.0, float(notes[i + 1]["at"]) if i + 1 < len(notes) else dur, dur)
+            if e - s >= 1.0:
+                lines.append(f"Dialogue: 1,{_ts(s)},{_ts(e)},Note,,0,0,0,,{_esc(n['text'])}")
 
     # Captions: 3-word groups, current word in yellow.
     rel = [dict(w, s=w["s"] - pick["start"], e=w["e"] - pick["start"]) for w in words
@@ -80,25 +205,33 @@ def build_ass(pick, words, layout, out_path, commentary=True):
     return out_path
 
 
-def render(src, src_offset, pick, words, out, facecam=None, commentary=True):
-    """src: downloaded section; src_offset: seconds into src where the clip starts."""
+# ------------------------------------------------------------------ render
+def render(src, src_offset, pick, words, out, facecam=None, commentary=False, layout="fill"):
+    """src: downloaded section; src_offset: seconds into src where the clip starts.
+    layout: fill (gameplay cropped to fill the screen), blur (whole frame over a blurred copy),
+    or stack (automatic when the streamer has a facecam crop configured: cam on top, gameplay below)."""
     out = Path(out)
-    layout = "stack" if facecam else "blur"
-    ass = build_ass(pick, words, layout, out.with_suffix(".ass"), commentary)
-    ass_arg = str(ass).replace(":", r"\:") + "':fontsdir='" + str(FONTS_DIR).replace(":", r"\:")
     if facecam:
+        layout = "stack"
+    ass = build_ass(pick, words, out.with_suffix(".ass"), commentary)
+    hook_png = hook_image(pick["hook"], out.with_suffix(".hook.png"))
+    ass_arg = str(ass).replace(":", r"\:") + "':fontsdir='" + str(FONTS_DIR).replace(":", r"\:")
+    if layout == "stack":
         f = facecam
-        vf = (f"[0:v]crop=iw*{f['w']}:ih*{f['h']}:iw*{f['x']}:ih*{f['y']},"
-              f"scale={W}:608:force_original_aspect_ratio=increase,crop={W}:608[cam];"
-              f"[0:v]crop='min(iw,ih*{W}/1312)':ih,scale={W}:1312[game];"
-              f"[cam][game]vstack,ass='{ass_arg}',fps=30[v]")
-    else:
-        vf = (f"[0:v]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},boxblur=20:2,"
-              f"eq=brightness=-0.12[bg];[0:v]scale={W}:-2[fg];"
-              f"[bg][fg]overlay=(W-w)/2:(H-h)/2,ass='{ass_arg}',fps=30[v]")
+        base = (f"[0:v]crop=iw*{f['w']}:ih*{f['h']}:iw*{f['x']}:ih*{f['y']},"
+                f"scale={W}:608:force_original_aspect_ratio=increase,crop={W}:608[cam];"
+                f"[0:v]crop='min(iw,ih*{W}/1312)':ih,scale={W}:1312[game];[cam][game]vstack[base]")
+    elif layout == "blur":
+        base = (f"[0:v]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},boxblur=20:2,"
+                f"eq=brightness=-0.12[bg];[0:v]scale={W}:-2[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2[base]")
+    else:  # fill
+        base = f"[0:v]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}[base]"
+    top = 560 if layout == "stack" else HOOK_TOP   # stack: sit on the seam between cam and gameplay
+    vf = (f"{base};[base][1:v]overlay=(W-w)/2:{top}[hk];"
+          f"[hk]ass='{ass_arg}',fps=30,format=yuv420p[v]")
     dur = pick["end"] - pick["start"]
-    run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{src_offset:.2f}", "-i", src, "-t", f"{dur:.2f}",
-         "-filter_complex", vf, "-map", "[v]", "-map", "0:a?",
+    run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{src_offset:.2f}", "-i", src, "-i", hook_png,
+         "-t", f"{dur:.2f}", "-filter_complex", vf, "-map", "[v]", "-map", "0:a?",
          "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
          "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
          "-c:a", "aac", "-b:a", "128k", "-ar", "44100", "-movflags", "+faststart", out])

@@ -104,7 +104,7 @@ def _test_run(cfg, state):
             log.info("%s still live, trying the previous stream", vod["id"])
     else:
         raise RuntimeError("All recent streams are still live; try again later")
-    summary = [{k: c.get(k) for k in ("score", "hook", "hook_score", "hook_options", "title", "caption", "duration", "why", "status")}
+    summary = [{k: c.get(k) for k in ("score", "hook", "hook_score", "hook_options", "punch_text", "punch_at", "title", "caption", "duration", "why", "status")}
                for c in scratch["clips"].values()]
     (WORK.parent / "test-output").mkdir(exist_ok=True)
     (WORK.parent / "test-output" / "summary.json").write_text(_json.dumps(
@@ -123,13 +123,14 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
     out = d / f"{cid}.mp4"
     words = caption_words(cfg, src, src_offset, p, d / f"{cid}_cap.wav", fallback=words)
     render.render(src, src_offset, p, words, out, facecam=vod["streamer"].get("facecam"),
-                  commentary=cfg["clip"].get("commentary", False))
+                  commentary=cfg["clip"].get("commentary", False), layout=cfg["clip"].get("layout", "fill"))
     media_url = None if DRY_RUN else services.blotato_upload(out)
     clip = {
         "id": cid, "vod": vod["id"], "vod_url": vod["url"], "streamer": vod["streamer"]["name"],
         "start": p["start"], "end": p["end"], "duration": round(p["end"] - p["start"], 1),
         "score": int(p["score"]), "hook": p["hook"], "title": p["title"], "caption": p["caption"],
-        "tags": p.get("tags", []), "why": p.get("why", ""), "hook_options": p.get("hook_options", []), "hook_score": p.get("hook_score"), "media_url": media_url,
+        "tags": p.get("tags", []), "why": p.get("why", ""), "hook_options": p.get("hook_options", []), "hook_score": p.get("hook_score"),
+        "punch_text": p.get("punch_text", ""), "punch_at": p.get("punch_at", 0), "media_url": media_url,
         "created": now_utc().isoformat(), "posts": {}, "issue": None, "local_file": str(out),
     }
     auto = cfg["review"]["mode"] == "auto"
@@ -138,7 +139,9 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         verdict = {"approved": "Will post automatically.", "rejected": "Below the score bar, won't post.",
                    "queued": "Add the `approve` label to post it, or close this issue to skip it."}[clip["status"]]
         body = (f"**Score {clip['score']}/10** · {clip['streamer']} · {clip['duration']}s\n\n"
-                f"Video: {media_url}\n\n**Hook:** {clip['hook']}\n\n**Other hooks it considered:**\n"
+                f"Video: {media_url}\n\n**Hook:** {clip['hook']}\n\n"
+                + (f"**Punchline:** {clip['punch_text']} (at {clip['punch_at']}s)\n\n" if clip.get("punch_text") else "")
+                + "**Other hooks it considered:**\n"
                 + "".join(f"- {h}\n" for h in clip.get("hook_options", []) if h != clip["hook"])
                 + f"\n**Title:** {clip['title']}\n\n"
                 f"**Caption:** {clip['caption']}\n\n**Why:** {clip['why']}\n\n"
@@ -185,8 +188,12 @@ def _slots(cfg, n):
 
 
 def _caption(cfg, clip, platform):
-    tags = " ".join(cfg["posting"]["hashtags"])
-    credit = f"Streamer: {clip['streamer']}" if clip["streamer"] != "manual" else ""
+    """Viral-style description: one casual reaction line, a credit, then 4-6 hashtags incl. the streamer's."""
+    tags = list(cfg["posting"]["hashtags"])
+    if clip["streamer"] not in ("manual", "test"):
+        tags.append("#" + "".join(ch for ch in clip["streamer"].lower() if ch.isalnum()))
+    tags = " ".join(dict.fromkeys(tags))
+    credit = f"Streamer: {clip['streamer']}" if clip["streamer"] not in ("manual", "test") else ""
     if platform == "tiktok":
         return f"{clip['caption']}\n\n{credit}\n{tags}".strip()
     return f"{clip['caption']}\n\n{credit}\n{tags} #shorts".strip()

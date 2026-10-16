@@ -1,4 +1,5 @@
-"""Find the best moments: loudness spikes narrow it down, Claude judges the transcript and writes the hook."""
+"""Find the best moments. Viewer-made Twitch clips, chat laugh spikes and loudness narrow a stream down to
+candidate windows; Claude judges their transcripts, cuts the clip and writes the hook."""
 import json
 import re
 import subprocess
@@ -6,10 +7,11 @@ import subprocess
 import numpy as np
 
 from .common import log, run, PLAYBOOK_FILE
+from . import twitch
 from .transcribe import transcribe, text_between, text_with_marks
 
-WINDOW_BEFORE = 75   # seconds of context before a spike sent for judging
-WINDOW_AFTER = 45
+WINDOW_BEFORE = 50   # seconds of context before a flagged second, sent for judging
+WINDOW_AFTER = 30
 
 
 def loudness_curve(wav):
@@ -44,51 +46,78 @@ def find_candidates(db, n, min_gap=90):
     return sorted(picks)
 
 
-JUDGE_PROMPT = """You pick moments from a livestream to post as vertical clips on TikTok and YouTube Shorts.
+HOOK_GUIDE = """HOW THE HOOK WORKS (the line of text in a white box at the top, on screen for the whole clip)
+It's the reason a stranger stops scrolling. On viral GTA RP clips (100K-2M+ views) the hook is a PREMISE told the way
+you'd tell a friend about it: slangy, present tense, and it makes you need to see what happens. It is never the
+streamer's opinion, never a description of something boring on screen, and never gives away the punchline.
+
+Formats that work (vary them):
+  "When you ..."            WHEN YOU STAND UP TO YO GIRL IN GTARP 😭😭😭💀
+  "POV: ..."                POV: he lets us get jumped so you flirt at the hospital 😭💀
+  "Bro ..." / "He ..."      BRO GOT SENSITIVE AFTER CATCHING A BODY 😭 / He was reaching 💀
+  "X tries to Y"            ICE tries to arrest gang members in GTA RP
+  "Who let/made X ..."      Who made Speed a cop 😭💀
+  "Chat ..."                Chat controls James in GTA 5 RP
+  first person as streamer  I disarmed a cop in front of his whole crew 😭
+  promise                   The longer you watch, the funnier it gets 🤣
+Rules:
+- 3 to 12 words. Casual slang is good ("bro", "nah", "lowkey", "yo", "chat"). ALL CAPS or normal case, both work.
+- End with 1-3 emojis from 😭 💀 🤣 😂 💔 🙏 when it's funny (😭 and 💀 are the most used). No emojis on a serious/tense clip.
+- True to what happens. Don't promise something the clip doesn't deliver.
+- Banned: stating what the streamer thinks or feels about something, narrating a boring action ("he grabs the horse"),
+  spoilers of the ending, hashtags, "insane", "epic", "you won't believe", "wait for it", headline or trailer language.
+The account owner's taste:
+  Liked:    "he told chat to spam W way too early" (promises a fail without saying how)
+  Liked:    "he still doesn't know what he did 💀" (confusion makes you watch to find out)
+  Rejected: "he said spam W if he gets the horse" (just describes the setup)
+  Rejected: "he didn't expect the town to just clear out" (narrates and gives the ending away)
+  Rejected: any hook that just repeats the streamer's own opinion (boring, nobody cares)"""
+
+JUDGE_PROMPT = """You pick moments from a livestream to post as short vertical clips on TikTok and YouTube Shorts.
 Streamer: {streamer}. Stream title: {title}. Game: GTA (GTA 6 when it is out).
 
-Below are candidate windows. Each has an id, absolute start/end seconds, a loudness spike score, and the transcript with [Ns] markers giving the absolute second each stretch of speech starts. Use the markers to set exact start and end times.
+Below are candidate windows. Each has an id, absolute start/end seconds, why it was flagged (viewers clipped it, chat
+burst out laughing, or it got loud), real chat messages from that moment when available, and the transcript with [Ns]
+markers giving the absolute second each stretch of speech starts. Use the markers to set exact cut points.
+"Viewers clipped this" and "chat laughed" are strong evidence that something good happened there; loudness alone is weak.
 
-Pick up to {max_picks} clips. That is a ceiling, not a target: only include moments that are genuinely good. Returning 2, or even 0, is better than padding with weak clips. Rules:
-- Each clip must be between {min_s} and {max_s} seconds long, inside its window. Start a beat before the setup so the payoff lands; end right after the reaction.
-- A clip has to work for someone who has never seen this streamer: a clear setup, an escalation, a payoff (chaos, a fail, a huge win, a funny line, a reaction).
-- Skip: dead air, menus, reading chat, sponsor reads, gambling, anything sexual, slurs or hateful content, real personal info (addresses, phone numbers), anything involving minors, or content that would get the account flagged.
-- Score each 1-10 for how likely it is to hold attention past 60 seconds. Be strict: a 7 is genuinely good.
+WHAT TO PICK: streamer reactions, fails, RP drama and storylines, chaotic action, funny lines. Pick up to {max_picks}
+clips. That is a ceiling, not a target: only include moments that are genuinely funny or gripping to someone who has
+never seen this streamer. Returning 2, or even 0, is better than padding with weak clips.
 
-For each pick, also write:
-- hook_options: 5 different hooks for the line of text that sits on screen for the WHOLE clip. Its only job is to make a stranger scrolling past stop and watch to the end.
-  A good hook gives a reason to CARE, never a description of what's on screen. "he grabs the horse" fails: nobody cares yet. Ask: what's at stake, what goes wrong, who's about to lose it, what's the twist?
-  Use a different angle for each of the 5:
-    1. stakes: what he's about to lose or win ("one wrong turn and the whole heist is gone")
-    2. contradiction or irony ("he planned this for 3 hours and it lasted 9 seconds")
-    3. reaction: the emotion it causes, without spoiling why ("I've never heard chat go this quiet")
-    4. curiosity gap with a promise about the ending ("the last 10 seconds ruined his whole night")
-    5. relatable or a challenge to the viewer ("every GTA player has done this exactly once")
-  Rules for every hook:
-  - 4 to 10 words, sounds like a real person, casual, contractions fine. No emojis, hashtags or exclamation marks.
-  - Must be true to what actually happens in the clip. Never promise something that isn't there.
-  - Never just narrate the action on screen. Never generic enough to fit any clip.
-  - Banned: "insane", "epic", "crazy", "you won't believe", "wait for it" on its own, "POV", "this is", "moment", "absolutely", "legendary", "chaos", headline or trailer language.
-  - Wrap the ONE word that carries the tension in *stars*; it gets highlighted.
-- hook: copy the single strongest of your 5 options, judged by: would a stranger who has never heard of this streamer stop scrolling for it?
-  The account owner's taste, from hooks he approved: irony and confused reactions win.
-    Approved: "he told chat to spam W way too *early*" (irony: promises a fail without saying how)
-    Approved: "he still doesn't know what he *did*" (reaction: confusion makes you watch to find out)
-    Rejected: "he said spam W if he gets the *horse*" (just describes the setup, no reason to care)
-    Rejected: "he didn't expect the *town* to just clear out" (narrates the event and gives away the ending)
-- commentary: 3 to 6 short context lines (max 12 words each) with an offset in seconds from clip start. These add real context a new viewer needs: who is doing what, what went wrong, why it's funny. Write like a sharp human editor, not a hype bot. No emojis.
-- title: YouTube Shorts title, max 70 chars.
-- caption: TikTok caption, 1-2 sentences, conversational.
-- tags: 1-3 category words from: chaos, fail, win, funny_line, reaction, police, heist, driving, glitch, rp, other.
+LENGTH: {min_s}-{max_s} seconds, inside its window. Find the shortest cut that still makes sense to a stranger: start
+1-3 seconds before the action kicks off (only as much setup as needed to get it), end right after the reaction or
+punchline lands. Most great clips are 15-35 seconds. Cut warm-up, menus, and the chatter after the moment is over.
+People should watch to the very end and feel the length was right.
+
+SKIP: dead air, menus, reading chat, sponsor reads, gambling, anything sexual, slurs or hateful content, real personal
+info, anything involving minors, or content that would get the account flagged.
+
+SCORE each 1-10: how likely is a stranger to watch to the end and laugh or react? Be strict: 7 is genuinely good,
+9-10 is something people would send to a friend.
+
+{hook_guide}
+
+For each pick write:
+- hook_options: 5 different hooks using different formats from the list above.
+- hook: the strongest of the 5.
+- punch_text: OPTIONAL. If the clip has one quotable payoff line (something the streamer or another player actually
+  says at the climax, or a 1-3 word reaction), give it in 1-6 words, max 30 characters, as said. It appears big at the
+  bottom from punch_at until the end. Empty string if nothing is quotable. No emojis.
+- punch_at: seconds from clip start when that line is said (0 if punch_text is empty).
+- title: YouTube Shorts title, max 70 chars, same voice as the hook.
+- caption: TikTok description: ONE casual reaction line like a viewer would comment, with 1-2 emojis,
+  e.g. "bro started apologizing in front of the homies 😭💔". No hashtags (added automatically).
+- tags: 1-3 from: reaction, fail, rp_drama, chaos, funny_line, police, heist, driving, glitch, win, other.
+- why: one sentence on what happens and why it works.
 
 {playbook}
 
-Return ONLY JSON: {{"picks": [{{"id": int, "start": float, "end": float, "score": int, "hook_options": [str], "hook": str, "title": str, "caption": str, "tags": [str], "commentary": [{{"at": float, "text": str}}], "why": str}}]}}
+Return ONLY JSON: {{"picks": [{{"id": int, "start": float, "end": float, "score": int, "hook_options": [str], "hook": str, "punch_text": str, "punch_at": float, "title": str, "caption": str, "tags": [str], "why": str}}]}}
 
 CANDIDATES:
 {candidates}
 """
-
 
 def clip_budget(cfg, seconds):
     """How many candidates to judge and clips to keep, scaled by stream length."""
@@ -107,12 +136,14 @@ def judge(cfg, vod, windows, client=None, max_picks=None):
     if playbook:
         playbook = "What has worked and failed on this account so far (follow it):\n" + playbook
     cand_txt = "\n\n".join(
-        f"[id {w['id']}] {w['start']:.0f}s-{w['end']:.0f}s spike={w['spike']:.1f}\n{w['text'] or '(no speech)'}"
+        f"[id {w['id']}] {w['start']:.0f}s-{w['end']:.0f}s\nFlagged: {'; '.join(w.get('signals') or ['loud moment'])}\n"
+        + (f"Chat at that moment: {' | '.join(w['chat'])}\n" if w.get("chat") else "")
+        + f"Transcript: {w['text'] or '(no speech)'}"
         for w in windows)
     c = cfg["clip"]
     prompt = JUDGE_PROMPT.format(streamer=vod["streamer"]["name"], title=vod.get("title", ""),
                                  max_picks=max_picks or c.get("min_per_vod", 3), min_s=c["min_seconds"], max_s=c["max_seconds"],
-                                 playbook=playbook, candidates=cand_txt)
+                                 hook_guide=HOOK_GUIDE, playbook=playbook, candidates=cand_txt)
     msg = client.messages.create(model=cfg["models"]["judge"], max_tokens=4000,
                                  messages=[{"role": "user", "content": prompt}])
     text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
@@ -144,7 +175,15 @@ def validate_picks(data, windows, c):
         if e - s < c["min_seconds"]:
             log.info("dropping pick %s: window too short", p.get("id"))
             continue
+        # The punchline's timestamp may have been given in absolute seconds; make it clip-relative and in range.
+        s0, pa = float(p["start"]), float(p.get("punch_at") or 0)
+        if pa > e - s0 + 1 and s0 <= pa <= e + 5:
+            pa -= s0           # was absolute stream seconds
+        pa += s0 - s           # rebase if the start moved above
+        p["punch_text"] = (p.get("punch_text") or "").strip()
+        p["punch_at"] = round(min(max(0.0, pa), max(0.0, e - s - 1.5)), 2)
         p["start"], p["end"] = round(s, 2), round(e, 2)
+        p["hook"] = (p.get("hook") or "").replace("*", "").strip()
         p["commentary"] = [x for x in p.get("commentary", []) if 0 <= float(x["at"]) < e - s]
         good.append(p)
     # Best first, and drop any clip that mostly overlaps a better one.
@@ -155,30 +194,22 @@ def validate_picks(data, windows, c):
     return kept
 
 
-EDITOR_PROMPT = """You are a ruthless short-form video editor. A stranger is scrolling TikTok. For each clip below you get
-what happens in it and some candidate hooks (the one line of text that stays on screen for the whole clip).
+EDITOR_PROMPT = """You are a ruthless short-form video editor for a GTA RP clip account. A stranger is scrolling TikTok.
+For each clip below you get what happens in it and candidate hooks.
 
-Score every candidate 1-10 on one question: would this make a stranger who has never heard of this streamer stop and
-watch to the end? Be harsh. Anything that narrates what's on screen, gives away the ending, or sounds like an ad,
-a headline, or an AI scores 4 or lower.
+{hook_guide}
 
-If the best candidate scores under 8, write a better one yourself. Same rules: 4 to 10 words, casual, true to the clip,
-gives a reason to care (stakes, irony, a reaction, a promise about the ending), one tension word in *stars*,
-no emojis, hashtags or exclamation marks.
+Score every candidate 1-10 on one question: would a stranger who has never heard of this streamer stop and watch to
+the end? Be harsh. Anything that states an opinion, narrates the screen, gives away the ending, or sounds like an ad,
+a headline or an AI scores 4 or lower.
 
-What has worked for this account:
-  "he told chat to spam W way too *early*" (irony: promises a fail without saying how)
-  "he still doesn't know what he *did*" (reaction: confusion makes you watch to find out)
-What has failed:
-  "he said spam W if he gets the *horse*" (just describes the setup)
-  "he didn't expect the *town* to just clear out" (narrates the event and gives away the ending)
+If the best candidate scores under 8, write a better one yourself following the guide above.
 
 Return ONLY JSON: {{"clips": [{{"i": int, "best": str, "score": int}}]}} where best is the final hook to use.
 
 CLIPS:
 {clips}
 """
-
 
 def edit_hooks(cfg, picks, windows, client=None):
     """Second pass: a strict editor scores every hook option and rewrites weak ones."""
@@ -195,34 +226,70 @@ def edit_hooks(cfg, picks, windows, client=None):
                       + "\n".join(f"- {o}" for o in opts if o))
     try:
         msg = client.messages.create(model=cfg["models"]["judge"], max_tokens=2000, messages=[
-            {"role": "user", "content": EDITOR_PROMPT.format(clips="\n\n".join(blocks))}])
+            {"role": "user", "content": EDITOR_PROMPT.format(hook_guide=HOOK_GUIDE, clips="\n\n".join(blocks))}])
         out = parse_json("".join(b.text for b in msg.content if getattr(b, "type", "") == "text"))
         for c in out.get("clips", []):
             i = int(c["i"])
             if 0 <= i < len(picks) and c.get("best"):
                 if c["best"] != picks[i]["hook"]:
                     picks[i].setdefault("hook_options", []).append(picks[i]["hook"])
-                picks[i]["hook"] = c["best"]
+                picks[i]["hook"] = c["best"].replace("*", "").strip()
                 picks[i]["hook_score"] = int(c.get("score", 0))
     except Exception as e:
         log.warning("hook editor pass failed (%s); keeping original hooks", e)
     return picks
 
 
+def merge_candidates(db, sig, n, min_gap=45):
+    """Combine the three signals into at most n flagged seconds, best evidence first.
+    Returns [{t, signals, strength}] where t is roughly when the moment peaks."""
+    length = len(db)
+    out = []
+
+    def add(t, label, strength):
+        t = int(min(max(0, t), length - 1))
+        for c in out:
+            if abs(c["t"] - t) < min_gap:
+                c["signals"].append(label)
+                c["strength"] += strength * 0.5
+                return
+        if len(out) < n:
+            out.append({"t": t, "signals": [label], "strength": strength})
+
+    # 1. Moments viewers clipped themselves: the best evidence there is. A Twitch clip usually ends at the payoff.
+    clips = sig.get("clips") or []
+    for c in clips[: max(1, n // 2)]:
+        title = f' "{c["title"]}"' if c["title"] and c["title"].lower() != "clip" else ""
+        add(c["offset"] + c["duration"] * 0.7, f"viewers clipped this{title} ({c['views']:,} views)", 10 + min(10, c["views"] / 50))
+    # 2. Chat laughing or exploding.
+    if sig.get("laughs") is not None:
+        for t, st in twitch.chat_peaks(sig["laughs"], sig["total"], n):
+            add(t, f"chat laughed/reacted ({st:.0f}x normal)", 4 + st)
+    # 3. Loudness fills whatever is left.
+    for t in find_candidates(db, n, min_gap=min_gap):
+        add(t, "loud moment (yelling or action)", 1)
+    return sorted(out, key=lambda c: c["t"])
+
+
 def analyze(cfg, vod, wav, client=None):
-    """Full pass for one VOD: loudness -> candidate windows -> transcripts -> Claude picks."""
+    """Full pass for one VOD: signals -> candidate windows -> transcripts -> Claude picks."""
     db = loudness_curve(wav)
     max_picks, n_cands = clip_budget(cfg, len(db))
-    peaks = find_candidates(db, n_cands)
-    log.info("%s: %.1f h stream, %d loudness candidates, up to %d clips", vod["id"], len(db) / 3600, len(peaks), max_picks)
-    print(f"::notice::{len(db) / 3600:.1f} h stream, judging {len(peaks)} moments, up to {max_picks} clips", flush=True)
+    sig = twitch.signals(vod, len(db)) if cfg.get("signals", {}).get("twitch", True) else {}
+    cands = merge_candidates(db, sig, n_cands)
+    kinds = {k: sum(1 for c in cands if c["signals"][0].startswith(k)) for k in ("viewers", "chat", "loud")}
+    log.info("%s: %.1f h stream, %d candidates %s, up to %d clips", vod["id"], len(db) / 3600, len(cands), kinds, max_picks)
+    print(f"::notice::{len(db) / 3600:.1f} h stream, judging {len(cands)} moments "
+          f"({kinds['viewers']} viewer clips, {kinds['chat']} chat spikes, {kinds['loud']} loud), up to {max_picks} clips",
+          flush=True)
     windows, words_all = [], []
-    for i, t in enumerate(peaks):
-        s, e = max(0, t - WINDOW_BEFORE), min(len(db), t + WINDOW_AFTER)
+    for i, c in enumerate(cands):
+        s, e = max(0, c["t"] - WINDOW_BEFORE), min(len(db), c["t"] + WINDOW_AFTER)
         words = transcribe(wav, cfg["models"]["whisper"], start=s, end=e)
         words_all.extend(words)
-        windows.append({"id": i, "start": s, "end": e, "spike": float(db[t] - np.median(db)),
-                        "text": text_with_marks(words, s, e)})
+        windows.append({"id": i, "start": s, "end": e, "signals": c["signals"],
+                        "chat": twitch.chat_sample(sig.get("msgs") or [], s, e),
+                        "spike": float(db[c["t"]] - np.median(db)), "text": text_with_marks(words, s, e)})
     if not windows:
         return [], []
     picks = judge(cfg, vod, windows, client, max_picks=max_picks)

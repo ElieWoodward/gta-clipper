@@ -7,7 +7,7 @@ start_date: "2026-11-19"          # first day posting is allowed (GTA 6 launch).
 # platform: twitch | kick | youtube
 # facecam: optional crop of the webcam as fractions of the frame (x, y, w, h).
 #          With it, clips use a stacked layout (cam on top, gameplay below).
-#          Without it, gameplay is centered over a blurred background.
+#          Without it, clips use clip.layout below.
 streamers:
   - name: example_streamer
     platform: twitch
@@ -26,8 +26,11 @@ fetch:
   title_match: "gta|grand theft|nopixel|np ?v|roleplay|\\brp\\b|leonida|vice city"   # only clip streams whose title looks like GTA; set to "" to allow any
 
 clip:
-  min_seconds: 61                 # TikTok Creator Rewards needs > 60s
-  max_seconds: 90
+  # Short and complete for now: starts right before the action, ends right after the reaction.
+  # Once the TikTok account qualifies for Creator Rewards (1k followers + 100k weekly views), switch to 61 / 90.
+  min_seconds: 8
+  max_seconds: 59
+  layout: fill                    # fill = gameplay fills the screen (viral GTA RP style); blur = whole frame over a blurred copy
   clips_per_hour: 2               # longer streams get more clips: an 8-hour stream yields up to 16
   min_per_vod: 3
   max_per_vod: 16
@@ -35,7 +38,10 @@ clip:
   max_candidates: 70
   transcribe_minutes: 50          # audio sent for transcription per stream; keeps long streams fast and inside Groq's hourly limit
   min_score: 7                    # Claude score (1-10) needed to post automatically
-  commentary: false               # false = one hook stays up the whole clip. true = hook for 3s, then rotating context lines
+  commentary: false               # true adds rotating context lines under the hook (off: the hook stays alone)
+
+signals:
+  twitch: true                    # use viewer-made Twitch clips and chat laugh spikes to find moments (falls back to loudness)
 
 review:
   mode: auto                      # auto = post clips scoring >= clip.min_score with no human step
@@ -51,7 +57,7 @@ posting:
     - {from_day: 42, per_day: 4}
   slots: ["11:00", "15:00", "18:00", "20:30"]   # local times; first N used each day
   adaptive_slots: true            # after enough data, shift slots toward hours that perform best
-  hashtags: ["#gta6", "#gta", "#gaming"]
+  hashtags: ["#gta6", "#gtarp", "#gta", "#funny", "#fyp"]   # the streamer's tag is added automatically
   label_ai_generated: false       # set true only if you add AI voiceover
 
 prune:

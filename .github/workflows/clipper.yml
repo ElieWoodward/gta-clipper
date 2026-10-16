@@ -11,7 +11,7 @@ on:
       job:
         description: "Which job to run"
         type: choice
-        options: [process, post, analytics, learn, accounts]
+        options: [process, post, analytics, learn, accounts, probe]
         default: process
       force:
         description: "Ignore launch date and quotas (for testing)"
@@ -55,8 +55,8 @@ jobs:
           cache: pip
 
       - name: Install ffmpeg and fonts
-        if: steps.pick.outputs.job == 'process'
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
+        if: steps.pick.outputs.job == 'process' || steps.pick.outputs.job == 'probe'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core fonts-noto-color-emoji
 
       - run: pip install -q -r requirements.txt
 

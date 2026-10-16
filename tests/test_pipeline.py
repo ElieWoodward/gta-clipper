@@ -15,7 +15,8 @@ shutil.copy(REPO / "config.yaml", TMP / "config.yaml")
 os.environ.update(CLIPPER_ROOT=str(TMP), CLIPPER_WORK=str(TMP / "work"), FORCE="1")
 sys.path.insert(0, str(REPO))
 
-from clipper import fetch, highlights, jobs, services, common  # noqa: E402
+from clipper import fetch, highlights, jobs, services, common, twitch, render  # noqa: E402
+import numpy as np  # noqa: E402
 
 # ---------- synthetic 6-minute "stream": test pattern, quiet tone, two loud moments ----------
 SRC = TMP / "stream.mp4"
@@ -67,12 +68,15 @@ class FakeClaude:
 def judge_reply(kw):
     p = kw["messages"][0]["content"]
     if "ruthless short-form video editor" in p:
-        return json.dumps({"clips": [{"i": 0, "best": "he really thought the *bridge* would hold", "score": 8}]})
+        assert "When you" in p and "{hook_guide}" not in p  # editor gets the hook guide
+        return json.dumps({"clips": [{"i": 0, "best": "bro really thought the bridge would hold 😭💀", "score": 8}]})
+    assert "{hook_guide}" not in p and ("[id 1]" not in p or ("viewers clipped this" in p and "Chat at that moment" in p))
     import re
     picks = []
     for i, s, e in [(int(a), float(b), float(c)) for a, b, c in re.findall(r"\[id (\d+)\] (\d+)s-(\d+)s", p)][:2]:
-        picks.append({"id": i, "start": s + 5, "end": s + 40,  # deliberately too short: validator must extend to >= 61s
+        picks.append({"id": i, "start": s + 5, "end": s + 30,
                       "score": 8 if i == 0 else 6, "hook": "he really thought the *bridge* would hold",
+                      "punch_text": "NAH HE MADE IT", "punch_at": s + 25,  # absolute on purpose: validator must fix it
                       "title": "Bridge jump escape", "caption": "He really thought this would work",
                       "tags": ["chaos", "police"], "why": "clear payoff",
                       "commentary": [{"at": 1, "text": "He has 4 stars and no plan"},
@@ -82,6 +86,15 @@ def judge_reply(kw):
 
 
 highlights.transcribe = fake_transcribe
+
+# Fake Twitch: one viewer clip near the second loud moment, and chat laughing near the first.
+_msgs = [(t, "hi chat") for t in range(0, 360, 3)] + [(t, "KEKW no way") for t in range(124, 132) for _ in range(6)]
+_l, _t = twitch.laugh_curve(_msgs, 360)
+twitch.signals = lambda vod, length: {"clips": [{"offset": 230.0, "duration": 30.0, "views": 420, "title": "BRIDGE JUMP"}],
+                                      "msgs": _msgs, "laughs": _l, "total": _t}
+assert twitch.video_id({"url": "https://www.twitch.tv/videos/2591234567"}) == "2591234567"
+assert twitch.video_id({"id": "twitch:v2591234567", "url": None}) == "2591234567"
+assert twitch.chat_peaks(_l, _t, 3)[0][0] in range(115, 130), twitch.chat_peaks(_l, _t, 3)
 fetch.download_audio = fake_audio
 fetch.download_section = fake_section
 
@@ -110,6 +123,8 @@ print("loudness picks ->", [(p["start"], p["end"], p["score"]) for p in picks])
 assert len(picks) == 2, picks
 for p in picks:
     assert cfg["clip"]["min_seconds"] <= p["end"] - p["start"] <= cfg["clip"]["max_seconds"], p
+    assert "*" not in p["hook"] and 0 < p["punch_at"] < p["end"] - p["start"], p
+assert picks[0]["hook"].endswith("😭💀"), picks[0]["hook"]
 for p in picks:
     jobs.make_clip(cfg, state, vod, p, words, d)
 
@@ -127,13 +142,13 @@ for c in state["clips"].values():
     dur = float(out["format"]["duration"])
     print(c["id"], c["status"], f"{v['width']}x{v['height']}", f"{dur:.1f}s", c["score"])
     assert (v["width"], v["height"]) == (1080, 1920)
-    assert dur > 60.5, dur
+    assert 8 <= dur <= 59.5, dur
 statuses = sorted(c["status"] for c in state["clips"].values())
 assert statuses == ["approved", "approved", "rejected"], statuses  # score 6 is below min_score 7
 
 # Save preview frames for a visual check
 for c in state["clips"].values():
-    for t in (1, 20):
+    for t in (1, 22):
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", str(t), "-i", c["local_file"], "-frames:v", "1",
                         "-vf", "scale=360:-1", str(TMP / f"frame_{c['streamer']}_{c['status']}_{t}.png")], check=True)
 
