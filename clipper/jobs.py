@@ -348,7 +348,10 @@ def _quota(cfg):
     return per
 
 
-def _slots(cfg, n):
+def _slots(cfg, n, state=None):
+    from . import timing
+    if state is not None and clipqueue.email_mode(cfg) and timing.settings(cfg)["enabled"]:
+        return timing.plan(cfg, state, now_local(cfg).date().isoformat(), n, cfg.get("timezone", "UTC"))
     slots = list(cfg["posting"]["slots"])
     ins = load_json(INSIGHTS_FILE, {})
     if cfg["posting"].get("adaptive_slots") and ins.get("best_slots"):
@@ -468,7 +471,7 @@ def cleanup_assets(state):
 def emails_due(cfg, state, now):
     """How many posting emails should have gone out by now today, and how many did."""
     sent = clipqueue.emailed_on(state, now.date().isoformat(), cfg.get("timezone", "UTC"))
-    slots = _slots(cfg, _quota(cfg))
+    slots = _slots(cfg, _quota(cfg), state)
     due = sum(1 for sl in slots if now.strftime("%H:%M") >= sl)
     return due, sent
 
@@ -697,7 +700,11 @@ def _weekly_email(cfg, rows, out):
         text += ["", "Worst:"] + [line(r) for r in ranked[-3:][::-1]]
     if out:
         text += ["", "What's working:", out["summary"], "", "Rules the clip picker follows this week:", out["playbook"]]
-        if out.get("best_slots"):
+        from . import timing
+        if timing.settings(cfg)["enabled"]:
+            text += ["", "Posting-time test (views a few hours after posting):"] + timing.report(cfg, load_state(),
+                                                                                                cfg.get("timezone", "UTC"))
+        elif out.get("best_slots"):
             text += ["", f"Posting emails will now come at: {', '.join(out['best_slots'])} (Pacific)."]
         if out.get("target_seconds"):
             lo, hi = out["target_seconds"]

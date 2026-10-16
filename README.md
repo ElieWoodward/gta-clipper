@@ -8,7 +8,8 @@ emails you one ready-to-post clip at each posting time. Everything runs on GitHu
 1. **It keeps a small queue.** It watches your streamers live (chat blowing up, viewers clipping the same moment) and
    checks their finished streams every 3 hours. Clips scoring 7/10 or more go into the queue. Once 5 are waiting it
    stops looking, so it isn't spending Claude money on clips you won't use. Clips older than 48 hours drop out.
-2. **It emails you at each posting time** (11:00 Pacific in week 1, more slots later) with the best clip made since
+2. **It emails you at each posting time** (1 a day for the first 3 days, then 2, ramping up later; the times rotate
+   through an experiment that finds which hours get the most views in the first 3 hours) with the best clip made since
    the last email, attached, plus blocks you can copy straight into TikTok and YouTube: TikTok caption, YouTube title and
    description, what's in the clip, the source link, and what's still waiting. A really big live moment
    (8/10 or more) is emailed right away, once a day at most on top of the normal emails.

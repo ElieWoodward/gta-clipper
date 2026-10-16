@@ -56,11 +56,17 @@ posting:
   # Posts per day per platform, ramping up as accounts age.
   ramp:
     - {from_day: 0, per_day: 1}
-    - {from_day: 7, per_day: 2}
+    - {from_day: 3, per_day: 2}
     - {from_day: 21, per_day: 3}
     - {from_day: 42, per_day: 4}
   slots: ["11:00", "15:00", "18:00", "20:30"]   # local times; first N used each day
-  adaptive_slots: true            # after enough data, shift slots toward hours that perform best
+  adaptive_slots: true            # after enough data, shift slots toward hours that perform best (blotato mode)
+  time_test:                      # email mode: try different posting times and keep the ones that get views fastest
+    enabled: true
+    candidates: ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"]   # Pacific
+    measure_hours: 3              # a post's result = its TikTok views this many hours after it went up
+    min_samples: 2                # posts per time before it's judged
+    min_gap_hours: 3              # two emails on the same day are at least this far apart
   hashtags: ["#gta6", "#gtarp", "#gta", "#funny", "#fyp"]   # the streamer's tag is added automatically
   label_ai_generated: false       # set true only if you add AI voiceover
 

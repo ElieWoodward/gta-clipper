@@ -597,3 +597,36 @@ wk = sent[n:]
 assert len(wk) == 1 and wk[0]["subject"].startswith("Weekly:") and "Best:" in wk[0]["text"], [x["subject"] for x in wk]
 assert "7,000 views" in wk[0]["text"] and "Peer pressure clips won." in wk[0]["text"] and "12:00" in wk[0]["text"]
 print("WEEKLY STATS OK")
+
+# ---------- 14. posting-time experiment ----------
+from clipper import timing  # noqa: E402
+from zoneinfo import ZoneInfo  # noqa: E402
+tz = cfg.get("timezone", "UTC")
+p = {"posted_at": "2026-10-10T18:00:00+00:00", "history": [["2026-10-10T19:00:00+00:00", 100], ["2026-10-10T22:00:00+00:00", 400]]}
+assert abs(timing.views_at(p, 3) - 300) < 1e-6           # interpolated between 1h (100) and 4h (400)
+assert timing.views_at(dict(p, history=[["2026-10-10T19:00:00+00:00", 100]]), 3) is None   # too early to tell
+assert timing.nearest(["08:00", "10:00", "12:00"], "11:20") == "12:00"
+st = {"clips": {}}
+d1 = timing.plan(cfg, st, "2026-10-20", 2, tz)
+assert len(d1) == 2 and abs(timing._minutes(d1[0]) - timing._minutes(d1[1])) >= 180, d1
+assert timing.plan(cfg, st, "2026-10-20", 2, tz) == d1, "same day, same plan"
+d2 = timing.plan(cfg, st, "2026-10-21", 2, tz)
+assert d2 != d1, "untested times rotate from day to day"
+# give every time results: 20:00 is the clear winner
+cands = timing.settings(cfg)["candidates"]
+for i, c in enumerate(cands):
+    for k in range(2):
+        h, m = map(int, c.split(":"))
+        t0 = _dt(2026, 10, 1 + k, h, m, tzinfo=ZoneInfo(tz)).astimezone(_tz.utc)
+        v = 5000 if c == "20:00" else 500 + i * 10
+        st["clips"][f"t{i}{k}"] = {"posts": {"tiktok": {"posted_at": t0.isoformat(),
+                                                        "history": [[(t0 + timedelta(hours=4)).isoformat(), v]]}}}
+res = timing.results(cfg, st, tz)
+assert all(len(res[c]) == 2 for c in cands), res
+d3 = timing.plan(cfg, st, "2026-10-25", 2, tz)
+assert "20:00" in d3 and len(d3) == 2, d3                 # best time + one still testing
+assert timing.plan(cfg, st, "2026-10-26", 1, tz) == ["20:00"]
+assert timing.report(cfg, st, tz)[0].startswith("- 20:00")
+# ramp: two emails a day from day 3
+assert any(r["from_day"] == 3 and r["per_day"] == 2 for r in cfg["posting"]["ramp"])
+print("TIMING OK")
