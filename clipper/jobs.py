@@ -37,7 +37,11 @@ def process():
     if len(_queued(state)) >= cap and not FORCE:
         log.info("queue already has %d clips; skipping", len(_queued(state)))
         return
-    for vod in fetch.list_new_vods(cfg, state):
+    vods = fetch.list_new_vods(cfg, state)
+    if vods:
+        from . import preflight
+        preflight.run_all(cfg)   # stop before downloading anything if a service or the renderer is broken
+    for vod in vods:
         try:
             _process_vod(cfg, state, vod)
         except fetch.StillLive:
@@ -73,9 +77,8 @@ def _process_vod(cfg, state, vod, client=None):
         shutil.rmtree(d, ignore_errors=True)
 
 
-def _test_run(cfg, state):
-    """Process one source end to end without uploading, opening issues or posting."""
-    import json as _json
+def _test_vods(cfg):
+    """The VODs a test run would use (newest first), and the config to use for them."""
     if TEST_SOURCE.startswith("twitch:"):
         ch = TEST_SOURCE.split(":", 1)[1]
         cfg = dict(cfg, streamers=[{"name": ch, "platform": "twitch", "channel": ch}], manual_urls=[])
@@ -90,6 +93,26 @@ def _test_run(cfg, state):
                  "streamer": {"name": "test", "platform": "manual"}}]
     if not vods:
         raise RuntimeError(f"No VOD found for {TEST_SOURCE}")
+    return cfg, vods
+
+
+def preflight_only():
+    """Just the start-of-run check, against the test source's VOD (about a minute, no download)."""
+    from . import preflight
+    cfg = load_config()
+    vod = None
+    if TEST_SOURCE:
+        cfg, vods = _test_vods(cfg)
+        vod = vods[0]
+    preflight.run_all(cfg, vod)
+
+
+def _test_run(cfg, state):
+    """Process one source end to end without uploading, opening issues or posting."""
+    import json as _json
+    from . import preflight
+    cfg, vods = _test_vods(cfg)
+    preflight.run_all(cfg, vods[0])   # about a minute: stop now if anything is broken, before the long download
     cfg["clip"] = dict(cfg["clip"], max_per_vod=min(6, cfg["clip"].get("max_per_vod", 16)))
     scratch = {"processed_vods": [], "clips": {}, "posts": [], "pruned": []}
     import clipper.common as common
@@ -376,6 +399,12 @@ DATA:
 """
 
 
+LEARN_SCHEMA = {"type": "object", "required": ["playbook", "summary"],
+                "properties": {"playbook": {"type": "string"}, "summary": {"type": "string"},
+                               "best_slots": {"type": "array", "items": {"type": "string"}},
+                               "target_seconds": {"type": ["array", "null"], "items": {"type": "number"}}}}
+
+
 def learn(client=None):
     import anthropic
     cfg, state = load_config(), load_state()
@@ -393,11 +422,8 @@ def learn(client=None):
         log.info("only %d posts with data; skipping learn", len(rows))
         return
     client = client or anthropic.Anthropic()
-    out = highlights.ask_tool(client, cfg["models"]["learn"], LEARN_PROMPT.format(data=json.dumps(rows)), {
-        "type": "object", "required": ["playbook", "summary"],
-        "properties": {"playbook": {"type": "string"}, "summary": {"type": "string"},
-                       "best_slots": {"type": "array", "items": {"type": "string"}},
-                       "target_seconds": {"type": ["array", "null"], "items": {"type": "number"}}}}, max_tokens=3000)
+    out = highlights.ask_tool(client, cfg["models"]["learn"], LEARN_PROMPT.format(data=json.dumps(rows)), LEARN_SCHEMA,
+                              max_tokens=3000)
     PLAYBOOK_FILE.write_text(out["playbook"])
     ts = out.get("target_seconds")
     lo_hi = cfg["clip"]["min_seconds"], cfg["clip"]["max_seconds"]

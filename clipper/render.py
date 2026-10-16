@@ -231,9 +231,13 @@ def render(src, src_offset, pick, words, out, facecam=None, commentary=False, la
     mode = "wide" if layout == "wide" else "fill"
     if facecam:
         f = facecam
-        base = (f"[0:v]split[c0][g0];[c0]crop=iw*{f['w']}:ih*{f['h']}:iw*{f['x']}:ih*{f['y']},"
+        cam_crop = f"crop=iw*{f['w']}:ih*{f['h']}:iw*{f['x']}:ih*{f['y']}"
+        # The cam is already on top, so blur it out of the gameplay underneath instead of showing it twice.
+        base = (f"[0:v]split=3[c0][g0][g1];[c0]{cam_crop},"
                 f"scale={W}:608:force_original_aspect_ratio=increase,crop={W}:608[cam];"
-                + _game("game", H - 608, mode, focus_x, "[g0]") + ";[cam][game]vstack[base]")
+                f"[g1]{cam_crop},boxblur=40:3,eq=brightness=-0.2[camblur];"
+                f"[g0][camblur]overlay=main_w*{f['x']}:main_h*{f['y']}[gclean];"
+                + _game("game", H - 608, mode, focus_x, "[gclean]") + ";[cam][game]vstack[base]")
         top = 560   # on the seam between cam and gameplay
     elif layout == "blur":
         base = (f"[0:v]split[b0][b1];[b0]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},boxblur=20:2,"

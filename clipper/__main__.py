@@ -1,4 +1,4 @@
-"""python -m clipper {process|post|analytics|learn|accounts|probe}"""
+"""python -m clipper {process|post|analytics|learn|accounts|probe|preflight}"""
 import os
 import sys
 
@@ -41,7 +41,7 @@ def probe():
 
 
 CMDS = {"process": jobs.process, "post": jobs.post, "analytics": jobs.analytics, "learn": jobs.learn,
-        "accounts": lambda: print(services.blotato_accounts()), "probe": probe}
+        "accounts": lambda: print(services.blotato_accounts()), "probe": probe, "preflight": jobs.preflight_only}
 
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in CMDS:

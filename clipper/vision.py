@@ -54,7 +54,7 @@ def _clean(d):
     return out
 
 
-def analyze_frames(cfg, src, offset, dur, work_dir, client=None):
+def analyze_frames(cfg, src, offset, dur, work_dir, client=None, strict=False):
     """Returns {facecam, focus_x, layout, why}. On any failure: centered fill crop, no facecam."""
     try:
         import anthropic
@@ -69,5 +69,7 @@ def analyze_frames(cfg, src, offset, dur, work_dir, client=None):
         start, end = text.find("{"), text.rfind("}")
         return _clean(json.loads(text[start:end + 1]))
     except Exception as e:
+        if strict:
+            raise
         log.warning("frame check failed (%s); using a centered crop", e)
         return _clean({})
