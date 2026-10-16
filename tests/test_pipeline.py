@@ -419,6 +419,12 @@ replies[:] = [(st["clips"]["d"]["email_message_id"], "skip")]
 clipqueue.refresh_posted(cfg, st)
 assert st["clips"]["d"]["status"] == "skipped"
 replies[:] = []
+# a skipped clip doesn't count toward today's emails, so the next run sends a replacement
+_today = common.now_local(cfg).date().isoformat()
+_n_before = clipqueue.emailed_on(st, _today, cfg.get("timezone", "UTC"))
+st["clips"]["d"]["status"] = "approved"
+assert clipqueue.emailed_on(st, _today, cfg.get("timezone", "UTC")) == _n_before + 1
+st["clips"]["d"]["status"] = "skipped"
 assert mail.reply_verdict("Posted!\n\nOn Fri, bot wrote:\n> Post now") == "posted"
 assert mail.reply_verdict("skip this one") == "skip"
 assert mail.reply_verdict("> posted\nwhat is this") is None

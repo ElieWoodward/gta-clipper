@@ -59,11 +59,11 @@ def last_emailed(state):
 
 
 def emailed_on(state, day, tz):
-    """How many posting emails went out on a local date."""
+    """How many posting emails went out on a local date. Skipped clips don't count, so a skip gets replaced."""
     from zoneinfo import ZoneInfo
     n = 0
     for c in state["clips"].values():
-        if c.get("emailed_at"):
+        if c.get("emailed_at") and c.get("status") != "skipped":
             if datetime.fromisoformat(c["emailed_at"]).astimezone(ZoneInfo(tz)).date().isoformat() == day:
                 n += 1
     return n
