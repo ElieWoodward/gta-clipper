@@ -79,8 +79,8 @@ def _test_run(cfg, state):
     if TEST_SOURCE.startswith("twitch:"):
         ch = TEST_SOURCE.split(":", 1)[1]
         cfg = dict(cfg, streamers=[{"name": ch, "platform": "twitch", "channel": ch}], manual_urls=[])
-        cfg["fetch"] = dict(cfg["fetch"], vods_per_streamer=1, max_vod_age_days=30)
-        vods = fetch.list_new_vods(cfg, {"processed_vods": []})[:1]
+        cfg["fetch"] = dict(cfg["fetch"], vods_per_streamer=3, max_vod_age_days=30)
+        vods = fetch.list_new_vods(cfg, {"processed_vods": []})[:3]
     else:
         vods = [{"id": "test:" + TEST_SOURCE, "url": TEST_SOURCE, "title": "",
                  "streamer": {"name": "test", "platform": "manual"}}]
@@ -91,8 +91,16 @@ def _test_run(cfg, state):
     import clipper.common as common
     common.save_state = lambda s: None  # never touch the real state in a test
     globals()["save_state"] = lambda s: None
-    _process_vod(cfg, scratch, vods[0])
-    summary = [{k: c.get(k) for k in ("score", "hook", "hook_options", "title", "caption", "duration", "why", "status")}
+    for vod in vods:  # the newest may still be live; fall back to the latest finished stream
+        try:
+            _process_vod(cfg, scratch, vod)
+            vods = [vod]
+            break
+        except fetch.StillLive:
+            log.info("%s still live, trying the previous stream", vod["id"])
+    else:
+        raise RuntimeError("All recent streams are still live; try again later")
+    summary = [{k: c.get(k) for k in ("score", "hook", "hook_score", "hook_options", "title", "caption", "duration", "why", "status")}
                for c in scratch["clips"].values()]
     (WORK.parent / "test-output").mkdir(exist_ok=True)
     (WORK.parent / "test-output" / "summary.json").write_text(_json.dumps(
@@ -109,6 +117,7 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         src = fetch.download_section(vod, dl_start, p["end"] + 2, d / f"{cid}_src.mp4")
         src_offset = p["start"] - dl_start
     out = d / f"{cid}.mp4"
+    words = caption_words(cfg, src, src_offset, p, d / f"{cid}_cap.wav", fallback=words)
     render.render(src, src_offset, p, words, out, facecam=vod["streamer"].get("facecam"),
                   commentary=cfg["clip"].get("commentary", False))
     media_url = None if DRY_RUN else services.blotato_upload(out)
@@ -116,7 +125,7 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         "id": cid, "vod": vod["id"], "vod_url": vod["url"], "streamer": vod["streamer"]["name"],
         "start": p["start"], "end": p["end"], "duration": round(p["end"] - p["start"], 1),
         "score": int(p["score"]), "hook": p["hook"], "title": p["title"], "caption": p["caption"],
-        "tags": p.get("tags", []), "why": p.get("why", ""), "hook_options": p.get("hook_options", []), "media_url": media_url,
+        "tags": p.get("tags", []), "why": p.get("why", ""), "hook_options": p.get("hook_options", []), "hook_score": p.get("hook_score"), "media_url": media_url,
         "created": now_utc().isoformat(), "posts": {}, "issue": None, "local_file": str(out),
     }
     auto = cfg["review"]["mode"] == "auto"
@@ -136,6 +145,21 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
     state["clips"][cid] = clip
     save_state(state)
     return clip
+
+
+def caption_words(cfg, src, src_offset, p, wav, fallback):
+    """Transcribe exactly the audio that ends up in the clip, so captions match what is said on screen."""
+    from .common import run
+    try:
+        dur = p["end"] - p["start"]
+        run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{src_offset:.2f}", "-i", src, "-t", f"{dur:.2f}",
+             "-vn", "-ac", "1", "-ar", "16000", wav])
+        model = cfg["models"].get("captions", cfg["models"]["whisper"])
+        words = highlights.transcribe(wav, model, start=0.0, end=dur)
+        return [dict(w, s=w["s"] + p["start"], e=w["e"] + p["start"]) for w in words]
+    except Exception as e:
+        log.warning("caption transcription failed (%s); using scan transcript", e)
+        return fallback
 
 
 # ------------------------------------------------------------------ post

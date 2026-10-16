@@ -64,4 +64,5 @@ prune:
 models:
   judge: claude-sonnet-5-5        # picks moments, writes hooks/captions
   learn: claude-sonnet-5-5        # weekly analysis
-  whisper: whisper-large-v3-turbo # Groq transcription model
+  whisper: whisper-large-v3-turbo # Groq model for scanning streams (fast)
+  captions: whisper-large-v3      # Groq model for on-screen captions (more accurate)

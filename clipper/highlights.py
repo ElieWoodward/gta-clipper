@@ -155,6 +155,60 @@ def validate_picks(data, windows, c):
     return kept
 
 
+EDITOR_PROMPT = """You are a ruthless short-form video editor. A stranger is scrolling TikTok. For each clip below you get
+what happens in it and some candidate hooks (the one line of text that stays on screen for the whole clip).
+
+Score every candidate 1-10 on one question: would this make a stranger who has never heard of this streamer stop and
+watch to the end? Be harsh. Anything that narrates what's on screen, gives away the ending, or sounds like an ad,
+a headline, or an AI scores 4 or lower.
+
+If the best candidate scores under 8, write a better one yourself. Same rules: 4 to 10 words, casual, true to the clip,
+gives a reason to care (stakes, irony, a reaction, a promise about the ending), one tension word in *stars*,
+no emojis, hashtags or exclamation marks.
+
+What has worked for this account:
+  "he told chat to spam W way too *early*" (irony: promises a fail without saying how)
+  "he still doesn't know what he *did*" (reaction: confusion makes you watch to find out)
+What has failed:
+  "he said spam W if he gets the *horse*" (just describes the setup)
+  "he didn't expect the *town* to just clear out" (narrates the event and gives away the ending)
+
+Return ONLY JSON: {{"clips": [{{"i": int, "best": str, "score": int}}]}} where best is the final hook to use.
+
+CLIPS:
+{clips}
+"""
+
+
+def edit_hooks(cfg, picks, windows, client=None):
+    """Second pass: a strict editor scores every hook option and rewrites weak ones."""
+    if not picks:
+        return picks
+    import anthropic
+    client = client or anthropic.Anthropic()
+    by_id = {w["id"]: w for w in windows}
+    blocks = []
+    for i, p in enumerate(picks):
+        opts = list(dict.fromkeys((p.get("hook_options") or []) + [p.get("hook", "")]))
+        said = by_id.get(p.get("id"), {}).get("text", "")[:1200]
+        blocks.append(f"[{i}] What happens: {p.get('why', '')}\nWhat they say: {said}\nCandidates:\n"
+                      + "\n".join(f"- {o}" for o in opts if o))
+    try:
+        msg = client.messages.create(model=cfg["models"]["judge"], max_tokens=2000, messages=[
+            {"role": "user", "content": EDITOR_PROMPT.format(clips="\n\n".join(blocks))}])
+        out = parse_json("".join(b.text for b in msg.content if getattr(b, "type", "") == "text"))
+        for c in out.get("clips", []):
+            i = int(c["i"])
+            if 0 <= i < len(picks) and c.get("best"):
+                if c["best"] != picks[i]["hook"]:
+                    picks[i].setdefault("hook_options", []).append(picks[i]["hook"])
+                picks[i]["hook"] = c["best"]
+                picks[i]["hook_score"] = int(c.get("score", 0))
+    except Exception as e:
+        log.warning("hook editor pass failed (%s); keeping original hooks", e)
+    return picks
+
+
 def analyze(cfg, vod, wav, client=None):
     """Full pass for one VOD: loudness -> candidate windows -> transcripts -> Claude picks."""
     db = loudness_curve(wav)
@@ -171,4 +225,5 @@ def analyze(cfg, vod, wav, client=None):
                         "text": text_with_marks(words, s, e)})
     if not windows:
         return [], []
-    return judge(cfg, vod, windows, client, max_picks=max_picks), words_all
+    picks = judge(cfg, vod, windows, client, max_picks=max_picks)
+    return edit_hooks(cfg, picks, windows, client), words_all

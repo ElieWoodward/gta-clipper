@@ -28,8 +28,9 @@ def transcribe(wav, model, start=0.0, end=None):
             with open(chunk, "rb") as fh:
                 r = requests.post(GROQ_URL, headers={"Authorization": f"Bearer {key}"},
                                   files={"file": (chunk.name, fh, "audio/mpeg")},
-                                  data={"model": model, "response_format": "verbose_json",
-                                        "timestamp_granularities[]": "word", "language": "en"},
+                                  data=[("model", model), ("response_format", "verbose_json"),
+                                        ("timestamp_granularities[]", "word"),
+                                        ("timestamp_granularities[]", "segment"), ("language", "en")],
                                   timeout=300)
             if r.status_code == 429:
                 wait = float(r.headers.get("retry-after") or 20 * (attempt + 1))
@@ -40,7 +41,13 @@ def transcribe(wav, model, start=0.0, end=None):
             break
         else:
             raise RuntimeError("Groq kept rate-limiting; try again later or lower clip.transcribe_minutes")
-        for w in r.json().get("words", []):
+        data = r.json()
+        # Whisper invents words over music and game noise; drop stretches it isn't confident are speech.
+        bad = [(g["start"], g["end"]) for g in data.get("segments", [])
+               if g.get("no_speech_prob", 0) > 0.6 or g.get("avg_logprob", 0) < -1.0 or g.get("compression_ratio", 0) > 2.4]
+        for w in data.get("words", []):
+            if any(a <= w["start"] < b for a, b in bad):
+                continue
             words.append({"w": w["word"].strip(), "s": round(w["start"] + t, 2), "e": round(w["end"] + t, 2)})
         os.remove(chunk)
         t += seg_len

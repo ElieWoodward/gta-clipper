@@ -66,6 +66,8 @@ class FakeClaude:
 
 def judge_reply(kw):
     p = kw["messages"][0]["content"]
+    if "ruthless short-form video editor" in p:
+        return json.dumps({"clips": [{"i": 0, "best": "he really thought the *bridge* would hold", "score": 8}]})
     import re
     picks = []
     for i, s, e in [(int(a), float(b), float(c)) for a, b, c in re.findall(r"\[id (\d+)\] (\d+)s-(\d+)s", p)][:2]:
