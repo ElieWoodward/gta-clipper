@@ -119,9 +119,15 @@ def _blotato(cfg):
 
 
 def _release():
+    """The queue release exists and a file can be uploaded to it and deleted again."""
     from . import services
     rel = services.queue_release()
-    return f"release ready ({len(rel.get('assets') or [])} stored clips)"
+    with tempfile.TemporaryDirectory() as tmp:
+        f = Path(tmp) / "preflight.mp4"
+        f.write_bytes(b"\0" * 1024)
+        aid, url = services.release_upload(f, "preflight-check.mp4")
+        services.release_delete(aid)
+    return f"upload + delete ok ({len(rel.get('assets') or [])} stored clips)"
 
 
 def run_all(cfg, vod=None, client=None, posting=False):
