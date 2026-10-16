@@ -40,13 +40,24 @@ def probe():
         print("::error::no Twitch signals came back; the picker will fall back to loudness", flush=True)
 
 
+def _campaigns():
+    from . import campaigns
+    from .common import load_config, load_state, save_state
+    cfg, state = load_config(), load_state()
+    try:
+        found = campaigns.scan(cfg, state)
+        print(f"::notice::campaign scan done: {len(found)} new match(es)", flush=True)
+    finally:
+        save_state(state)
+
+
 def _live():
     from . import live
     live.watch()
 
 
 CMDS = {"process": jobs.process, "post": jobs.post, "analytics": jobs.analytics, "learn": jobs.learn,
-        "accounts": lambda: print(services.blotato_accounts()), "probe": probe, "preflight": jobs.preflight_only, "live": _live}
+        "accounts": lambda: print(services.blotato_accounts()), "probe": probe, "preflight": jobs.preflight_only, "live": _live, "campaigns": _campaigns}
 
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in CMDS:

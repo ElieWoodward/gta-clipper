@@ -474,7 +474,7 @@ def emails_due(cfg, state, now):
 def send_package(cfg, state, clip, test=False):
     """Email one clip with everything needed to post it. Returns the Message-ID."""
     from . import mail
-    pkg = clipqueue.package(cfg, clip, clipqueue.queue(state))
+    pkg = clipqueue.package(cfg, clip, clipqueue.queue(state), state)
     d = WORK / f"email_{clip['id']}"
     d.mkdir(parents=True, exist_ok=True)
     attach = None
@@ -557,6 +557,14 @@ def email_post(cfg):
 # ------------------------------------------------------------------ analytics + prune
 def analytics():
     cfg, state = load_config(), load_state()
+    if clipqueue.email_mode(cfg):   # posting is by hand: no Blotato stats; look for paid campaigns instead
+        from . import campaigns
+        try:
+            campaigns.scan(cfg, state)
+        finally:
+            save_state(state)
+        _status_issue(cfg, state)
+        return
     if days_since_start(cfg) < 0 and not FORCE:
         log.info("before start_date %s; nothing posted yet", cfg["start_date"])
         return

@@ -11,7 +11,7 @@ on:
       job:
         description: "Which job to run"
         type: choice
-        options: [process, post, analytics, learn, accounts, probe, preflight, live]
+        options: [process, post, analytics, learn, accounts, probe, preflight, live, campaigns]
         default: process
       force:
         description: "Ignore launch date and quotas (for testing)"

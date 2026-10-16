@@ -84,6 +84,8 @@ def reply_verdict(text):
             continue
         if re.match(r"^(on .+ wrote:|-{2,}|sent from)", line):
             return None
+        if re.match(r"^(join|joined|in|sign me up)\b", line):
+            return "join"
         if re.match(r"^(posted|post|done|uploaded|yes)\b", line):
             return "posted"
         if re.match(r"^(skip|skipped|no|pass|nah)\b", line):
@@ -98,8 +100,11 @@ def read_replies(since_days=7):
     m = _login_imap()
     try:
         m.select("INBOX")
-        typ, data = m.search(None, "UNSEEN", "SUBJECT", '"Post now"')
-        for num in (data[0].split() if data and data[0] else []):
+        nums = []
+        for subj in ('"Post now"', '"Campaign:"'):
+            typ, data = m.search(None, "UNSEEN", "SUBJECT", subj)
+            nums += data[0].split() if data and data[0] else []
+        for num in dict.fromkeys(nums):
             typ, parts = m.fetch(num, "(RFC822)")
             if typ != "OK" or not parts or not isinstance(parts[0], tuple):
                 continue

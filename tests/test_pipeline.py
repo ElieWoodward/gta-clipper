@@ -478,3 +478,70 @@ _cq.run = lambda cmd, **kw: (_ for _ in ()).throw(RuntimeError("yt-dlp failed (1
 assert _cq.tiktok_uploads("x") == []
 _cq.run = _run
 print("TIKTOK EMPTY OK")
+
+# ---------- 11. paid campaign scan: match GTA streamers, email, "join", clip them, claim links ----------
+from clipper import campaigns  # noqa: E402
+LIST_HTML = """<html><body>
+<article><a href="/campaigns/clippedin/big-rp">x</a>Board: Content RewardsFAIR50$2,000 Bigrp Streamer Clipping Campaign
+Platforms TikTok, Instagram, YouTubeCLIPPINGCPM$1.50$1.50 per 1K views$1.2K of $2K left</article>
+<article><a href="/campaigns/clipster/flower">x</a>Board: ClipsterFAIR45Flower In A Hurricane [GTA 6 CLIPPING]
+Platforms TikTok, Instagram, YouTubeMUSICCPM$1.00$1.00 per 1K views$1.6K of $1.6K left</article>
+<article><a href="/campaigns/boxabl/clipping">x</a>Board: Content RewardsLOW10Boxabl Official Clipping
+Platforms TikTokCLIPPINGCPM$0.50$0.50 per 1K views$64K of $85K left</article>
+<article><a href="/campaigns/clippedin/fortnite-guy">x</a>Board: Content RewardsLOW10$1,000 Fortniteguy Streamer Clipping
+Platforms TikTokCLIPPINGCPM$1.00$1.00 per 1K views$500 of $1K left</article>
+</body></html>"""
+DETAIL = {"/campaigns/clippedin/big-rp": '<a href="https://whop.com/big-rp/">Join</a> THRESHOLDS AND CAPS MIN VIEWS 2K '
+          'Clip from twitch.tv/bigrp_live VODs. Use #bigrp in every caption.',
+          "/campaigns/clipster/flower": '<a href="https://whop.com/clipster/">Join</a> THRESHOLDS AND CAPS Niche: GTA VI trailer edits',
+          "/campaigns/clippedin/fortnite-guy": '<a href="https://whop.com/fg/">Join</a> THRESHOLDS AND CAPS twitch.tv/fortniteguy'}
+campaigns._get = lambda url: LIST_HTML if url.endswith("/campaigns") else ("" if "/page/" in url else DETAIL[url.replace(campaigns.BASE, "")])
+_orig_la, _orig_ch = twitch.list_archives, twitch.chapters
+twitch.list_archives = lambda login, n=10: ([{"id": "v1", "title": "NOPIXEL day 3", "duration": 3600}] if login == "bigrp_live"
+                                            else [{"id": "v2", "title": "fortnite arena", "duration": 3600}])
+twitch.chapters = lambda vid: [(0.0, None, "Fortnite")]
+cards = campaigns.list_campaigns()
+assert len(cards) == 4 and cards[0]["rate"] == 1.5 and "Bigrp" in cards[0]["name"], cards[0]
+st = common.load_state()
+st.pop("campaigns", None); st.pop("campaigns_seen", None)
+n = len(sent)
+found = campaigns.scan(cfg, st)
+names = sorted(f["name"] for f in found)
+assert len(found) == 2 and any("Bigrp" in x for x in names) and any("Flower" in x for x in names), names
+big = next(f for f in found if "Bigrp" in f["name"])
+flower = next(f for f in found if "Flower" in f["name"])
+assert big["auto_clip"] and big["twitch_login"] == "bigrp_live" and not flower["auto_clip"]
+assert len(sent) == n + 2 and all(x["subject"].startswith("Campaign:") for x in sent[n:])
+assert 'Reply "join"' in sent[n]["text"] or 'Reply "join"' in sent[n + 1]["text"]
+assert campaigns.scan(cfg, st) == [] and len(sent) == n + 2, "a campaign is only emailed once"
+# replying "join" adds the streamer to the ones the bot clips
+replies[:] = [(big["email_message_id"], "join")]
+clipqueue.refresh_posted(cfg, st)
+replies[:] = []
+assert st["campaigns"][big["id"]]["status"] == "joined"
+common.save_state(st)
+cfg2 = common.load_config()
+assert any(s["channel"] == "bigrp_live" and s.get("campaign") for s in cfg2["streamers"]), cfg2["streamers"]
+assert mail.reply_verdict("join") == "join"
+# a clip of that streamer: the email says how to claim, and a claim email goes out once it's posted
+clipqueue.tiktok_uploads = lambda handle, n=15: list(tt_uploads)   # section 10 reloaded the module; fake again
+clipqueue.youtube_channel_id = lambda handle: "UC" + "x" * 22
+clipqueue.youtube_uploads = lambda cid: []
+st = common.load_state()
+cc = fake_clip("camp", 9, 0.5, "bigrp caption for the campaign clip 💀")
+cc["streamer"] = "bigrp_live"
+pkg = clipqueue.package(cfg2, cc, clipqueue.queue(st), st)
+assert pkg["blocks"][0][0] == "Paid campaign" and "whop.com/big-rp" in pkg["blocks"][0][1]
+cc["emailed_at"] = (common.now_utc() - timedelta(minutes=5)).isoformat()
+cc["email_message_id"] = "<camp@x>"
+tt_uploads[:] = [{"text": "bigrp caption for the campaign clip 💀 #bigrp", "timestamp": common.now_utc().timestamp(),
+                  "url": "https://www.tiktok.com/@wantedlevelclips8/video/99", "duration": cc["duration"]}]
+n = len(sent)
+clipqueue.refresh_posted(cfg2, st)
+assert cc["status"] == "posted" and len(sent) == n + 1 and sent[-1]["subject"].startswith("Claim:")
+assert "video/99" in sent[-1]["text"] and "whop.com/big-rp" in sent[-1]["text"]
+clipqueue.refresh_posted(cfg2, st)
+assert len(sent) == n + 1, "claim email only once"
+tt_uploads[:] = []
+twitch.list_archives, twitch.chapters = _orig_la, _orig_ch
+print("CAMPAIGNS OK")

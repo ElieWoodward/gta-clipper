@@ -95,7 +95,7 @@ def _ts(seconds):
     return f"{s // 3600}h{s % 3600 // 60}m{s % 60}s"
 
 
-def package(cfg, clip, queue_now):
+def package(cfg, clip, queue_now, state=None):
     """Everything to paste into TikTok and YouTube for one clip: {subject, blocks: [(label, text)]}."""
     from . import jobs
     tiktok_caption = jobs._caption(cfg, clip, "tiktok")
@@ -109,6 +109,8 @@ def package(cfg, clip, queue_now):
         source = f"{source}?t={_ts(clip['start'])}"
     waiting = "\n".join(f"- {c['hook']} ({c['score']}/10, {int((now_utc() - _created(c)).total_seconds() // 3600)}h old)"
                         for c in queue_now if c["id"] != clip["id"]) or "- nothing else right now"
+    from . import campaigns
+    rec = campaigns.campaign_for(state, clip["streamer"]) if state is not None else None
     blocks = [
         ("TikTok caption", tiktok_caption),
         ("YouTube title", yt_title),
@@ -118,6 +120,11 @@ def package(cfg, clip, queue_now):
         ("Source", source or "(manual upload)"),
         ("Still in the queue", waiting),
     ]
+    if rec:
+        blocks.insert(0, ("Paid campaign", f"{rec['name']} ({rec.get('rate') or '?'} per 1K views).\nFollow the brief's "
+                          f"caption/hashtag rules (on the board), post, then submit your link at "
+                          f"{rec.get('join_url') or rec['url']}. You'll also get a Claim email with the exact link once "
+                          "the post is seen."))
     return {"subject": f"Post now: {clip['hook']} ({clip['score']}/10)", "blocks": blocks,
             "tiktok_caption": tiktok_caption, "yt_title": yt_title}
 
@@ -253,6 +260,24 @@ def youtube_uploads(channel_id):
     return out
 
 
+def claim_email(cfg, state, clip, platform):
+    """If the clip belongs to a joined campaign, email the exact link to submit for payment (once per platform)."""
+    from . import campaigns, mail
+    rec = campaigns.campaign_for(state, clip.get("streamer"))
+    url = (clip.get("posts", {}).get(platform) or {}).get("url")
+    if not rec or not url or clip.setdefault("claim_sent", {}).get(platform) or not mail.configured():
+        return
+    text = "\n".join([f"Your {platform} post of \"{clip['hook']}\" is live. Submit it to get paid:", "",
+                      f"1. Open the campaign: {rec.get('join_url') or rec['url']}",
+                      "2. Tap Submit (or Add submission).", f"3. Paste this link: {url}", "",
+                      "Views only count after the board approves the submission, so do it today."])
+    try:
+        mail.send(f"Claim: {clip['hook'][:60]} ({rec['name'][:40]})", text)
+        clip["claim_sent"][platform] = now_utc().isoformat()
+    except Exception as e:
+        log.info("couldn't send the claim email: %s", e)
+
+
 def refresh_posted(cfg, state):
     """Check TikTok, YouTube and email replies; take posted/skipped clips out of the queue. Returns notes."""
     from . import mail
@@ -266,6 +291,7 @@ def refresh_posted(cfg, state):
                     if c["status"] == "approved":
                         c["status"] = "posted"
                     notes.append(f"seen on TikTok: {c['hook']}")
+                    claim_email(cfg, state, c, "tiktok")
                 state.setdefault("health", {})["tiktok_check"] = {"ok": now_utc().isoformat()}
                 break
             except Exception as e:
@@ -283,12 +309,21 @@ def refresh_posted(cfg, state):
                 ids["youtube_channel_id"] = youtube_channel_id(yt)
             for c in match_uploads(state, youtube_uploads(ids["youtube_channel_id"]), "youtube"):
                 notes.append(f"seen on YouTube: {c['hook']}")
+            for c in state["clips"].values():
+                if c.get("posts", {}).get("youtube") and not c.get("claim_sent", {}).get("youtube"):
+                    claim_email(cfg, state, c, "youtube")
         except Exception as e:
             log.info("YouTube check failed: %s", e)
     if mail.configured():
         try:
+            from . import campaigns
             by_msg = {c.get("email_message_id"): c for c in state["clips"].values() if c.get("email_message_id")}
             for ref, verdict in mail.read_replies():
+                if campaigns.apply_reply(state, ref, verdict):
+                    notes.append(f"campaign reply: {verdict}")
+                    continue
+                if verdict == "join":
+                    continue
                 c = by_msg.get(ref)
                 if not c or c.get("status") != "approved":
                     continue

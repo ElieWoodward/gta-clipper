@@ -22,7 +22,18 @@ log = logging.getLogger("clipper")
 
 def load_config():
     with open(ROOT / "config.yaml") as f:
-        return yaml.safe_load(f)
+        cfg = yaml.safe_load(f)
+    # Streamers from paid campaigns Elie joined (by replying "join") are clipped too.
+    try:
+        from .campaigns import joined_streamers
+        state = json.loads(STATE_FILE.read_text()) if STATE_FILE.exists() else {}
+        have = {(s.get("channel") or s.get("name") or "").lower() for s in cfg.get("streamers") or []}
+        for s in joined_streamers(state):
+            if s["channel"] not in have:
+                cfg.setdefault("streamers", []).append(s)
+    except Exception as e:
+        log.warning("couldn't add campaign streamers: %s", e)
+    return cfg
 
 
 LIVE_FILE = DATA / "live.json"   # written only by the live watcher, which runs alongside the other jobs
