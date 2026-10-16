@@ -169,7 +169,7 @@ def build_ass(pick, words, out_path, commentary=False):
     ]
     if punch and punch_at < dur - 0.5:
         # pops in slightly oversized, then settles
-        lines.append(f"Dialogue: 3,{_ts(punch_at)},{_ts(dur)},Punch,,0,0,0,,"
+        lines.append(f"Dialogue: 3,{_ts(punch_at)},{_ts(min(dur, punch_at + 3.5))},Punch,,0,0,0,,"
                      f"{{\\fscx120\\fscy120\\t(0,150,\\fscx100\\fscy100)}}{_esc(punch)}")
 
     if commentary:  # optional context lines (off by default)
@@ -207,15 +207,15 @@ def build_ass(pick, words, out_path, commentary=False):
 
 # ------------------------------------------------------------------ render
 def _game(label, h, mode, fx, src="[0:v]"):
-    """Gameplay area W x h. fill: tall crop centered on the action. wide: a 4:3 slice of the frame (most of the
+    """Gameplay area W x h. fill: tall crop centered on the action. wide: a square slice of the frame (much more of the
     screen stays visible) over a blurred copy, for clips where the important stuff is spread out."""
     def crop(aspect_w):  # crop width aspect_w*ih around fx, clamped inside the frame
         return f"crop='min(iw,{aspect_w}*ih)':ih:'max(0,min(iw-ow,iw*{fx:.3f}-ow/2))':0"
     if mode == "wide":
-        fg_h = min(h, int(W * 3 / 4))
+        fg_h = min(h, W)
         return (f"{src}split[{label}a][{label}b];"
-                f"[{label}a]scale={W}:{h}:force_original_aspect_ratio=increase,crop={W}:{h},boxblur=20:2,eq=brightness=-0.15[{label}bg];"
-                f"[{label}b]{crop(4 / 3)},scale={W}:{fg_h}[{label}fg];"
+                f"[{label}a]scale={W}:{h}:force_original_aspect_ratio=increase,crop={W}:{h},boxblur=20:2[{label}bg];"
+                f"[{label}b]{crop(W / fg_h)},scale={W}:{fg_h}[{label}fg];"
                 f"[{label}bg][{label}fg]overlay=0:(H-h)/2[{label}]")
     return f"{src}{crop(W / h)},scale={W}:{h}[{label}]"
 

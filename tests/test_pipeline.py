@@ -42,7 +42,7 @@ def fake_section(vod, s, e, dest):
 SCRIPT = "no way no way he is actually doing it the cops are right behind him oh my god he made the jump"
 
 
-def fake_transcribe(wav, model, start=0.0, end=None):
+def fake_transcribe(wav, model, start=0.0, end=None, **kw):
     words, t = [], start + 2
     while t < end - 1:
         for w in SCRIPT.split():
@@ -82,7 +82,7 @@ def judge_reply(kw):
     for i, s, e in [(int(a), float(b), float(c)) for a, b, c in re.findall(r"\[id (\d+)\] (\d+)s-(\d+)s", p)][:2]:
         picks.append({"id": i, "start": s + 5, "end": s + 30,
                       "score": 8 if i == 0 else 6, "hook": "he really thought the *bridge* would hold",
-                      "punch_text": "NAH HE MADE IT", "punch_at": s + 25,  # absolute on purpose: validator must fix it
+                      "punch_text": "HE MADE THE JUMP", "punch_at": s + 25,  # absolute on purpose: validator must fix it
                       "title": "Bridge jump escape", "caption": "He really thought this would work",
                       "tags": ["chaos", "police"], "why": "clear payoff",
                       "commentary": [{"at": 1, "text": "He has 4 stars and no plan"},
@@ -153,6 +153,11 @@ jobs.make_clip(cfg, state, vod2, picks[0], words, d)
 state = common.load_state()
 assert len(state["clips"]) == 3
 layouts = sorted(c["layout"] for c in state["clips"].values())
+for c in state["clips"].values():  # punchline found in the clip's own audio and timed to it
+    assert c["punch_text"] == "HE MADE THE JUMP" and 0 < c["punch_at"] < c["duration"], (c["punch_text"], c["punch_at"])
+from clipper.jobs import place_punchline  # noqa: E402
+assert place_punchline({"start": 0, "end": 30, "punch_text": "Don't say my name!"},
+                       [{"w": "my", "s": 3, "e": 3.2}, {"w": "name", "s": 3.3, "e": 3.5}, {"w": "is", "s": 3.6, "e": 3.7}])["punch_text"] == ""
 print("layouts:", layouts)
 assert layouts == ["cam+fill", "cam+wide", "fill"], layouts  # 3rd: bad vision answer -> cleaned to fill, config cam
 assert state["streamers"]["teststreamer"]["facecam"] is True

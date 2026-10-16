@@ -64,6 +64,8 @@ Rules:
 - 3 to 12 words. Casual slang is good ("bro", "nah", "lowkey", "yo", "chat"). ALL CAPS or normal case, both work.
 - End with 1-3 emojis from 😭 💀 🤣 😂 💔 🙏 when it's funny (😭 and 💀 are the most used). No emojis on a serious/tense clip.
 - True to what happens. Don't promise something the clip doesn't deliver.
+- No in-game character names a stranger wouldn't know ("Breckers", "Mickey"): say "bro", "he", "my boss", "the cops".
+  A famous streamer's real name is fine.
 - Banned: stating what the streamer thinks or feels about something, narrating a boring action ("he grabs the horse"),
   spoilers of the ending, hashtags, "insane", "epic", "you won't believe", "wait for it", headline or trailer language.
 The account owner's taste:
@@ -218,7 +220,7 @@ def validate_picks(data, windows, c):
             s = max(w["start"], e - c["min_seconds"] - 1)
             e = min(w["end"], s + c["min_seconds"] + 1)
         if e - s > c["max_seconds"]:
-            e = s + c["max_seconds"]
+            s = e - c["max_seconds"]   # the payoff is at the end: trim setup, never the ending
         if e - s < c["min_seconds"]:
             log.info("dropping pick %s: window too short", p.get("id"))
             continue

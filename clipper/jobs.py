@@ -174,6 +174,7 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
     out = d / f"{cid}.mp4"
     words = caption_words(cfg, src, src_offset, p, d / f"{cid}_cap.wav", fallback=words)
     # Look at the frames first: find the webcam and where the action is, so the vertical crop keeps what matters.
+    p = dict(p, **place_punchline(p, words))   # only show a punchline that's really said, exactly when it's said
     look = vision.analyze_frames(cfg, src, src_offset, p["end"] - p["start"], d)
     facecam = vod["streamer"].get("facecam") or look["facecam"]
     layout = cfg["clip"].get("layout", "auto")
@@ -215,6 +216,28 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
     return clip
 
 
+def _norm(w):
+    return "".join(ch for ch in w.lower() if ch.isalnum())
+
+
+def place_punchline(p, words):
+    """Find the punchline in what's actually said in the clip. Returns punch_text/punch_at; drops it if not found."""
+    target = [_norm(w) for w in (p.get("punch_text") or "").split() if _norm(w)]
+    said = [w for w in words if p["start"] <= w["s"] < p["end"] and _norm(w["w"])]
+    if not target or not said:
+        return {"punch_text": "", "punch_at": 0}
+    best, best_i = 0.0, None
+    for i in range(len(said)):
+        window = [_norm(w["w"]) for w in said[i:i + len(target)]]
+        hit = sum(1 for a, b in zip(target, window) if a == b) / len(target)
+        if hit > best:
+            best, best_i = hit, i
+    if best_i is None or best < 0.6:
+        log.info("punchline %r isn't in the clip's audio; dropping it", p.get("punch_text"))
+        return {"punch_text": "", "punch_at": 0}
+    return {"punch_text": p["punch_text"], "punch_at": round(said[best_i]["s"] - p["start"], 2)}
+
+
 def caption_words(cfg, src, src_offset, p, wav, fallback):
     """Transcribe exactly the audio that ends up in the clip, so captions match what is said on screen."""
     from .common import run
@@ -223,7 +246,7 @@ def caption_words(cfg, src, src_offset, p, wav, fallback):
         run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{src_offset:.2f}", "-i", src, "-t", f"{dur:.2f}",
              "-vn", "-ac", "1", "-ar", "16000", wav])
         model = cfg["models"].get("captions", cfg["models"]["whisper"])
-        words = highlights.transcribe(wav, model, start=0.0, end=dur)
+        words = highlights.transcribe(wav, model, start=0.0, end=dur, lenient=True)
         return [dict(w, s=w["s"] + p["start"], e=w["e"] + p["start"]) for w in words]
     except Exception as e:
         log.warning("caption transcription failed (%s); using scan transcript", e)

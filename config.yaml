@@ -29,7 +29,7 @@ clip:
   # Short and complete for now: starts right before the action, ends right after the reaction.
   # Once the TikTok account qualifies for Creator Rewards (1k followers + 100k weekly views), switch to 61 / 90.
   min_seconds: 8
-  max_seconds: 59
+  max_seconds: 50                 # hard cap; the picker aims for 15-35s
   layout: auto                    # auto = Claude looks at each clip's frames: finds the webcam (cam on top, gameplay below)
                                   # and picks fill (tight crop on the action) or wide (more of the screen) so nothing
                                   # important is cut off. Or force: fill | wide | blur

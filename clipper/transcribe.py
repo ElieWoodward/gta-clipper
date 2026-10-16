@@ -14,7 +14,13 @@ def _duration(path):
     return float(run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", path]).strip())
 
 
-def transcribe(wav, model, start=0.0, end=None):
+HALLUCINATIONS = ("thank you for watching", "thanks for watching", "please subscribe", "subscribe to", "like and subscribe",
+                  "subtitles by", "transcribed by")
+
+
+def transcribe(wav, model, start=0.0, end=None, lenient=False):
+    """lenient: keep more speech (for on-screen captions of a short clip, where missing lines are worse than the
+    rare made-up word); strict mode drops anything Whisper isn't sure is speech (for scanning a whole stream)."""
     """Return list of words [{w, s, e}] with absolute timestamps."""
     key = require_env("GROQ_API_KEY")
     end = end or _duration(wav)
@@ -43,8 +49,13 @@ def transcribe(wav, model, start=0.0, end=None):
             raise RuntimeError("Groq kept rate-limiting; try again later or lower clip.transcribe_minutes")
         data = r.json()
         # Whisper invents words over music and game noise; drop stretches it isn't confident are speech.
-        bad = [(g["start"], g["end"]) for g in data.get("segments", [])
-               if g.get("no_speech_prob", 0) > 0.6 or g.get("avg_logprob", 0) < -1.0 or g.get("compression_ratio", 0) > 2.4]
+        def unsure(g):
+            if g.get("compression_ratio", 0) > 2.4 or any(h in (g.get("text") or "").lower() for h in HALLUCINATIONS):
+                return True
+            if lenient:  # both signals must agree before a stretch is dropped
+                return g.get("no_speech_prob", 0) > 0.6 and g.get("avg_logprob", 0) < -0.8
+            return g.get("no_speech_prob", 0) > 0.6 or g.get("avg_logprob", 0) < -1.0
+        bad = [(g["start"], g["end"]) for g in data.get("segments", []) if unsure(g)]
         for w in data.get("words", []):
             if any(a <= w["start"] < b for a, b in bad):
                 continue
