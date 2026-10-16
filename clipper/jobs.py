@@ -369,7 +369,7 @@ Also return target_seconds: the [shortest, longest] clip length range that perfo
 
 Also return the 4 best posting times (HH:MM, local) if the data supports it, else an empty list.
 
-Return ONLY JSON: {{"playbook": "markdown string", "summary": "string", "best_slots": ["HH:MM"], "target_seconds": [int, int] or null}}
+Submit with the tool: {{"playbook": "markdown string", "summary": "string", "best_slots": ["HH:MM"], "target_seconds": [int, int] or null}}
 
 DATA:
 {data}
@@ -393,9 +393,11 @@ def learn(client=None):
         log.info("only %d posts with data; skipping learn", len(rows))
         return
     client = client or anthropic.Anthropic()
-    msg = client.messages.create(model=cfg["models"]["learn"], max_tokens=3000,
-                                 messages=[{"role": "user", "content": LEARN_PROMPT.format(data=json.dumps(rows))}])
-    out = highlights.parse_json("".join(b.text for b in msg.content if getattr(b, "type", "") == "text"))
+    out = highlights.ask_tool(client, cfg["models"]["learn"], LEARN_PROMPT.format(data=json.dumps(rows)), {
+        "type": "object", "required": ["playbook", "summary"],
+        "properties": {"playbook": {"type": "string"}, "summary": {"type": "string"},
+                       "best_slots": {"type": "array", "items": {"type": "string"}},
+                       "target_seconds": {"type": ["array", "null"], "items": {"type": "number"}}}}, max_tokens=3000)
     PLAYBOOK_FILE.write_text(out["playbook"])
     ts = out.get("target_seconds")
     lo_hi = cfg["clip"]["min_seconds"], cfg["clip"]["max_seconds"]

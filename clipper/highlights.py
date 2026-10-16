@@ -124,7 +124,7 @@ For each pick write:
 
 {playbook}
 
-Return ONLY JSON: {{"picks": [{{"id": int, "start": float, "end": float, "score": int, "hook_options": [str], "hook": str, "punch_text": str, "punch_at": float, "title": str, "caption": str, "tags": [str], "why": str}}]}}
+Submit with the tool as JSON: {{"picks": [{{"id": int, "start": float, "end": float, "score": int, "hook_options": [str], "hook": str, "punch_text": str, "punch_at": float, "title": str, "caption": str, "tags": [str], "why": str}}]}}
 
 CANDIDATES:
 {candidates}
@@ -162,10 +162,26 @@ def judge(cfg, vod, windows, client=None, max_picks=None):
     prompt = JUDGE_PROMPT.format(length_note=length_note, streamer=vod["streamer"]["name"], title=vod.get("title", ""),
                                  max_picks=max_picks or c.get("min_per_vod", 3), min_s=c["min_seconds"], max_s=c["max_seconds"],
                                  hook_guide=HOOK_GUIDE, playbook=playbook, candidates=cand_txt)
-    msg = client.messages.create(model=cfg["models"]["judge"], max_tokens=4000,
+    data = ask_json(client, cfg["models"]["judge"], prompt, "picks", max_tokens=8000)
+    return validate_picks(data, windows, c)[: max_picks or len(windows)]
+
+
+def ask_json(client, model, prompt, key, max_tokens=4000):
+    """Ask Claude for {key: [objects]}. A forced tool call guarantees well-formed JSON (hooks are full of quotes
+    and emojis that break hand-written JSON); falls back to parsing text if the reply has no tool call."""
+    return ask_tool(client, model, prompt, {"type": "object", "required": [key],
+                                            "properties": {key: {"type": "array", "items": {"type": "object"}}}}, max_tokens)
+
+
+def ask_tool(client, model, prompt, schema, max_tokens=4000):
+    tool = {"name": "submit", "description": "Submit the answer.", "input_schema": schema}
+    msg = client.messages.create(model=model, max_tokens=max_tokens, tools=[tool],
+                                 tool_choice={"type": "tool", "name": "submit"},
                                  messages=[{"role": "user", "content": prompt}])
-    text = "".join(b.text for b in msg.content if getattr(b, "type", "") == "text")
-    return validate_picks(parse_json(text), windows, c)[: max_picks or len(windows)]
+    for b in msg.content:
+        if getattr(b, "type", "") == "tool_use" and isinstance(getattr(b, "input", None), dict):
+            return b.input
+    return parse_json("".join(b.text for b in msg.content if getattr(b, "type", "") == "text"))
 
 
 def parse_json(text):
@@ -223,7 +239,7 @@ a headline or an AI scores 4 or lower.
 
 If the best candidate scores under 8, write a better one yourself following the guide above.
 
-Return ONLY JSON: {{"clips": [{{"i": int, "best": str, "score": int}}]}} where best is the final hook to use.
+Submit with the tool as JSON: {{"clips": [{{"i": int, "best": str, "score": int}}]}} where best is the final hook to use.
 
 CLIPS:
 {clips}
@@ -243,9 +259,8 @@ def edit_hooks(cfg, picks, windows, client=None):
         blocks.append(f"[{i}] What happens: {p.get('why', '')}\nWhat they say: {said}\nCandidates:\n"
                       + "\n".join(f"- {o}" for o in opts if o))
     try:
-        msg = client.messages.create(model=cfg["models"]["judge"], max_tokens=2000, messages=[
-            {"role": "user", "content": EDITOR_PROMPT.format(hook_guide=HOOK_GUIDE, clips="\n\n".join(blocks))}])
-        out = parse_json("".join(b.text for b in msg.content if getattr(b, "type", "") == "text"))
+        out = ask_json(client, cfg["models"]["judge"],
+                       EDITOR_PROMPT.format(hook_guide=HOOK_GUIDE, clips="\n\n".join(blocks)), "clips", max_tokens=3000)
         for c in out.get("clips", []):
             i = int(c["i"])
             if 0 <= i < len(picks) and c.get("best"):
