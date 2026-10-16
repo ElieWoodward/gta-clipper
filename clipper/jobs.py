@@ -40,6 +40,9 @@ def process():
     for vod in fetch.list_new_vods(cfg, state):
         try:
             _process_vod(cfg, state, vod)
+        except fetch.StillLive:
+            log.info("%s is still live; will pick it up after the stream ends", vod["id"])
+            continue
         except Exception as e:  # one bad VOD shouldn't stop the rest
             log.exception("failed on %s: %s", vod["id"], e)
         state["processed_vods"].append(vod["id"])

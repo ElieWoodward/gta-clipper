@@ -44,12 +44,20 @@ def list_new_vods(cfg, state):
     return out
 
 
+class StillLive(Exception):
+    """The VOD belongs to a stream that hasn't ended yet; try again on a later run."""
+
+
 def download_audio(vod, dest_dir):
     """Download audio only, as 16 kHz mono wav (small and enough for analysis)."""
     dest_dir.mkdir(parents=True, exist_ok=True)
     tmpl = str(dest_dir / "audio.%(ext)s")
     t0 = time.time()
-    run(["yt-dlp", "-N", "16", "-f", "bestaudio/worst", "-x", "--audio-format", "m4a", "-o", tmpl, vod["url"]])
+    # A VOD of a stream that's still live downloads at real-time speed, so skip it until the stream ends.
+    run(["yt-dlp", "-N", "16", "--match-filter", "!is_live & live_status!=is_live & live_status!=post_live",
+         "-f", "bestaudio/worst", "-x", "--audio-format", "m4a", "-o", tmpl, vod["url"]])
+    if not list(dest_dir.glob("audio.*")):
+        raise StillLive(vod["id"])
     print(f"::notice::audio downloaded in {time.time() - t0:.0f}s", flush=True)
     src = next(dest_dir.glob("audio.*"))
     wav = dest_dir / "audio.wav"
