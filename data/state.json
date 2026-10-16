@@ -997,6 +997,7 @@
       "why": "A cop makes him put his wife on speaker mid-stop, his sweet-talk call is interrupted by the car coming back stolen; chat spammed LOL."
     },
     "f62ddcbe99": {
+      "asset_deleted": true,
       "asset_id": 647860254,
       "caption": "the emotional rollercoaster in his voice \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-16T16:10:21.689929+00:00",
@@ -1025,12 +1026,13 @@
       "posts": {},
       "punch_at": 0,
       "punch_text": "",
+      "reply": "skip",
       "said": "Like, you just sent me on like a, like a ride of emotions and told me I had to do it to get my dream. And now you're telling me I don't have to do it to get my dream. Which one is it? Marty? Well, here's the thing. I don't know what X is saying. I have no idea why he's saying it, but you have to. Otherwise, we can't go into cars. What, actually? what the fuck is happening you have to I find me this is really to the TV means is not life right now bro I'm depressed",
       "score": 7,
       "sent_caption": "the emotional rollercoaster in his voice \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
       "sent_title": "They gave him false hope and took it back instantly \ud83d\ude2d #shorts",
       "start": 27363.0,
-      "status": "approved",
+      "status": "skipped",
       "streamer": "xQc",
       "tags": [
         "reaction",
@@ -1056,7 +1058,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-16T18:13:28.448008+00:00"
+      "ok": "2026-10-16T18:19:36.924745+00:00"
     }
   },
   "posts": [],
