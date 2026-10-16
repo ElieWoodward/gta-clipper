@@ -118,6 +118,12 @@ def _blotato(cfg):
     return "connected: " + ", ".join(f"{p} ({a})" for p, a in names.items())
 
 
+def _release():
+    from . import services
+    rel = services.queue_release()
+    return f"release ready ({len(rel.get('assets') or [])} stored clips)"
+
+
 def run_all(cfg, vod=None, client=None, posting=False):
     import anthropic
     client = client or anthropic.Anthropic()
@@ -131,7 +137,13 @@ def run_all(cfg, vod=None, client=None, posting=False):
         _check("render", lambda: _render(d), results)
         if vod:
             _check("Twitch", lambda: _twitch(vod), results)
-        if posting or os.environ.get("BLOTATO_API_KEY"):
+        from . import clipqueue, mail
+        if clipqueue.email_mode(cfg):
+            if posting or mail.configured():
+                _check("Gmail (sending + reading replies)", lambda: (mail.check_login(), "logged in")[1], results)
+            if posting or os.environ.get("GITHUB_TOKEN"):
+                _check("clip storage (GitHub release)", _release, results)
+        elif posting or os.environ.get("BLOTATO_API_KEY"):
             _check("Blotato (posting)", lambda: _blotato(cfg), results)
     bad = [r for r in results if not r[1]]
     if bad:

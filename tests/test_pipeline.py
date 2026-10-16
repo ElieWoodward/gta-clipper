@@ -12,6 +12,10 @@ from types import SimpleNamespace
 TMP = Path(tempfile.mkdtemp(prefix="cliptest_"))
 REPO = Path(__file__).resolve().parent.parent
 shutil.copy(REPO / "config.yaml", TMP / "config.yaml")
+# Sections 1-8 test the Blotato auto-posting path; section 9 switches to email mode.
+_cfg_text = (TMP / "config.yaml").read_text().replace("  mode: email ", "  mode: blotato ", 1)
+assert "mode: blotato" in _cfg_text
+(TMP / "config.yaml").write_text(_cfg_text)
 os.environ.update(CLIPPER_ROOT=str(TMP), CLIPPER_WORK=str(TMP / "work"), FORCE="1", BLOTATO_API_KEY="test-key")
 sys.path.insert(0, str(REPO))
 
@@ -286,3 +290,180 @@ merged = common.load_state()
 assert merged["clips"]["livex"]["posts"]["tiktok"]["date"] == "2026-10-16"
 assert jobs.overlaps_existing(merged, "twitch:v9", 105, 140) and not jobs.overlaps_existing(merged, "twitch:v9", 200, 240)
 print("LIVE OK")
+
+# ---------- 9. email mode: queue, emails, posted detection, spend cap, alerts ----------
+from datetime import datetime as _dt, timezone as _tz  # noqa: E402
+from clipper import clipqueue, mail, health  # noqa: E402
+(TMP / "config.yaml").write_text(_cfg_text.replace("  mode: blotato ", "  mode: email ", 1))
+os.environ.pop("DRY_RUN", None)
+jobs.DRY_RUN = False
+os.environ.update(GMAIL_ADDRESS="bot@example.com", GMAIL_APP_PASSWORD="abcd efgh ijkl mnop", NOTIFY_EMAIL="me@example.com")
+cfg = common.load_config()
+assert clipqueue.email_mode(cfg) and jobs._posting_ready(cfg)
+st = common.load_state()
+st["clips"] = {}
+for k in ("spend", "health", "alerts", "email"):
+    st.pop(k, None)
+common.save_state(st)
+if common.LIVE_FILE.exists():
+    common.LIVE_FILE.unlink()
+
+uploads, deleted, sent = {}, [], []
+services.release_upload = lambda path, name=None: uploads.setdefault(name, (len(uploads) + 100, f"https://gh/dl/{name}"))
+services.release_delete = lambda aid: deleted.append(aid)
+services.download = lambda url, dest: shutil.copy(next(iter(rendered)), dest) and dest
+
+
+def fake_send(subject, text, html=None, attachment=None, attachment_name=None):
+    size = os.path.getsize(attachment) if attachment else 0
+    sent.append({"subject": subject, "text": text, "html": html, "size": size})
+    return f"<mid{len(sent)}@example.com>"
+
+
+mail.send = fake_send
+replies = []
+mail.read_replies = lambda since_days=7: list(replies)
+tt_uploads = []
+clipqueue.tiktok_uploads = lambda handle, n=15: list(tt_uploads)
+clipqueue.youtube_channel_id = lambda handle: "UC" + "x" * 22
+clipqueue.youtube_uploads = lambda cid: []
+
+# one real clip through make_clip: stored on the release, enters the queue
+p8 = dict(picks[0], score=8)
+real = jobs.make_clip(cfg, st, dict(vod, id="twitch:900"), p8, words, d)
+rendered = [real["local_file"]]
+assert real["status"] == "approved" and real["asset_id"] == 100 and real["media_url"].endswith(".mp4"), real
+assert len(clipqueue.queue(st)) == 1 and clipqueue.room(cfg, st) == 4
+
+
+def fake_clip(cid, score, hours_old, caption, facecam=False):
+    c = dict(real, id=cid, score=score, hook=f"hook {cid}", title=f"title {cid}", caption=caption, facecam=facecam,
+             created=(common.now_utc() - timedelta(hours=hours_old)).isoformat(), posts={}, asset_id=200 + len(st["clips"]),
+             vod="twitch:v77", start=100.0 * len(st["clips"]), end=100.0 * len(st["clips"]) + 30, status="approved")
+    for k in ("emailed_at", "email_message_id"):
+        c.pop(k, None)
+    st["clips"][cid] = c
+    return c
+
+
+fake_clip("a", 7, 5, "bro really thought the cops wouldn't notice 😭")
+fake_clip("b", 9, 3, "the way he said I don't speak brexit brother 💀", facecam=True)
+fake_clip("c", 8, 1, "he crashed into the only tree in the city 😭")
+fake_clip("old", 10, 20, "this one will be too old to post")
+assert len(clipqueue.queue(st)) == 5 and clipqueue.room(cfg, st) == 0
+# full queue: no Claude work, and the process job doesn't even list streams
+assert not jobs.claude_allowed(cfg, st)
+common.save_state(st)
+_orig_list = fetch.list_new_vods
+fetch.list_new_vods = lambda *a, **k: (_ for _ in ()).throw(AssertionError("process should not look for streams"))
+os.environ.pop("FORCE")
+jobs.FORCE = False
+jobs.process()
+fetch.list_new_vods = _orig_list
+# expiry frees a slot
+st = common.load_state()
+st["clips"]["old"]["created"] = (common.now_utc() - timedelta(hours=50)).isoformat()
+gone = clipqueue.expire(cfg, st)
+assert [c["id"] for c in gone] == ["old"] and st["clips"]["old"]["status"] == "expired"
+assert clipqueue.room(cfg, st) == 1 and jobs.claude_allowed(cfg, st)
+# best clip goes first, then the best one made since the last email, never the same one twice
+assert clipqueue.pick_for_email(st)["id"] == "b"
+common.save_state(st)
+jobs.FORCE = True
+jobs.email_post(cfg)
+st = common.load_state()
+assert len(sent) == 1 and sent[0]["subject"] == "Post now: hook b (9/10)", sent[0]["subject"]
+assert st["clips"]["b"]["emailed_at"] and st["clips"]["b"]["email_message_id"] == "<mid1@example.com>"
+for label in ("TIKTOK CAPTION", "YOUTUBE TITLE", "YOUTUBE DESCRIPTION", "YOUTUBE TAGS", "WHAT'S IN IT", "SOURCE",
+              "STILL IN THE QUEUE"):
+    assert f"=== {label} ===" in sent[0]["text"], label
+assert "#shorts" in sent[0]["text"] and "Streamer:" in sent[0]["text"] and "twitch.tv/" in sent[0]["text"]
+assert 0 < sent[0]["size"] <= mail.ATTACH_LIMIT and "user-select:all" in sent[0]["html"]
+fake_clip("d", 7, 0.1, "brand new moment after the email 💀")   # newer than the last email beats an older 8
+st["clips"]["d"]["created"] = common.now_utc().isoformat()
+common.save_state(st)
+jobs.email_post(cfg)
+st = common.load_state()
+assert sent[1]["subject"] == "Post now: hook d (7/10)", sent[1]["subject"]
+jobs.email_post(cfg)
+jobs.email_post(cfg)
+st = common.load_state()
+subjects = [x["subject"] for x in sent]
+assert len(subjects) == len(set(subjects)), subjects
+# slots: without FORCE, nothing more goes out once today's emails are done
+jobs.FORCE = False
+n = len(sent)
+due, done = jobs.emails_due(cfg, st, common.now_local(cfg))
+jobs.email_post(cfg)
+assert len(sent) == n + (1 if done < due and clipqueue.pick_for_email(common.load_state()) else 0)
+# a big attachment gets shrunk under the limit
+_full = os.path.getsize(real["local_file"])
+_lim = max(int(_full * 0.6), 25 * 900 * 1000 // 8 + 600_000)   # still above the 800 kbps floor for a 25 s clip
+small = clipqueue.fit_for_email(real["local_file"], TMP / "small.mp4", _lim)
+assert os.path.getsize(small) <= _lim, (os.path.getsize(small), _lim, _full)
+print("shrink:", _full, "->", os.path.getsize(small), "limit", _lim)
+(TMP / "sample_email.txt").write_text(sent[0]["text"])
+(TMP / "sample_email.html").write_text(sent[0]["html"])
+# TikTok shows the emailed clip -> posted; an unrelated upload matches nothing
+st = common.load_state()
+tt_uploads[:] = [{"text": "the way he said I don't speak brexit brother 💀 #gtarp #fyp", "duration": st["clips"]["b"]["duration"],
+                  "timestamp": common.now_utc().timestamp(), "url": "https://www.tiktok.com/@wantedlevelclips8/video/1"},
+                 {"text": "my cat doing a backflip", "timestamp": common.now_utc().timestamp(), "url": "x"}]
+notes = clipqueue.refresh_posted(cfg, st)
+assert st["clips"]["b"]["status"] == "posted" and st["clips"]["b"]["posts"]["tiktok"]["url"].endswith("/1"), notes
+assert st["clips"]["d"]["status"] == "approved"
+assert clipqueue.similarity("he crashed into the only tree 😭", "my cat doing a backflip") < 0.6
+# replying "skip" to an email drops that clip
+replies[:] = [(st["clips"]["d"]["email_message_id"], "skip")]
+clipqueue.refresh_posted(cfg, st)
+assert st["clips"]["d"]["status"] == "skipped"
+replies[:] = []
+assert mail.reply_verdict("Posted!\n\nOn Fri, bot wrote:\n> Post now") == "posted"
+assert mail.reply_verdict("skip this one") == "skip"
+assert mail.reply_verdict("> posted\nwhat is this") is None
+# stored videos of clips that left the queue are deleted
+jobs.cleanup_assets(st)
+assert st["clips"]["b"]["asset_id"] in deleted and st["clips"]["d"]["asset_id"] in deleted
+assert st["clips"]["c"]["asset_id"] not in deleted or st["clips"]["c"]["status"] != "approved"
+common.save_state(st)
+# daily Claude budget
+st = common.load_state()
+assert highlights.budget_left(cfg, st) > 0
+common.add_spend(1.25)
+assert highlights.budget_left(cfg, st) <= 0 and not jobs.claude_allowed(cfg, st)
+common.save_state(st)
+st = common.load_state()
+assert abs(common.spend_today(st) - 1.25) < 0.01 and not jobs.claude_allowed(cfg, st)
+st["spend"] = {}
+common.save_state(st)
+highlights.record_usage(SimpleNamespace(usage=SimpleNamespace(input_tokens=1_000_000, output_tokens=100_000,
+                                                              cache_creation_input_tokens=0)))
+assert abs(common._SPEND["pending"] - 3.0) < 1e-6
+common._SPEND["pending"] = 0.0
+# alerts: one email after two failures in a row, not again the same day
+n = len(sent)
+st = common.load_state()
+health.job_failed(st, "post", "RuntimeError: GMAIL login failed")
+assert len(sent) == n
+health.job_failed(st, "post", "RuntimeError: GMAIL login failed")
+assert len(sent) == n + 1 and "post job failed 2 times" in sent[-1]["subject"] and "app password" in sent[-1]["text"]
+health.job_failed(st, "post", "RuntimeError: GMAIL login failed")
+assert len(sent) == n + 1
+health.record(st, "post")
+assert st["health"]["post"]["fails"] == 0
+# live watcher's email marks reach the main state
+os.environ["CLIPPER_LIVE"] = "1"
+st = common.load_state()
+lv = fake_clip("lv", 9, 0.2, "live moment caption")
+lv["live"] = True
+common.save_state(st)
+os.environ.pop("CLIPPER_LIVE")
+st = common.load_state()
+common.save_state(st)    # main state now holds a copy of the live clip
+os.environ["CLIPPER_LIVE"] = "1"
+st = common.load_state()
+st["clips"]["lv"]["emailed_at"] = common.now_utc().isoformat()
+common.save_state(st)
+os.environ.pop("CLIPPER_LIVE")
+assert common.load_state()["clips"]["lv"]["emailed_at"]
+print("EMAIL QUEUE OK")

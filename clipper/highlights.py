@@ -188,6 +188,7 @@ def ask_tool(client, model, prompt, schema, max_tokens=4000, attempts=3):
     for _ in range(attempts):
         msg = client.messages.create(model=model, max_tokens=max_tokens, tools=[tool], tool_choice={"type": "auto"},
                                      messages=[{"role": "user", "content": content}])
+        record_usage(msg)
         for b in msg.content:
             if getattr(b, "type", "") == "tool_use" and isinstance(getattr(b, "input", None), dict) and b.input:
                 return b.input
@@ -197,6 +198,36 @@ def ask_tool(client, model, prompt, schema, max_tokens=4000, attempts=3):
             last = e
             log.warning("unreadable reply from Claude (%s); asking again", e)
     raise RuntimeError(f"Claude never returned readable JSON: {last}")
+
+
+PRICE_PER_MTOK = {"input": 2.0, "output": 10.0}   # Claude Sonnet 5.5 list price (USD); config limits can override
+
+
+class SpendCapReached(RuntimeError):
+    """Today's Claude budget is used up; skip Claude work until tomorrow."""
+
+
+def record_usage(msg):
+    from .common import add_spend
+    u = getattr(msg, "usage", None)
+    if u is None:
+        return
+    inp = (getattr(u, "input_tokens", 0) or 0) + (getattr(u, "cache_creation_input_tokens", 0) or 0)
+    out = getattr(u, "output_tokens", 0) or 0
+    if not isinstance(inp, (int, float)) or not isinstance(out, (int, float)):
+        return
+    add_spend(inp / 1e6 * PRICE_PER_MTOK["input"] + out / 1e6 * PRICE_PER_MTOK["output"])
+
+
+def budget_left(cfg, state):
+    """USD of Claude budget left today (inf if no cap is set)."""
+    from .common import spend_today
+    lim = (cfg.get("limits") or {})
+    prices = lim.get("price_per_mtok")
+    if prices:
+        PRICE_PER_MTOK.update(prices)
+    cap = lim.get("claude_usd_per_day")
+    return float("inf") if cap is None else cap - spend_today(state)
 
 
 def parse_json(text):
@@ -319,10 +350,15 @@ def merge_candidates(db, sig, n, min_gap=45):
     return sorted(out, key=lambda c: c["t"])
 
 
-def analyze(cfg, vod, wav, client=None):
+def analyze(cfg, vod, wav, client=None, max_picks=None):
     """Full pass for one VOD: signals -> candidate windows -> transcripts -> Claude picks."""
     db = loudness_curve(wav)
-    max_picks, n_cands = clip_budget(cfg, len(db))
+    budget_picks, n_cands = clip_budget(cfg, len(db))
+    if max_picks:   # the queue only has room for a few: judge fewer moments too (fewer tokens)
+        n_cands = min(n_cands, max(12, max_picks * 6))
+        max_picks = min(max_picks, budget_picks)
+    else:
+        max_picks = budget_picks
     sig = twitch.signals(vod, len(db)) if cfg.get("signals", {}).get("twitch", True) else {}
     ranges = vod.get("gta_ranges")
     if ranges:   # only the GTA part of the stream (big streamers often open with an hour of Just Chatting)

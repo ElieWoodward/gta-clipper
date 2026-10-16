@@ -50,6 +50,8 @@ review:
                                   # manual = every clip waits for an "approve" label on its GitHub issue
 
 posting:
+  mode: email                     # email = you get an email with the clip + captions at each slot and post it yourself
+                                  # blotato = the bot posts for you through Blotato (needs BLOTATO_API_KEY)
   platforms: [tiktok, youtube]
   # Posts per day per platform, ramping up as accounts age.
   ramp:
@@ -84,3 +86,15 @@ live:
   max_per_stream: 6
   post_now_score: 8               # live clips scoring this or more post right away instead of waiting for a slot
   extra_posts_per_day: 1          # live posts allowed on top of the daily ramp
+
+queue:                            # email mode only
+  max_size: 5                     # stop looking for new clips once this many are waiting (saves Claude money)
+  max_age_hours: 48               # clips older than this are dropped; fresh beats a big backlog
+
+accounts:                         # your pages; checked every hour to see which emailed clips you've posted
+  tiktok: wantedlevelclips8
+  youtube: wantedlevelclips8
+
+limits:
+  claude_usd_per_day: 1.00        # no Claude calls after this much spend in a day (UTC); the next day starts fresh
+  price_per_mtok: {input: 2.0, output: 10.0}   # Claude Sonnet 5.5 list price in USD per million tokens

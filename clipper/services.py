@@ -158,3 +158,51 @@ def youtube_set_private(video_id):
         log.warning("youtube hide failed for %s: %s", video_id, r.text[:300])
         return False
     return True
+
+
+# ---------------- GitHub Release "queue": where queued clip videos live between runs ----------------
+QUEUE_TAG = "queue"
+
+
+def queue_release():
+    """The `queue` release (created on first use). Returns its JSON."""
+    r = requests.get(f"{GH}/repos/{_repo()}/releases/tags/{QUEUE_TAG}", headers=_gh(), timeout=30)
+    if r.status_code == 200:
+        return r.json()
+    r = requests.post(f"{GH}/repos/{_repo()}/releases", headers=_gh(), timeout=30,
+                      json={"tag_name": QUEUE_TAG, "name": "Clip queue",
+                            "body": "Videos waiting to be posted. Managed by the bot; assets are removed after posting.",
+                            "prerelease": True})
+    r.raise_for_status()
+    return r.json()
+
+
+def release_upload(path, name=None):
+    """Upload a file to the queue release. Returns (asset_id, public download URL)."""
+    rel = queue_release()
+    name = name or os.path.basename(str(path))
+    for a in rel.get("assets") or []:   # re-running a clip replaces its old upload
+        if a["name"] == name:
+            release_delete(a["id"])
+    with open(path, "rb") as f:
+        r = requests.post(f"https://uploads.github.com/repos/{_repo()}/releases/{rel['id']}/assets",
+                          params={"name": name}, data=f, timeout=600,
+                          headers=dict(_gh(), **{"Content-Type": "video/mp4"}))
+    r.raise_for_status()
+    a = r.json()
+    return a["id"], a["browser_download_url"]
+
+
+def release_delete(asset_id):
+    r = requests.delete(f"{GH}/repos/{_repo()}/releases/assets/{asset_id}", headers=_gh(), timeout=30)
+    if r.status_code not in (204, 404):
+        r.raise_for_status()
+
+
+def download(url, dest):
+    with requests.get(url, stream=True, timeout=600) as r:
+        r.raise_for_status()
+        with open(dest, "wb") as f:
+            for chunk in r.iter_content(1 << 20):
+                f.write(chunk)
+    return dest

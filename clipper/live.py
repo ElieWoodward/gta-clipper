@@ -209,6 +209,20 @@ def make_live_clip(cfg, state, vod, t, label, chat_msgs, client=None):
 
 def maybe_post_now(cfg, state, clip):
     s = _settings(cfg)
+    from . import clipqueue
+    if clipqueue.email_mode(cfg):
+        # A big live moment is emailed right away (being first matters), within the daily limit plus the extra.
+        if jobs.DRY_RUN or clip["status"] != "approved" or clip["score"] < s["post_now_score"] or clip.get("emailed_at"):
+            return
+        if jobs.days_since_start(cfg) < 0 and not jobs.FORCE:
+            return
+        today = jobs.now_local(cfg).date().isoformat()
+        if clipqueue.emailed_on(state, today, cfg.get("timezone", "UTC")) >= jobs._quota(cfg) + s["extra_posts_per_day"]:
+            log.info("daily email limit reached; the live clip waits for the next slot")
+            return
+        jobs.send_package(cfg, state, clip)
+        save_state(state)
+        return
     if jobs.DRY_RUN or clip["status"] != "approved" or clip["score"] < s["post_now_score"]:
         return
     if jobs.days_since_start(cfg) < 0 and not jobs.FORCE:
@@ -253,7 +267,7 @@ def watch():
         streamers = [{"name": ch, "platform": "twitch", "channel": ch}]
         minutes = TEST_MINUTES
     else:
-        if not s["enabled"] or not jobs._posting_ready():
+        if not s["enabled"] or not jobs._posting_ready(cfg):
             return
         streamers = [x for x in cfg.get("streamers", []) if x.get("enabled", True) and x["platform"] == "twitch"]
         minutes = s["max_minutes"]
@@ -265,10 +279,16 @@ def watch():
     worker = threading.Thread(target=_worker, args=(cfg, pending, watching, busy), daemon=True)
     worker.start()
     next_check = 0
+    next_pull = time.time() + 600
+    allowed = True
     while time.time() < deadline:
         now = time.time()
-        if now >= next_check:   # who's live (every 2 minutes)
+        if now >= next_check:   # who's live (every 2 minutes), and is there room in the queue / budget
             next_check = now + 120
+            if now >= next_pull:
+                next_pull = now + 600
+                git_sync("live: sync")   # pick up posts, expiries and spend from the other jobs
+            allowed = test or jobs.claude_allowed(cfg, load_state(), "; still watching chat for free")
             for st in streamers:
                 login = st["channel"]
                 info = live_info(login)
@@ -297,7 +317,7 @@ def watch():
                 t = offset_now - 7 - twitch.CHAT_DELAY
                 if w["best"] is None or r > w["best"][0]:
                     w["best"] = (r, t)
-                _flag(w, pending, login, t, f"chat exploded live ({r:.1f}x normal)", s, now)
+                _flag(w, pending, login, t, f"chat exploded live ({r:.1f}x normal)", s, now, allowed)
             # 2. viewers clipping the same moment
             if now >= w["next_clips"]:
                 w["next_clips"] = now + CLIP_POLL_SECONDS
@@ -315,7 +335,7 @@ def watch():
                     w["seen"] |= keys
                     hit = viewer_clip_cluster(new, s["min_viewer_clips"])
                     if hit:
-                        _flag(w, pending, login, hit[0], f"{hit[1]} viewers clipped this live", s, now)
+                        _flag(w, pending, login, hit[0], f"{hit[1]} viewers clipped this live", s, now, allowed)
         if test and time.time() > deadline - 300:
             for login, w in watching.items():   # test: no big moment yet, so take the liveliest one seen
                 if w["made"] == 0 and w["best"]:
@@ -342,6 +362,8 @@ def _worker(cfg, pending, watching, busy):
             if not w:
                 continue
             state = load_state()
+            if not jobs.claude_allowed(cfg, state, "; skipping a flagged moment"):
+                continue
             clip = make_live_clip(cfg, state, w["vod"], t, label, list(w["chat"].msgs))
             if clip:
                 maybe_post_now(cfg, state, clip)
@@ -353,8 +375,8 @@ def _worker(cfg, pending, watching, busy):
             busy.clear()
 
 
-def _flag(w, pending, login, t, label, s, now):
-    if w["made"] >= s["max_per_stream"] or t - w["last_t"] < s["cooldown_minutes"] * 60:
+def _flag(w, pending, login, t, label, s, now, allowed=True):
+    if not allowed or w["made"] >= s["max_per_stream"] or t - w["last_t"] < s["cooldown_minutes"] * 60:
         return
     w["last_t"] = t
     w["made"] += 1

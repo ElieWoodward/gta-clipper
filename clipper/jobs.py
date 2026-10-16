@@ -6,8 +6,9 @@ import shutil
 import statistics
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
-from . import fetch, highlights, render, services, vision
+from . import clipqueue, fetch, highlights, render, services, vision
 from .common import (log, load_config, load_state, save_state, now_utc, now_local, days_since_start,
                      WORK, PLAYBOOK_FILE, INSIGHTS_FILE, load_json)
 
@@ -26,32 +27,66 @@ def _queued(state):
 
 
 # ------------------------------------------------------------------ process
-def _posting_ready():
-    """False (with a note on the run page) until the Blotato key is added, so scheduled runs wait instead of failing."""
-    if DRY_RUN or os.environ.get("BLOTATO_API_KEY"):
+def _posting_ready(cfg=None):
+    """False (with a note on the run page) until posting is set up, so scheduled runs wait instead of failing."""
+    from . import mail
+    cfg = cfg or load_config()
+    if DRY_RUN:
+        return True
+    if clipqueue.email_mode(cfg):
+        if mail.configured():
+            return True
+        print("::notice::Email isn't set up yet: add the GMAIL_ADDRESS, GMAIL_APP_PASSWORD and NOTIFY_EMAIL secrets. "
+              "Nothing was done this run.", flush=True)
+        return False
+    if os.environ.get("BLOTATO_API_KEY"):
         return True
     print("::notice::Posting isn't set up yet: add the BLOTATO_API_KEY secret. Nothing was done this run.", flush=True)
     return False
+
+
+def claude_allowed(cfg, state, why=""):
+    """Room in the queue and in today's Claude budget? Prints why not."""
+    if TEST_SOURCE:
+        return True
+    if clipqueue.email_mode(cfg):
+        free = clipqueue.room(cfg, state)
+        if free <= 0:
+            print(f"::notice::queue is full ({clipqueue.settings(cfg)['max_size']} clips waiting); not looking for "
+                  f"new clips{why}", flush=True)
+            return False
+    left = highlights.budget_left(cfg, state)
+    if left <= 0:
+        print(f"::notice::today's Claude budget is used up; no Claude calls until tomorrow (UTC){why}", flush=True)
+        return False
+    return True
 
 
 def process():
     cfg, state = load_config(), load_state()
     if TEST_SOURCE:
         return _test_run(cfg, state)
-    if not _posting_ready():
+    if not _posting_ready(cfg):
         return
     if days_since_start(cfg) < -1 and not FORCE:
         log.info("before launch window; nothing to process (set FORCE=1 to test)")
         return
-    cap = 3 * max(r["per_day"] for r in cfg["posting"]["ramp"]) * 2
-    if len(_queued(state)) >= cap and not FORCE:
-        log.info("queue already has %d clips; skipping", len(_queued(state)))
-        return
+    if clipqueue.email_mode(cfg):
+        clipqueue.expire(cfg, state)
+        if not claude_allowed(cfg, state):
+            return
+    else:
+        cap = 3 * max(r["per_day"] for r in cfg["posting"]["ramp"]) * 2
+        if len(_queued(state)) >= cap and not FORCE:
+            log.info("queue already has %d clips; skipping", len(_queued(state)))
+            return
     vods = fetch.list_new_vods(cfg, state)
     if vods:
         from . import preflight
         preflight.run_all(cfg, vods[0], posting=not DRY_RUN)   # stop before downloading if anything is broken
     for vod in vods:
+        if clipqueue.email_mode(cfg) and not claude_allowed(cfg, state, "; leaving the rest of the streams for later"):
+            break
         try:
             _process_vod(cfg, state, vod)
         except fetch.StillLive:
@@ -69,10 +104,15 @@ def _process_vod(cfg, state, vod, client=None):
     d.mkdir(parents=True, exist_ok=True)
     try:
         wav = fetch.download_audio(vod, d)
-        picks, words = highlights.analyze(cfg, vod, wav, client)
+        limit = None
+        if clipqueue.email_mode(cfg) and not TEST_SOURCE:
+            limit = max(1, clipqueue.room(cfg, state))   # only as many as the queue has room for
+        picks, words = highlights.analyze(cfg, vod, wav, client, max_picks=limit)
         log.info("%s: %d picks", vod["id"], len(picks))
         bar = cfg["clip"]["min_score"]
         for p in picks:
+            if limit is not None and clipqueue.room(cfg, state) <= 0:
+                break
             # Below the quality bar never gets rendered or posted (test runs keep them so you can compare).
             if cfg["review"]["mode"] == "auto" and int(p["score"]) < bar and not TEST_SOURCE:
                 continue
@@ -200,7 +240,13 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
                   commentary=cfg["clip"].get("commentary", False), layout=layout)
     if facecam:  # remember which streamers show their face; their clips get priority
         state.setdefault("streamers", {}).setdefault(vod["streamer"]["name"], {})["facecam"] = True
-    media_url = None if DRY_RUN else services.blotato_upload(out)
+    asset_id = None
+    if DRY_RUN:
+        media_url = None
+    elif clipqueue.email_mode(cfg):
+        asset_id, media_url = services.release_upload(out, f"{cid}.mp4")
+    else:
+        media_url = services.blotato_upload(out)
     clip = {
         "id": cid, "vod": vod["id"], "vod_url": vod["url"], "streamer": vod["streamer"]["name"],
         "start": p["start"], "end": p["end"], "duration": round(p["end"] - p["start"], 1),
@@ -209,7 +255,7 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         "punch_text": p.get("punch_text", ""), "punch_at": p.get("punch_at", 0), "media_url": media_url,
         "facecam": bool(facecam), "layout": "cam+" + layout if facecam else layout, "framing": look["why"],
         "said": " ".join(w["w"] for w in words if p["start"] <= w["s"] < p["end"])[:600], "file": out.name,
-        "created": now_utc().isoformat(), "posts": {}, "issue": None, "local_file": str(out),
+        "created": now_utc().isoformat(), "posts": {}, "issue": None, "local_file": str(out), "asset_id": asset_id,
     }
     auto = cfg["review"]["mode"] == "auto"
     clip["status"] = ("approved" if clip["score"] >= cfg["clip"]["min_score"] else "rejected") if auto else "queued"
@@ -311,9 +357,12 @@ def _refresh_manual_approvals(state):
 
 
 def post():
-    if not _posting_ready():
+    cfg = load_config()
+    if not _posting_ready(cfg) and TEST_SOURCE != "email":
         return
-    cfg, state = load_config(), load_state()
+    if clipqueue.email_mode(cfg) or TEST_SOURCE == "email":
+        return email_post(cfg)
+    state = load_state()
     if days_since_start(cfg) < 0 and not FORCE:
         log.info("before start_date %s; not posting", cfg["start_date"])
         return
@@ -379,6 +428,109 @@ def overlaps_existing(state, vod_id, start, end, min_share=0.5):
         if inter > min_share * min(end - start, c["end"] - c["start"]):
             return True
     return False
+
+
+# ------------------------------------------------------------------ email mode: one email per posting slot
+def cleanup_assets(state):
+    """Delete the stored video of clips that left the queue."""
+    for c in state["clips"].values():
+        if c.get("asset_id") and not c.get("asset_deleted") and c.get("status") != "approved":
+            try:
+                services.release_delete(c["asset_id"])
+                c["asset_deleted"] = True
+            except Exception as e:
+                log.info("couldn't delete stored video for %s: %s", c["id"], e)
+
+
+def emails_due(cfg, state, now):
+    """How many posting emails should have gone out by now today, and how many did."""
+    sent = clipqueue.emailed_on(state, now.date().isoformat(), cfg.get("timezone", "UTC"))
+    slots = _slots(cfg, _quota(cfg))
+    due = sum(1 for sl in slots if now.strftime("%H:%M") >= sl)
+    return due, sent
+
+
+def send_package(cfg, state, clip, test=False):
+    """Email one clip with everything needed to post it. Returns the Message-ID."""
+    from . import mail
+    pkg = clipqueue.package(cfg, clip, clipqueue.queue(state))
+    d = WORK / f"email_{clip['id']}"
+    d.mkdir(parents=True, exist_ok=True)
+    attach = None
+    try:
+        src = clip.get("local_file")
+        if not (src and os.path.exists(src)):
+            src = services.download(clip["media_url"], d / "clip.mp4") if clip.get("media_url") else None
+        if src:
+            attach = clipqueue.fit_for_email(src, d / f"{clip['id']}.mp4", mail.ATTACH_LIMIT)
+    except Exception as e:
+        log.warning("couldn't prepare the attachment (%s); sending the link only", e)
+        attach = None
+    text, html = clipqueue.render_email(pkg, download_url=clip.get("media_url"), attached=bool(attach))
+    subject = ("[TEST] " if test else "") + pkg["subject"]
+    mid = mail.send(subject, text, html, attachment=attach, attachment_name=f"wantedlevel_{clip['id']}.mp4")
+    shutil.rmtree(d, ignore_errors=True)
+    now = now_utc()
+    if not test:
+        clip.update(emailed_at=now.isoformat(), email_message_id=mid, sent_caption=pkg["tiktok_caption"],
+                    sent_title=pkg["yt_title"])
+    em = state.setdefault("email", {})
+    em.setdefault("log", []).append({"date": now_local(cfg).date().isoformat(), "at": now.isoformat(),
+                                     "clip": clip["id"], "subject": subject, "test": test})
+    em["log"] = em["log"][-200:]
+    print(f"::notice::emailed {'test ' if test else ''}package: {pkg['subject']} "
+          f"({'attached' if attach else 'link only'})", flush=True)
+    return mid
+
+
+def _email_test(cfg, state):
+    """test_source=email: send one real package for the best queued clip, or a freshly rendered sample."""
+    clip = clipqueue.pick_for_email(state) or (clipqueue.queue(state) or [None])[0]
+    if clip is None:
+        from . import preflight
+        import tempfile
+        tmp = Path(tempfile.mkdtemp())
+        out = tmp / "sample.mp4"
+        src = preflight._sample_video(tmp, seconds=12)
+        words = [{"w": w, "s": 0.5 + i * 0.4, "e": 0.8 + i * 0.4} for i, w in enumerate("no way he actually did it".split())]
+        render.render(src, 0.0, {"start": 0.0, "end": 12.0, "hook": "TEST: this is what a posting email looks like 📬",
+                                 "punch_text": "", "punch_at": 0}, words, out, layout="wide")
+        clip = {"id": "test", "hook": "TEST: this is what a posting email looks like 📬", "score": 9,
+                "streamer": cfg["streamers"][0]["name"] if cfg.get("streamers") else "test", "title": "Test clip title",
+                "caption": "test caption, nothing to post 😭", "tags": ["test"], "why": "A sample clip to check the email.",
+                "duration": 12.0, "start": 0, "vod_url": "", "created": now_utc().isoformat(), "local_file": str(out),
+                "facecam": False}
+    send_package(cfg, state, clip, test=True)
+
+
+def email_post(cfg):
+    from . import health
+    state = load_state()
+    if TEST_SOURCE == "email":
+        _email_test(cfg, state)
+        save_state(state)
+        return
+    if days_since_start(cfg) < 0 and not FORCE:
+        log.info("before start_date %s; not emailing", cfg["start_date"])
+        return
+    for note in clipqueue.refresh_posted(cfg, state):
+        print(f"::notice::{note}", flush=True)
+    for c in clipqueue.expire(cfg, state):
+        print(f"::notice::expired (too old to post): {c['hook']}", flush=True)
+    cleanup_assets(state)
+    save_state(state)
+    now = now_local(cfg)
+    due, sent = emails_due(cfg, state, now)
+    q = clipqueue.queue(state)
+    log.info("queue %d, emails due today %d, sent %d", len(q), due, sent)
+    if FORCE or sent < due:
+        clip = clipqueue.pick_for_email(state)
+        if clip:
+            send_package(cfg, state, clip)
+        else:
+            log.info("a posting slot is due but nothing new is waiting")
+    health.check_quiet(cfg, state, len(clipqueue.queue(state)))
+    save_state(state)
 
 
 # ------------------------------------------------------------------ analytics + prune

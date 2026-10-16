@@ -51,8 +51,36 @@ CMDS = {"process": jobs.process, "post": jobs.post, "analytics": jobs.analytics,
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in CMDS:
         sys.exit(f"usage: python -m clipper [{'|'.join(CMDS)}]")
+    job = sys.argv[1]
+    if job == "live":
+        os.environ["CLIPPER_LIVE"] = "1"   # the live watcher only writes data/live.json
+    tracked = job in ("process", "post", "live", "analytics") and not os.environ.get("TEST_SOURCE")
     try:
-        CMDS[sys.argv[1]]()
+        CMDS[job]()
     except Exception as e:  # put the real reason at the top of the run page
         print(f"::error::{type(e).__name__}: {str(e)[:600]}", flush=True)
+        if tracked:
+            try:
+                from . import health
+                from .common import load_state, save_state
+                st = load_state()
+                health.job_failed(st, job, f"{type(e).__name__}: {e}")
+                save_state(st)
+                if job == "live":
+                    from . import live
+                    live.git_sync("live: record failure")
+            except Exception as e2:
+                print(f"::warning::couldn't record the failure: {e2}", flush=True)
         raise
+    else:
+        if tracked:
+            try:
+                from . import health
+                from .common import load_state, save_state
+                st = load_state()
+                hk = "health_live" if job == "live" else "health"
+                if (st.get(hk, {}).get(job) or {}).get("fails"):
+                    health.record(st, job)
+                    save_state(st)
+            except Exception as e2:
+                print(f"::warning::couldn't record the run: {e2}", flush=True)

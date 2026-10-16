@@ -28,14 +28,36 @@ def load_config():
 LIVE_FILE = DATA / "live.json"   # written only by the live watcher, which runs alongside the other jobs
 
 
+# Claude spend made by this process and not yet written to a state file (USD).
+_SPEND = {"pending": 0.0}
+
+
+def add_spend(usd):
+    _SPEND["pending"] += float(usd)
+
+
+def _today():
+    return datetime.now(timezone.utc).date().isoformat()
+
+
+def spend_today(state):
+    """USD spent on Claude today (UTC day), by every job including the live watcher."""
+    d = _today()
+    return (state.get("spend", {}).get(d, 0.0) + state.get("spend_live", {}).get(d, 0.0) + _SPEND["pending"])
+
+
 def _merge_live(state):
     """Fold the live watcher's clips (and the posts it made) into the main state."""
+    state["spend_live"], state["health_live"], state["alerts_live"] = {}, {}, {}
     if not LIVE_FILE.exists():
         return state
     try:
         live = json.loads(LIVE_FILE.read_text())
     except ValueError:
         return state
+    state["spend_live"] = live.get("spend") or {}
+    state["health_live"] = live.get("health") or {}
+    state["alerts_live"] = live.get("alerts") or {}
     for cid, clip in (live.get("clips") or {}).items():
         mine = state["clips"].get(cid)
         if mine is None:
@@ -43,6 +65,9 @@ def _merge_live(state):
         else:
             for platform, post in (clip.get("posts") or {}).items():
                 mine.setdefault("posts", {}).setdefault(platform, post)
+            for k in ("emailed_at", "email_message_id", "sent_caption", "sent_title"):   # emailed by the watcher
+                if clip.get(k) and not mine.get(k):
+                    mine[k] = clip[k]
             if clip.get("posts") and mine.get("status") == "approved":
                 mine["status"] = "posted"
     return state
@@ -58,11 +83,22 @@ def load_state():
 
 def save_state(state):
     DATA.mkdir(parents=True, exist_ok=True)
-    if os.environ.get("CLIPPER_LIVE") == "1":   # the live watcher only ever writes its own file
+    live = os.environ.get("CLIPPER_LIVE") == "1"
+    key = "spend_live" if live else "spend"
+    if _SPEND["pending"]:
+        book = state.setdefault(key, {})
+        book[_today()] = round(book.get(_today(), 0.0) + _SPEND["pending"], 4)
+        for old in sorted(book)[:-14]:   # two weeks is plenty
+            book.pop(old)
+        _SPEND["pending"] = 0.0
+    if live:   # the live watcher only ever writes its own file
         target = LIVE_FILE
-        state = {"clips": {k: v for k, v in state["clips"].items() if v.get("live")}}
+        state = {"clips": {k: v for k, v in state["clips"].items() if v.get("live")},
+                 "spend": state.get("spend_live", {}), "health": state.get("health_live", {}),
+                 "alerts": state.get("alerts_live", {})}
     else:
         target = STATE_FILE
+        state = {k: v for k, v in state.items() if k not in ("spend_live", "health_live", "alerts_live")}
     tmp = target.with_suffix(".tmp")
     tmp.write_text(json.dumps(state, indent=2, sort_keys=True))
     tmp.replace(target)
