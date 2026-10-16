@@ -247,3 +247,13 @@ _tw.chapters = lambda vid: [(0.0, None, "Just Chatting")]
 assert _fetch.twitch_game("twitch:1") == ("Just Chatting", [])
 _tw.chapters = _orig
 print("CHAPTERS OK")
+
+# ---------- 7. Twitch listing through the API ----------
+_g = _tw._gql
+_tw._gql = lambda body, timeout=15: {"data": {"user": {"videos": {"edges": [
+    {"node": {"id": "2900842637", "title": "GTA V NOPIXEL", "lengthSeconds": 43425, "createdAt": "2026-10-14T20:49:43Z", "status": "RECORDED"}}]}}}}
+lst = _tw.list_archives("xqc", 5)
+assert lst[0]["id"] == "v2900842637" and lst[0]["duration"] == 43425 and lst[0]["timestamp"] > 1.7e9, lst
+assert _tw.video_id({"id": "twitch:" + lst[0]["id"]}) == "2900842637"
+_tw._gql = _g
+print("LISTING OK")

@@ -24,13 +24,22 @@ def list_new_vods(cfg, state):
     for s in order:
         if not s.get("enabled", True):
             continue
-        url = LISTING_URLS[s["platform"]].format(ch=s["channel"])
-        try:
-            raw = run(["yt-dlp", "--flat-playlist", "-J", "--playlist-end", f["vods_per_streamer"], url])
-        except RuntimeError as e:
-            log.warning("listing %s failed: %s", s["name"], e)
-            continue
-        for e in (json.loads(raw).get("entries") or [])[: f["vods_per_streamer"]]:
+        entries = None
+        if s["platform"] == "twitch":   # Twitch's own API: faster and steadier than scraping the videos page
+            from . import twitch
+            try:
+                entries = twitch.list_archives(s["channel"], f["vods_per_streamer"]) or None
+            except Exception as e:
+                log.info("twitch listing for %s failed (%s); trying yt-dlp", s["name"], e)
+        if entries is None:
+            url = LISTING_URLS[s["platform"]].format(ch=s["channel"])
+            try:
+                raw = run(["yt-dlp", "--flat-playlist", "-J", "--playlist-end", f["vods_per_streamer"], url])
+                entries = json.loads(raw).get("entries") or []
+            except RuntimeError as e:
+                print(f"::warning::couldn't list {s['name']}'s streams: {str(e)[:200]}", flush=True)
+                continue
+        for e in entries[: f["vods_per_streamer"]]:
             vid = f"{s['platform']}:{e.get('id')}"
             if vid in seen:
                 continue

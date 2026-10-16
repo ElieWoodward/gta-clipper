@@ -59,6 +59,25 @@ def video_info(vid):
     return v or None
 
 
+def list_archives(login, n=10):
+    """The channel's latest past broadcasts as yt-dlp-style entries: [{id, url, title, duration, timestamp}]."""
+    from datetime import datetime
+    q = ('query { user(login: "%s") { videos(first: %d, type: ARCHIVE, sort: TIME) '
+         '{ edges { node { id title lengthSeconds createdAt status } } } } }' % (login.lower(), int(n)))
+    user = (((_gql({"query": q}) or {}).get("data") or {}).get("user")) or {}
+    out = []
+    for e in ((user.get("videos") or {}).get("edges") or []):
+        v = e.get("node") or {}
+        ts = None
+        try:
+            ts = datetime.fromisoformat(v["createdAt"].replace("Z", "+00:00")).timestamp()
+        except Exception:
+            pass
+        out.append({"id": f'v{v["id"]}', "url": f'https://www.twitch.tv/videos/{v["id"]}', "title": v.get("title") or "",
+                    "duration": v.get("lengthSeconds") or 0, "timestamp": ts, "live": v.get("status") == "RECORDING"})
+    return out
+
+
 def chapters(vid):
     """[(start_s, end_s or None, game)] from the VOD's chapter markers; [] if Twitch doesn't say.
     Big streamers often start in Just Chatting and switch to GTA later, so the VOD's own category isn't enough."""
