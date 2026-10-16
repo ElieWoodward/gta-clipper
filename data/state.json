@@ -983,13 +983,21 @@
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/d564c855ac.mp4",
       "posts": {
         "youtube": {
+          "comments": null,
           "date": "2026-10-16",
-          "history": [],
+          "history": [
+            [
+              "2026-10-16T21:30:30.717019+00:00",
+              508
+            ]
+          ],
+          "likes": 14,
           "match": 1.0,
           "seen_at": "2026-10-16T21:12:13.954365+00:00",
+          "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/h-i9oBUzpow",
-          "views": null
+          "views": 508
         }
       },
       "punch_at": 44.32,
@@ -1081,7 +1089,7 @@
   },
   "health": {
     "tiktok_check": {
-      "at": "2026-10-16T21:12:13.734645+00:00",
+      "at": "2026-10-16T21:30:30.363677+00:00",
       "error": "yt-dlp failed (1): ERROR: wantedlevelclips8: Failed to parse JSON (caused by JSONDecodeError(\"Expecting value in '': line 1 column 1 (char 0)\")); please report this issue on  https://github.com/yt-dlp"
     }
   },
