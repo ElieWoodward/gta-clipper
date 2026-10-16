@@ -1001,6 +1001,8 @@
       "caption": "the emotional rollercoaster in his voice \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-16T16:10:21.689929+00:00",
       "duration": 48.0,
+      "email_message_id": "<179217441138.3692.3957518804449899506@gmail.com>",
+      "emailed_at": "2026-10-16T18:13:39.530767+00:00",
       "end": 27411.0,
       "facecam": true,
       "file": "f62ddcbe99.mp4",
@@ -1025,6 +1027,8 @@
       "punch_text": "",
       "said": "Like, you just sent me on like a, like a ride of emotions and told me I had to do it to get my dream. And now you're telling me I don't have to do it to get my dream. Which one is it? Marty? Well, here's the thing. I don't know what X is saying. I have no idea why he's saying it, but you have to. Otherwise, we can't go into cars. What, actually? what the fuck is happening you have to I find me this is really to the TV means is not life right now bro I'm depressed",
       "score": 7,
+      "sent_caption": "the emotional rollercoaster in his voice \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
+      "sent_title": "They gave him false hope and took it back instantly \ud83d\ude2d #shorts",
       "start": 27363.0,
       "status": "approved",
       "streamer": "xQc",
@@ -1039,9 +1043,20 @@
       "why": "He is told he doesn't have to sacrifice his car, then that he does, and his confused, betrayed reaction ('are you fucking with me?') has chat spamming laughs."
     }
   },
+  "email": {
+    "log": [
+      {
+        "at": "2026-10-16T18:13:39.530767+00:00",
+        "clip": "f62ddcbe99",
+        "date": "2026-10-16",
+        "subject": "Post now: POV: you don't have to sacrifice your car... actually you do \ud83d\udc80 (7/10)",
+        "test": false
+      }
+    ]
+  },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-16T17:22:17.312149+00:00"
+      "ok": "2026-10-16T18:13:28.448008+00:00"
     }
   },
   "posts": [],
