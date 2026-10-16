@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python tests/test_pipeline.py:*)",
+      "Bash(python -m pyflakes:*)",
+      "Bash(python -m clipper:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(curl -sS https://api.github.com/repos/ElieWoodward/gta-clipper/:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./**/*.pem)"
+    ]
+  }
+}
