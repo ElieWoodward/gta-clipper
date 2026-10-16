@@ -4,7 +4,7 @@ name: live
 # Each run lasts up to ~5.8 hours while someone is live (seconds if nobody is); the next one picks up after it.
 on:
   schedule:
-    - cron: "*/20 * * * *"
+    - cron: "7,27,47 * * * *"   # off the round minutes, where GitHub delays and drops scheduled runs
   workflow_dispatch:
 
 permissions:
