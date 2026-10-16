@@ -12,7 +12,7 @@ from types import SimpleNamespace
 TMP = Path(tempfile.mkdtemp(prefix="cliptest_"))
 REPO = Path(__file__).resolve().parent.parent
 shutil.copy(REPO / "config.yaml", TMP / "config.yaml")
-os.environ.update(CLIPPER_ROOT=str(TMP), CLIPPER_WORK=str(TMP / "work"), FORCE="1")
+os.environ.update(CLIPPER_ROOT=str(TMP), CLIPPER_WORK=str(TMP / "work"), FORCE="1", BLOTATO_API_KEY="test-key")
 sys.path.insert(0, str(REPO))
 
 from clipper import fetch, highlights, jobs, services, common, twitch, render  # noqa: E402
