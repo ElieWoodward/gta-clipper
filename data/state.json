@@ -986,6 +986,8 @@
       "caption": "the poor driver had no escape \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-17T01:53:48.732167+00:00",
       "duration": 48.0,
+      "email_message_id": "<179227098344.3722.1809063313290734429@gmail.com>",
+      "emailed_at": "2026-10-17T21:03:22.947367+00:00",
       "end": 1934.0,
       "facecam": true,
       "file": "5e059eaf31.mp4",
@@ -1009,6 +1011,8 @@
       "punch_text": "It doesn't smell that bad",
       "said": "your name oh my name is Callie and I'm so sorry I have an irritable bowel syndrome what 120 76 to the burger shot what is the 120 76 does that mean you're getting shitty too no I don't know I thought you were trying to relate to me I thought we could relate I was a relatable thing my god sir sir I'm so sorry but I have to let this one out. No, no, please! Please don't take me to the burger shop! Please! I have... It doesn't smell that bad, it doesn't. No, no, it doesn't...",
       "score": 8,
+      "sent_caption": "the poor driver had no escape \ud83d\ude2d\ud83d\udc80\n\nStreamer: Cinna\n#gta6 #gtarp #gta #funny #fyp #cinna",
+      "sent_title": "She begged a stranger to drive her to the bathroom \ud83d\ude2d\ud83d\udc80 #shorts",
       "start": 1886.0,
       "status": "approved",
       "streamer": "Cinna",
@@ -1455,12 +1459,19 @@
         "date": "2026-10-16",
         "subject": "Post now: POV: cop makes you put your wife on speaker mid-stop \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-10-17T21:03:22.947367+00:00",
+        "clip": "5e059eaf31",
+        "date": "2026-10-17",
+        "subject": "Post now: POV: you beg a stranger to drive you to the bathroom \ud83d\ude2d\ud83d\udc80 (8/10)",
+        "test": false
       }
     ]
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-17T20:46:56.578669+00:00"
+      "ok": "2026-10-17T21:02:04.099435+00:00"
     }
   },
   "last_run": {
@@ -1491,7 +1502,7 @@
     "2026-10-16": 0.1561,
     "2026-10-17": 0.168
   },
-  "status_updated": "2026-10-17T20:01:41.929766+00:00",
+  "status_updated": "2026-10-17T21:03:24.007015+00:00",
   "streamers": {
     "Cinna": {
       "facecam": true
