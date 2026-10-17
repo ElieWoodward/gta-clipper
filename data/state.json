@@ -1102,6 +1102,7 @@
       "hook_score": 8,
       "id": "d564c855ac",
       "issue": 3,
+      "issue_closed": true,
       "layout": "cam+fill",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/02279cbb8e/d564c855ac.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/d564c855ac.mp4",
@@ -1125,6 +1126,10 @@
             [
               "2026-10-17T01:35:50.391972+00:00",
               1005
+            ],
+            [
+              "2026-10-17T02:59:05.678005+00:00",
+              1010
             ]
           ],
           "hour": "11:00",
@@ -1135,7 +1140,7 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7697338138603031821",
-          "views": 1005
+          "views": 1010
         },
         "youtube": {
           "comments": null,
@@ -1144,15 +1149,19 @@
             [
               "2026-10-16T21:30:30.717019+00:00",
               508
+            ],
+            [
+              "2026-10-17T02:59:16.635949+00:00",
+              1200
             ]
           ],
-          "likes": 14,
+          "likes": null,
           "match": 1.0,
           "seen_at": "2026-10-16T21:12:13.954365+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/h-i9oBUzpow",
-          "views": 508
+          "views": 1200
         }
       },
       "punch_at": 44.32,
@@ -1199,6 +1208,7 @@
       "hook_score": 8,
       "id": "f62ddcbe99",
       "issue": 4,
+      "issue_closed": true,
       "layout": "cam+fill",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/c75c41d11d/f62ddcbe99.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/f62ddcbe99.mp4",
@@ -1244,7 +1254,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-17T01:35:50.391987+00:00"
+      "ok": "2026-10-17T02:59:05.678019+00:00"
     }
   },
   "posts": [],
@@ -1267,6 +1277,7 @@
     "2026-10-16": 0.1561,
     "2026-10-17": 0.1103
   },
+  "status_updated": "2026-10-17T02:59:22.438031+00:00",
   "streamers": {
     "Cinna": {
       "facecam": true
