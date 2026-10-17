@@ -1206,6 +1206,10 @@
             [
               "2026-10-17T04:59:33.066803+00:00",
               1019
+            ],
+            [
+              "2026-10-17T05:44:35.545036+00:00",
+              1020
             ]
           ],
           "hour": "11:00",
@@ -1216,7 +1220,7 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7697338138603031821",
-          "views": 1019
+          "views": 1020
         },
         "youtube": {
           "comments": null,
@@ -1330,8 +1334,7 @@
   },
   "health": {
     "tiktok_check": {
-      "at": "2026-10-17T05:30:16.890421+00:00",
-      "error": "to extract secondary user ID. If you are able to get the channel_id from a video posted by this user, try using \"tiktokuser:channel_id\" as the input URL (replacing `channel_id` with its actual value)\n"
+      "ok": "2026-10-17T05:44:35.545052+00:00"
     }
   },
   "last_run": {
