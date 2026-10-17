@@ -1,0 +1,26 @@
+{
+  "source": "live:auto",
+  "title": "live test",
+  "clips": [
+    {
+      "score": 0,
+      "hook": "TEST: nothing clip-worthy here",
+      "hook_score": null,
+      "hook_options": [],
+      "punch_text": "",
+      "punch_at": 0,
+      "title": "test",
+      "caption": "test",
+      "duration": 35.0,
+      "why": "test render",
+      "status": "rejected",
+      "facecam": true,
+      "layout": "cam+wide",
+      "framing": "The clip moves from the character in the game to a centered title screen to a character-select screen with a name label at the left and the character at right, so a wider view is safer.",
+      "said": "I'm gonna say that if he needs some help, he's gonna ask. It is what it is. I mean, I don't like doing nothing.",
+      "file": "94a569dd36.mp4",
+      "start": 15014.85153055191,
+      "live_signal": "liveliest chat moment (2.6x)"
+    }
+  ]
+}
