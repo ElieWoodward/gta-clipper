@@ -40,6 +40,25 @@ def probe():
         print("::error::no Twitch signals came back; the picker will fall back to loudness", flush=True)
 
 
+def check_streamers():
+    """TEST_SOURCE = comma-separated Twitch channels. One line each: VODs public?, GTA streams of last 10, hours."""
+    from . import twitch
+    from .campaigns import streams_gta
+    for ch in [c.strip().lower() for c in os.environ.get("TEST_SOURCE", "").split(",") if c.strip()]:
+        try:
+            vods = twitch.list_archives(ch, 10)
+        except Exception as e:
+            print(f"::warning::{ch}: couldn't list ({e})", flush=True)
+            continue
+        if not vods:
+            print(f"::notice::{ch}: no public past broadcasts (VODs off), can't clip", flush=True)
+            continue
+        ok, why = streams_gta(ch)
+        hrs = sum(v["duration"] for v in vods) / 3600
+        days = (max(v["timestamp"] for v in vods) - min(v["timestamp"] for v in vods)) / 86400 + 1
+        print(f"::notice::{ch}: {len(vods)} VODs over {days:.0f} days, {hrs:.0f}h total, {why}", flush=True)
+
+
 def _campaigns():
     from . import campaigns
     from .common import load_config, load_state, save_state
@@ -57,7 +76,7 @@ def _live():
 
 
 CMDS = {"process": jobs.process, "post": jobs.post, "analytics": jobs.analytics, "learn": jobs.learn,
-        "accounts": lambda: print(services.blotato_accounts()), "probe": probe, "preflight": jobs.preflight_only, "live": _live, "campaigns": _campaigns}
+        "accounts": lambda: print(services.blotato_accounts()), "probe": probe, "preflight": jobs.preflight_only, "live": _live, "campaigns": _campaigns, "check_streamers": check_streamers}
 
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in CMDS:
