@@ -200,8 +200,13 @@ def make_live_clip(cfg, state, vod, t, label, chat_msgs, client=None):
         window = {"id": 0, "start": a, "end": b, "signals": [label],
                   "chat": twitch.chat_sample(chat, a, b), "spike": 0.0,
                   "text": highlights.text_with_marks(words, a, b)}
-        picks = highlights.judge(cfg, vod, [window], client, max_picks=1)
-        picks = highlights.edit_hooks(cfg, picks, [window], client)
+        judged = highlights.judge(cfg, vod, [window], client, max_picks=1)
+        picks = highlights.keepers(cfg, judged, keep_all=jobs.DRY_RUN)
+        picks = highlights.edit_hooks(cfg, picks, [window], client) if picks else []
+        if judged and not picks:
+            print(f"::notice::live moment at {t / 3600:.2f}h ({label}): score {judged[0]['score']}/10, below the bar",
+                  flush=True)
+            return None
         if not picks:
             print(f"::notice::live moment at {t / 3600:.2f}h ({label}): Claude found nothing clip-worthy", flush=True)
             if not jobs.DRY_RUN:
@@ -235,6 +240,8 @@ def maybe_post_now(cfg, state, clip):
         # A big live moment is emailed right away (being first matters), within the daily limit plus the extra.
         if jobs.DRY_RUN or clip["status"] != "approved" or clip["score"] < s["post_now_score"] or clip.get("emailed_at"):
             return
+        if (state.get("email") or {}).get("paused"):
+            return   # you paused the posting emails
         if jobs.days_since_start(cfg) < 0 and not jobs.FORCE:
             return
         today = jobs.now_local(cfg).date().isoformat()
@@ -315,7 +322,8 @@ def watch():
             if now >= next_pull:
                 next_pull = now + 600
                 git_sync("live: sync")   # pick up posts, expiries and spend from the other jobs
-            allowed = test or jobs.claude_allowed(cfg, load_state(), "; still watching chat for free")
+            was = allowed
+            allowed = test or jobs.claude_allowed(cfg, load_state(), "; still watching chat for free", quiet=not was)
             for st in streamers:
                 login = st["channel"]
                 info = live_info(login)

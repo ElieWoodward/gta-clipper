@@ -387,13 +387,18 @@ def merge_candidates(db, sig, n, min_gap=45):
     return sorted(out, key=lambda c: c["t"])
 
 
-def analyze(cfg, vod, wav, client=None, max_picks=None):
+def keepers(cfg, picks, keep_all=False):
+    """Picks worth polishing: below the score bar they're thrown away, so don't pay to rewrite their hooks."""
+    return picks if keep_all else [p for p in picks if int(p.get("score") or 0) >= cfg["clip"]["min_score"]]
+
+
+def analyze(cfg, vod, wav, client=None, max_picks=None, keep_all=False):
     """Full pass for one VOD: signals -> candidate windows -> transcripts -> Claude picks."""
     windows, words_all, max_picks = prepare(cfg, vod, wav, max_picks)
     if not windows:
         return [], []
-    picks = judge(cfg, vod, windows, client, max_picks=max_picks)
-    return edit_hooks(cfg, picks, windows, client), words_all
+    picks = keepers(cfg, judge(cfg, vod, windows, client, max_picks=max_picks), keep_all)
+    return (edit_hooks(cfg, picks, windows, client) if picks else []), words_all
 
 
 def prepare(cfg, vod, wav, max_picks=None):

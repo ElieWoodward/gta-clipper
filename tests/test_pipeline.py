@@ -139,7 +139,7 @@ CLAUDE = claude
 d = TMP / "work" / "vod"
 d.mkdir(parents=True)
 wav = fake_audio(vod, d)
-picks, words = highlights.analyze(cfg, vod, wav, client=claude)
+picks, words = highlights.analyze(cfg, vod, wav, client=claude, keep_all=True)
 print("loudness picks ->", [(p["start"], p["end"], p["score"]) for p in picks])
 assert len(picks) == 2, picks
 for p in picks:
@@ -748,3 +748,13 @@ st["clips"]["paid8"]["posts"] = {"tiktok": {"url": "u", "views": 5}}
 body = jobs._status_issue(cfg, st)
 assert "Queue (" in body and "Today's posting times" in body and "Streamers being clipped" in body
 print("PRIORITY + REPLIES OK")
+
+# ---------- 17. below-bar picks don't get the (paid) hook polish ----------
+_calls = []
+_orig_edit = highlights.edit_hooks
+highlights.edit_hooks = lambda cfg, picks, windows, client=None: _calls.append(len(picks)) or picks
+_w, _wd = fake_audio(vod, TMP / "work" / "kv"), None
+res, _ = highlights.analyze(cfg, vod, _w, client=FakeClaude(judge_reply))
+assert all(p["score"] >= cfg["clip"]["min_score"] for p in res) and _calls == [len(res)], (_calls, res)
+highlights.edit_hooks = _orig_edit
+print("NO WASTED POLISH OK")

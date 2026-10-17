@@ -52,19 +52,21 @@ def open_room(cfg, state):
     return clipqueue.room(cfg, state) - expected
 
 
-def claude_allowed(cfg, state, why=""):
-    """Room in the queue and in today's Claude budget? Prints why not."""
+def claude_allowed(cfg, state, why="", quiet=False):
+    """Room in the queue and in today's Claude budget? Prints why not (unless quiet)."""
     if TEST_SOURCE:
         return True
     if clipqueue.email_mode(cfg):
         free = open_room(cfg, state)
         if free <= 0:
-            print(f"::notice::queue is full ({clipqueue.settings(cfg)['max_size']} clips waiting); not looking for "
-                  f"new clips{why}", flush=True)
+            if not quiet:
+                print(f"::notice::queue is full ({clipqueue.settings(cfg)['max_size']} clips waiting); not looking for "
+                      f"new clips{why}", flush=True)
             return False
     left = highlights.budget_left(cfg, state)
     if left <= 0:
-        print(f"::notice::today's Claude budget is used up; no Claude calls until tomorrow (UTC){why}", flush=True)
+        if not quiet:
+            print(f"::notice::today's Claude budget is used up; no Claude calls until tomorrow (UTC){why}", flush=True)
         return False
     return True
 
@@ -141,7 +143,7 @@ def _process_vod(cfg, state, vod, client=None):
                 batch.submit(client or anthropic.Anthropic(), vod, windows, words, max_picks,
                              highlights.judge_params(cfg, vod, windows, max_picks))
             return
-        picks, words = highlights.analyze(cfg, vod, wav, client, max_picks=limit)
+        picks, words = highlights.analyze(cfg, vod, wav, client, max_picks=limit, keep_all=bool(TEST_SOURCE))
         log.info("%s: %d picks", vod["id"], len(picks))
         bar = cfg["clip"]["min_score"]
         for p in picks:
@@ -188,7 +190,8 @@ def finish_batches(cfg, state, client=None):
                 picks = highlights.judge(cfg, vod, windows, client, max_picks=rec["max_picks"])
             else:
                 picks = highlights.judge_picks(cfg, data, windows, rec["max_picks"])
-            picks = highlights.edit_hooks(cfg, picks, windows, client)
+            picks = highlights.keepers(cfg, picks)
+            picks = highlights.edit_hooks(cfg, picks, windows, client) if picks else []
             _make_from_picks(cfg, state, vod, picks, words)
         except Exception as e:
             log.exception("finishing %s failed: %s", vod["id"], e)
