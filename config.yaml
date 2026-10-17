@@ -13,6 +13,14 @@ streamers:
     channel: xqc
     enabled: true
     campaign: ""                  # optional note, e.g. the Whop campaign name
+  - name: Cinna
+    platform: twitch
+    channel: cinna
+    enabled: true
+  - name: AnthonyZ
+    platform: twitch
+    channel: anthonyz
+    enabled: true
     # facecam: {x: 0.72, y: 0.02, w: 0.26, h: 0.26}
 
 # Extra source videos to process once (campaign-provided footage, a specific VOD, etc.).
