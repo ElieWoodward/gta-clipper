@@ -20,7 +20,7 @@ streamers:
   - name: AnthonyZ
     platform: twitch
     channel: anthonyz
-    enabled: true
+    enabled: false                # no webcam, and mostly the same storylines as xQc
     # facecam: {x: 0.72, y: 0.02, w: 0.26, h: 0.26}
 
 # Extra source videos to process once (campaign-provided footage, a specific VOD, etc.).
