@@ -45,11 +45,17 @@ def _settings(cfg):
 
 
 # ------------------------------------------------------------------ is anyone live?
+UNKNOWN = "unknown"   # Twitch didn't give a clear answer this time; keep doing whatever we were doing
+
+
 def live_info(login):
-    """{stream_started, game, title, vod_id, vod_created} if live with a recording VOD, else None."""
+    """{game, title, vod_id, vod_created} if live with a recording VOD, None if not, UNKNOWN if Twitch hiccuped."""
     q = ('query { user(login: "%s") { stream { id createdAt title game { name } } '
          'videos(first: 1, type: ARCHIVE, sort: TIME) { edges { node { id status createdAt title } } } } }' % login.lower())
-    user = (((twitch._gql({"query": q}) or {}).get("data") or {}).get("user")) or {}
+    data = twitch._gql({"query": q})
+    if not data or data.get("errors"):
+        return UNKNOWN
+    user = ((data.get("data") or {}).get("user")) or {}
     st = user.get("stream")
     if not st:
         return None
@@ -308,9 +314,10 @@ def watch():
     game_re = (cfg["fetch"].get("game_match") or "grand theft auto|gta")
     deadline = time.time() + minutes * 60
     watching = {}     # login -> {vod, chat, seen_clips, last_t, made, best}
+    ended = {}        # streams that stopped while moments were still waiting to be cut
     pending = queue.Queue()   # (ready_at_wall, login, t_offset, label); a worker cuts them so watching never pauses
     busy = threading.Event()
-    worker = threading.Thread(target=_worker, args=(cfg, pending, watching, busy), daemon=True)
+    worker = threading.Thread(target=_worker, args=(cfg, pending, watching, busy, ended), daemon=True)
     worker.start()
     next_check = 0
     next_pull = time.time() + 600
@@ -327,7 +334,14 @@ def watch():
             for st in streamers:
                 login = st["channel"]
                 info = live_info(login)
+                if info == UNKNOWN:
+                    continue   # a Twitch hiccup isn't a reason to stop (or start) watching
                 on_gta = info and (test or re.search(game_re, info["game"], re.I))
+                if login in watching:
+                    w = watching[login]
+                    w["misses"] = 0 if on_gta else w.get("misses", 0) + 1
+                    if not on_gta and w["misses"] < 2:
+                        continue   # only stop after two clear "not live on GTA" answers in a row
                 if on_gta and login not in watching:
                     vod = {"id": f"twitch:v{info['vod_id']}", "url": f"https://www.twitch.tv/videos/{info['vod_id']}",
                            "title": info["title"], "game": info["game"], "streamer": st, "created_ts": info["vod_created"]}
@@ -337,12 +351,14 @@ def watch():
                                        "best": None, "next_clips": 0}
                     print(f"::notice::watching {st['name']} live: {info['title'][:80]} ({info['game']})", flush=True)
                 elif not on_gta and login in watching:
-                    watching.pop(login)["chat"].stop = True
+                    gone = watching.pop(login)
+                    gone["chat"].stop = True
+                    ended[login] = gone   # moments already flagged on this stream still get cut
                     log.info("%s is no longer live on GTA", login)
             if not watching and not test:
                 log.info("nobody is live on GTA right now")
                 return
-            if not watching and test:
+            if not watching and test and pending.empty() and not busy.is_set():
                 print(f"::warning::{streamers[0]['channel']} isn't live on GTA right now; nothing to test", flush=True)
                 return
         for login, w in watching.items():
@@ -393,14 +409,14 @@ def watch():
         _test_summary()
 
 
-def _worker(cfg, pending, watching, busy):
+def _worker(cfg, pending, watching, busy, ended=None):
     """3. Cut each flagged moment once its payoff should be in the VOD."""
     while True:
         ready, login, t, label = pending.get()
         busy.set()
         try:
             time.sleep(max(0, ready - time.time()))
-            w = watching.get(login)
+            w = watching.get(login) or (ended or {}).get(login)
             if not w:
                 continue
             state = load_state()
