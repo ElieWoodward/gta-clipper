@@ -22,10 +22,14 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
   - `campaigns.py`: daily scan of ClippingAlpha's campaign directory (no Claude calls). Emails campaigns that pay for
     a Twitch streamer with recent GTA streams; reply "join" adds them to the clipped streamers (via state, merged in
     `load_config`); posting emails for their clips carry the claim link, and a "Claim" email goes out once posted.
+  - `batch.py`: full-stream judging through the half-price Message Batches API. `process` hands off and exits;
+    a later hourly `process` run finishes it (`jobs.finish_batches`); falls back to a normal call after 6h.
+  - `timing.py`: posting-time experiment (candidate times, views 3h after posting, explore/exploit plan per day).
   - `common.py`: config, state. `data/state.json` is the main state; `data/live.json` is written only by the live
     watcher and merged in on load.
-- `.github/workflows/clipper.yml`: scheduled process, post, analytics, learn, plus manual runs and test runs.
-- `.github/workflows/live.yml`: live watcher every 20 minutes, own concurrency group.
+- `.github/workflows/clipper.yml`: post every 15 min, process hourly, analytics daily, learn Mondays, plus manual
+  runs and test runs. All share one concurrency group, so a long run delays the others.
+- `.github/workflows/live.yml`: live watcher at :07/:27/:47, own concurrency group, writes only `data/live.json`.
 - `config.yaml`: every setting Elie can change. `tests/test_pipeline.py`: offline end-to-end test, no keys needed.
 
 ## Rules
@@ -36,8 +40,9 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
 - Run `python tests/test_pipeline.py` before every push. Only push when it prints `ALL TESTS PASSED` and every
   section marker (`PREVIEWS OK`, `CHAPTERS OK`, `LISTING OK`, `LIVE OK`, plus any you add).
 - Commit messages end with the attribution lines the session gives you.
-- Keep Claude API spend low. Observed costs: about $0.15 to $0.25 per full 12-hour VOD run, about $0.02 per live
-  moment judged. Do not add calls without a reason; prefer cheap filters before any Claude call.
+- Keep Claude API spend low. Observed costs: about $0.05 to $0.10 per full 12-hour VOD with batch judging, about
+  $0.02 per live moment judged. Do not add calls without a reason; prefer cheap filters before any Claude call.
+  Picks below `clip.min_score` never get the hook-polish call (`highlights.keepers`).
 - Elie wants plain, practical replies with numbered click-by-click steps when he has to do something.
 
 ## Things about this environment that will bite you
@@ -60,5 +65,8 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
   videos makes yt-dlp error; that's treated as an empty list.
 - The Twitch "failed integrity check" warning on one viewer-clips query shape is normal; the code falls back to the
   other shape.
+- GitHub shows at most 10 notices per step. Scheduled runs print a single "preflight ok" line; the manual
+  `preflight` job prints every check.
+- Twitch GQL sometimes answers "service error" for `user.videos`; the code falls back to yt-dlp.
 - Big streamers start in Just Chatting and switch to GTA later; `twitch.chapters()` handles that. Streams run 12 to
   14 hours; `max_vod_hours` is 16.
