@@ -50,22 +50,33 @@ UNKNOWN = "unknown"   # Twitch didn't give a clear answer this time; keep doing 
 
 def live_info(login):
     """{game, title, vod_id, vod_created} if live with a recording VOD, None if not, UNKNOWN if Twitch hiccuped."""
-    q = ('query { user(login: "%s") { stream { id createdAt title game { name } } '
-         'videos(first: 1, type: ARCHIVE, sort: TIME) { edges { node { id status createdAt title } } } } }' % login.lower())
+    q = ('query { user(login: "%s") { stream { id createdAt title game { name } archiveVideo { id createdAt status } } } }'
+         % login.lower())
     data = twitch._gql({"query": q})
-    if not data or data.get("errors"):
+    user = (((data or {}).get("data") or {}).get("user")) if data else None
+    if user is None and data and "archiveVideo" in str(data.get("errors")):   # field not available: plain query
+        data = twitch._gql({"query": 'query { user(login: "%s") { stream { id createdAt title game { name } } } }'
+                                     % login.lower()})
+        user = (((data or {}).get("data") or {}).get("user")) if data else None
+    if user is None:
         return UNKNOWN
-    user = ((data.get("data") or {}).get("user")) or {}
     st = user.get("stream")
     if not st:
-        return None
-    edges = ((user.get("videos") or {}).get("edges") or [])
-    v = (edges[0].get("node") or {}) if edges else {}
-    if v.get("status") != "RECORDING":
-        log.info("%s is live but has no recording VOD (VODs off?); can't clip it live", login)
-        return None
+        return None if not (data or {}).get("errors") else UNKNOWN
+    v = st.get("archiveVideo") or {}
+    if not v.get("id"):   # older way: the newest past broadcast, if it's the one still recording
+        q2 = ('query { user(login: "%s") { videos(first: 1, type: ARCHIVE, sort: TIME) '
+              '{ edges { node { id status createdAt } } } } }' % login.lower())
+        d2 = twitch._gql({"query": q2})
+        edges = (((((d2 or {}).get("data") or {}).get("user") or {}).get("videos") or {}).get("edges")) or []
+        if not edges:
+            return UNKNOWN if (not d2 or d2.get("errors")) else None
+        v = edges[0].get("node") or {}
+        if v.get("status") != "RECORDING":
+            log.info("%s is live but has no recording VOD (VODs off?); can't clip it live", login)
+            return None
     return {"game": (st.get("game") or {}).get("name") or "", "title": st.get("title") or "",
-            "vod_id": v["id"], "vod_created": _ts(v["createdAt"])}
+            "vod_id": v["id"], "vod_created": _ts(v.get("createdAt") or st.get("createdAt"))}
 
 
 def top_gta_channel(game="Grand Theft Auto V", n=15):
@@ -320,6 +331,7 @@ def watch():
     worker = threading.Thread(target=_worker, args=(cfg, pending, watching, busy, ended), daemon=True)
     worker.start()
     next_check = 0
+    test_give_up = time.time() + 300   # a test keeps asking Twitch for 5 minutes before deciding nobody's live
     next_pull = time.time() + 600
     allowed = True
     while time.time() < deadline:
@@ -358,7 +370,7 @@ def watch():
             if not watching and not test:
                 log.info("nobody is live on GTA right now")
                 return
-            if not watching and test and pending.empty() and not busy.is_set():
+            if not watching and test and pending.empty() and not busy.is_set() and time.time() > test_give_up:
                 print(f"::warning::{streamers[0]['channel']} isn't live on GTA right now; nothing to test", flush=True)
                 return
         for login, w in watching.items():

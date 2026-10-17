@@ -761,15 +761,26 @@ print("NO WASTED POLISH OK")
 
 # ---------- 18. a Twitch hiccup doesn't make the live watcher think a stream ended ----------
 _g = _tw._gql
-_tw._gql = lambda body, timeout=15: {"errors": [{"message": "service error"}], "data": {"user": {"stream": None}}}
+_tw._gql = lambda body, timeout=15: {"errors": [{"message": "service error"}], "data": {"user": None}}
 assert _live.live_info("xqc") == _live.UNKNOWN
+# the stream's own recording link is enough (no video-list query needed)
+_tw._gql = lambda body, timeout=15: {"data": {"user": {"stream": {"title": "t", "createdAt": "2026-10-17T00:00:00Z",
+                                                                  "game": {"name": "Grand Theft Auto V"},
+                                                                  "archiveVideo": {"id": "77", "createdAt": "2026-10-17T00:00:05Z"}}}}}
+assert _live.live_info("xqc")["vod_id"] == "77"
 _tw._gql = lambda body, timeout=15: None
 assert _live.live_info("xqc") == _live.UNKNOWN
 _tw._gql = lambda body, timeout=15: {"data": {"user": {"stream": None, "videos": {"edges": []}}}}
 assert _live.live_info("xqc") is None
-_tw._gql = lambda body, timeout=15: {"data": {"user": {"stream": {"title": "t", "game": {"name": "Grand Theft Auto V"}},
-                                                       "videos": {"edges": [{"node": {"id": "9", "status": "RECORDING",
-                                                                                      "createdAt": "2026-10-17T00:00:00Z"}}]}}}}
+def _two(body, timeout=15):   # no archiveVideo: falls back to the newest past broadcast
+    if "archiveVideo" in body["query"]:
+        return {"data": {"user": {"stream": {"title": "t", "game": {"name": "Grand Theft Auto V"}, "archiveVideo": None,
+                                             "createdAt": "2026-10-17T00:00:00Z"}}}}
+    return {"data": {"user": {"videos": {"edges": [{"node": {"id": "9", "status": "RECORDING",
+                                                             "createdAt": "2026-10-17T00:00:00Z"}}]}}}}
+
+
+_tw._gql = _two
 assert _live.live_info("xqc")["vod_id"] == "9"
 _tw._gql = _g
 print("LIVE HICCUP OK")
