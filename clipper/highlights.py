@@ -142,9 +142,7 @@ def clip_budget(cfg, seconds):
     return picks, cands
 
 
-def judge(cfg, vod, windows, client=None, max_picks=None):
-    import anthropic
-    client = client or anthropic.Anthropic()
+def judge_prompt(cfg, vod, windows, max_picks=None):
     playbook = PLAYBOOK_FILE.read_text() if PLAYBOOK_FILE.exists() else ""
     if playbook:
         playbook = "What has worked and failed on this account so far (follow it):\n" + playbook
@@ -161,39 +159,78 @@ def judge(cfg, vod, windows, client=None, max_picks=None):
         lo, hi = ins["target_seconds"]
         length_note = (f"\nOn this account, clips of {lo}-{hi} seconds have been doing best so far: aim for that "
                        f"unless the moment truly needs more or less.")
-    prompt = JUDGE_PROMPT.format(length_note=length_note, streamer=vod["streamer"]["name"], title=vod.get("title", ""),
-                                 max_picks=max_picks or c.get("min_per_vod", 3), min_s=c["min_seconds"], max_s=c["max_seconds"],
-                                 hook_guide=HOOK_GUIDE, playbook=playbook, candidates=cand_txt)
-    data = ask_json(client, cfg["models"]["judge"], prompt, "picks", max_tokens=8000)
-    return validate_picks(data, windows, c)[: max_picks or len(windows)]
+    return JUDGE_PROMPT.format(length_note=length_note, streamer=vod["streamer"]["name"], title=vod.get("title", ""),
+                               max_picks=max_picks or c.get("min_per_vod", 3), min_s=c["min_seconds"], max_s=c["max_seconds"],
+                               hook_guide=HOOK_GUIDE, playbook=playbook, candidates=cand_txt)
+
+
+JUDGE_MAX_TOKENS = 8000
+
+
+def judge_params(cfg, vod, windows, max_picks=None):
+    """The judge request, ready to send now or to put in a batch."""
+    return tool_params(cfg["models"]["judge"], judge_prompt(cfg, vod, windows, max_picks), list_schema("picks"),
+                       JUDGE_MAX_TOKENS)
+
+
+def judge_picks(cfg, data, windows, max_picks=None):
+    return validate_picks(data, windows, cfg["clip"])[: max_picks or len(windows)]
+
+
+def judge(cfg, vod, windows, client=None, max_picks=None):
+    import anthropic
+    client = client or anthropic.Anthropic()
+    data = ask_json(client, cfg["models"]["judge"], judge_prompt(cfg, vod, windows, max_picks), "picks",
+                    max_tokens=JUDGE_MAX_TOKENS)
+    return judge_picks(cfg, data, windows, max_picks)
+
+
+def list_schema(key):
+    return {"type": "object", "required": [key], "properties": {key: {"type": "array", "items": {"type": "object"}}}}
 
 
 def ask_json(client, model, prompt, key, max_tokens=4000):
     """Ask Claude for {key: [objects]}. A forced tool call guarantees well-formed JSON (hooks are full of quotes
     and emojis that break hand-written JSON); falls back to parsing text if the reply has no tool call."""
-    return ask_tool(client, model, prompt, {"type": "object", "required": [key],
-                                            "properties": {key: {"type": "array", "items": {"type": "object"}}}}, max_tokens)
+    return ask_tool(client, model, prompt, list_schema(key), max_tokens)
 
 
-def ask_tool(client, model, prompt, schema, max_tokens=4000, attempts=3):
-    """Get a JSON object from Claude through a tool call (valid JSON even when hooks are full of quotes and emojis).
-    Falls back to parsing a JSON reply, and asks again if neither works."""
+def tool_params(model, prompt, schema, max_tokens=4000):
+    """The request for a tool-call answer (also what goes into a batch)."""
     tool = {"name": "submit", "description": "Submit the answer. Always answer by calling this tool.", "input_schema": schema}
     ask = "\n\nAnswer by calling the submit tool."
     if isinstance(prompt, list):   # images + text
         content = prompt[:-1] + [dict(prompt[-1], text=prompt[-1]["text"] + ask)]
     else:
         content = prompt + ask
+    return {"model": model, "max_tokens": max_tokens, "tools": [tool], "tool_choice": {"type": "auto"},
+            "messages": [{"role": "user", "content": content}]}
+
+
+def _get(x, k):
+    return x.get(k) if isinstance(x, dict) else getattr(x, k, None)
+
+
+def read_tool_reply(msg):
+    """The JSON object from a tool-call reply (or from JSON text). Raises ValueError if neither is there."""
+    blocks = _get(msg, "content") or []
+    for b in blocks:
+        inp = _get(b, "input")
+        if _get(b, "type") == "tool_use" and isinstance(inp, dict) and inp:
+            return inp
+    return parse_json("".join(_get(b, "text") or "" for b in blocks if _get(b, "type") == "text"))
+
+
+def ask_tool(client, model, prompt, schema, max_tokens=4000, attempts=3):
+    """Get a JSON object from Claude through a tool call (valid JSON even when hooks are full of quotes and emojis).
+    Falls back to parsing a JSON reply, and asks again if neither works."""
+    params = tool_params(model, prompt, schema, max_tokens)
     last = None
     for _ in range(attempts):
-        msg = client.messages.create(model=model, max_tokens=max_tokens, tools=[tool], tool_choice={"type": "auto"},
-                                     messages=[{"role": "user", "content": content}])
+        msg = client.messages.create(**params)
         record_usage(msg)
-        for b in msg.content:
-            if getattr(b, "type", "") == "tool_use" and isinstance(getattr(b, "input", None), dict) and b.input:
-                return b.input
         try:
-            return parse_json("".join(b.text for b in msg.content if getattr(b, "type", "") == "text"))
+            return read_tool_reply(msg)
         except ValueError as e:   # JSONDecodeError is a ValueError
             last = e
             log.warning("unreadable reply from Claude (%s); asking again", e)
@@ -207,16 +244,16 @@ class SpendCapReached(RuntimeError):
     """Today's Claude budget is used up; skip Claude work until tomorrow."""
 
 
-def record_usage(msg):
+def record_usage(msg, discount=1.0):
     from .common import add_spend
-    u = getattr(msg, "usage", None)
+    u = _get(msg, "usage")
     if u is None:
         return
-    inp = (getattr(u, "input_tokens", 0) or 0) + (getattr(u, "cache_creation_input_tokens", 0) or 0)
-    out = getattr(u, "output_tokens", 0) or 0
+    inp = (_get(u, "input_tokens") or 0) + (_get(u, "cache_creation_input_tokens") or 0)
+    out = _get(u, "output_tokens") or 0
     if not isinstance(inp, (int, float)) or not isinstance(out, (int, float)):
         return
-    add_spend(inp / 1e6 * PRICE_PER_MTOK["input"] + out / 1e6 * PRICE_PER_MTOK["output"])
+    add_spend(discount * (inp / 1e6 * PRICE_PER_MTOK["input"] + out / 1e6 * PRICE_PER_MTOK["output"]))
 
 
 def budget_left(cfg, state):
@@ -352,6 +389,15 @@ def merge_candidates(db, sig, n, min_gap=45):
 
 def analyze(cfg, vod, wav, client=None, max_picks=None):
     """Full pass for one VOD: signals -> candidate windows -> transcripts -> Claude picks."""
+    windows, words_all, max_picks = prepare(cfg, vod, wav, max_picks)
+    if not windows:
+        return [], []
+    picks = judge(cfg, vod, windows, client, max_picks=max_picks)
+    return edit_hooks(cfg, picks, windows, client), words_all
+
+
+def prepare(cfg, vod, wav, max_picks=None):
+    """Signals -> candidate windows with transcripts (no Claude). Returns (windows, words, max_picks)."""
     db = loudness_curve(wav)
     budget_picks, n_cands = clip_budget(cfg, len(db))
     if max_picks:   # the queue only has room for a few: judge fewer moments too (fewer tokens)
@@ -381,7 +427,4 @@ def analyze(cfg, vod, wav, client=None, max_picks=None):
         windows.append({"id": i, "start": s, "end": e, "signals": c["signals"],
                         "chat": twitch.chat_sample(sig.get("msgs") or [], s, e),
                         "spike": float(db[c["t"]] - np.median(db)), "text": text_with_marks(words, s, e)})
-    if not windows:
-        return [], []
-    picks = judge(cfg, vod, windows, client, max_picks=max_picks)
-    return edit_hooks(cfg, picks, windows, client), words_all
+    return windows, words_all, max_picks

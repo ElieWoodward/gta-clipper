@@ -2,7 +2,7 @@ name: clipper
 
 on:
   schedule:
-    - cron: "17 */3 * * *"   # process: look for new VODs every 3 hours
+    - cron: "17 * * * *"     # process: hourly (new streams, and clips from finished half-price judging)
     - cron: "4,19,34,49 * * * *"   # post: every 15 min (GitHub delays/skips scheduled runs, so check often)
     - cron: "23 14 * * *"    # analytics + prune + dashboard: daily ~7am Pacific
     - cron: "41 15 * * 1"    # learn: weekly on Monday
@@ -41,7 +41,7 @@ jobs:
         id: pick
         run: |
           case "${{ github.event.schedule }}" in
-            "17 */3 * * *") JOB=process ;;
+            "17 * * * *")   JOB=process ;;
             "4,19,34,49 * * * *") JOB=post ;;
             "23 14 * * *")  JOB=analytics ;;
             "41 15 * * 1")  JOB=learn ;;

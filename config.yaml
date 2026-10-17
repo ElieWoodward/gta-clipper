@@ -116,3 +116,5 @@ accounts:                         # your pages; checked every hour to see which 
 limits:
   claude_usd_per_day: 1.00        # no Claude calls after this much spend in a day (UTC); the next day starts fresh
   price_per_mtok: {input: 2.0, output: 10.0}   # Claude Sonnet 5.5 list price in USD per million tokens
+  batch: true                     # judge full streams through Anthropic's half-price batch API (live clips stay instant)
+  batch_wait_hours: 6             # if a batch isn't back by then, judge the normal way

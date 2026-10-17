@@ -631,3 +631,61 @@ assert timing.report(cfg, st, tz)[0].startswith("- 20:00")
 # ramp: two emails a day from day 3
 assert any(r["from_day"] == 3 and r["per_day"] == 2 for r in cfg["posting"]["ramp"])
 print("TIMING OK")
+
+# ---------- 15. half-price batch judging: submit, wait, finish on a later run ----------
+from clipper import batch  # noqa: E402
+
+
+class FakeBatches:
+    def __init__(self):
+        self.reqs, self.status, self.cancelled = {}, "in_progress", []
+
+    def create(self, requests):
+        bid = f"msgbatch_{len(self.reqs) + 1}"
+        self.reqs[bid] = requests
+        return SimpleNamespace(id=bid)
+
+    def retrieve(self, bid):
+        return SimpleNamespace(id=bid, processing_status=self.status)
+
+    def cancel(self, bid):
+        self.cancelled.append(bid)
+
+    def results(self, bid):
+        for r in self.reqs[bid]:
+            msg = SimpleNamespace(content=[SimpleNamespace(type="text", text=judge_reply(r["params"]))],
+                                  usage=SimpleNamespace(input_tokens=100_000, output_tokens=2_000))
+            yield SimpleNamespace(custom_id=r["custom_id"], result=SimpleNamespace(type="succeeded", message=msg))
+
+
+bclient = FakeClaude(judge_reply)
+bclient.batches = FakeBatches()
+cfg_b = dict(cfg2, queue={"max_size": 50, "max_age_hours": 48})
+bvod = dict(vod, id="twitch:v555", url="https://twitch.tv/videos/555")
+bd = TMP / "work" / "bvod"
+bwav = fake_audio(bvod, bd)
+wins, bwords, mp = highlights.prepare(cfg_b, bvod, bwav)
+assert wins
+rec = batch.submit(bclient, bvod, wins, bwords, mp, highlights.judge_params(cfg_b, bvod, wins, mp))
+assert batch.pending() and rec["batch_id"] == "msgbatch_1"
+st = common.load_state()
+before = len(st["clips"])
+_spent0 = common.spend_today(st)
+jobs.finish_batches(cfg_b, st, client=bclient)          # still running: nothing happens, stays pending
+assert batch.pending() and len(st["clips"]) == before
+bclient.batches.status = "ended"
+jobs.finish_batches(cfg_b, st, client=bclient)          # done: clips made, pending cleared
+new = [c for c in st["clips"].values() if c.get("vod") == "twitch:v555"]
+assert new and not batch.pending(), (len(new), batch.pending())
+_spent = common.spend_today(st) - _spent0
+assert 0.10 < _spent < 0.2, _spent   # $0.22 at full price, half in a batch
+bclient.batches.status = "in_progress"
+rec2 = batch.submit(bclient, dict(bvod, id="twitch:v556"), wins, bwords, mp, highlights.judge_params(cfg_b, bvod, wins, mp))
+p2 = batch._path("twitch:v556")
+r2 = json.loads(p2.read_text())
+r2["submitted"] = (common.now_utc() - timedelta(hours=7)).isoformat()
+p2.write_text(json.dumps(r2))
+jobs.finish_batches(cfg_b, st, client=bclient)          # stuck too long: cancelled, judged the normal way
+assert not batch.pending() and bclient.batches.cancelled == [rec2["batch_id"]]
+assert any(c.get("vod") == "twitch:v556" for c in st["clips"].values())
+print("BATCH OK")

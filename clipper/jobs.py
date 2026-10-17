@@ -73,6 +73,7 @@ def process():
         return
     if clipqueue.email_mode(cfg):
         clipqueue.expire(cfg, state)
+        finish_batches(cfg, state)   # clips from streams judged at half price on an earlier run
         if not claude_allowed(cfg, state):
             return
     else:
@@ -107,6 +108,14 @@ def _process_vod(cfg, state, vod, client=None):
         limit = None
         if clipqueue.email_mode(cfg) and not TEST_SOURCE:
             limit = max(1, clipqueue.room(cfg, state))   # only as many as the queue has room for
+        from . import batch
+        if batch.enabled(cfg) and not TEST_SOURCE and not DRY_RUN:
+            windows, words, max_picks = highlights.prepare(cfg, vod, wav, limit)
+            if windows:
+                import anthropic
+                batch.submit(client or anthropic.Anthropic(), vod, windows, words, max_picks,
+                             highlights.judge_params(cfg, vod, windows, max_picks))
+            return
         picks, words = highlights.analyze(cfg, vod, wav, client, max_picks=limit)
         log.info("%s: %d picks", vod["id"], len(picks))
         bar = cfg["clip"]["min_score"]
@@ -123,6 +132,62 @@ def _process_vod(cfg, state, vod, client=None):
     finally:
         if DRY_RUN:  # keep the finished clips so a test run can hand them over
             export_test_clips(d)
+        shutil.rmtree(d, ignore_errors=True)
+
+
+def finish_batches(cfg, state, client=None):
+    """Turn finished half-price judging batches into clips (or judge normally if a batch is stuck)."""
+    from . import batch
+    recs = batch.pending()
+    if not recs:
+        return
+    import anthropic
+    client = client or anthropic.Anthropic()
+    for rec in recs:
+        vod = rec["vod"]
+        try:
+            status, data = batch.result(client, cfg, rec)
+        except Exception as e:
+            log.warning("couldn't check batch %s: %s", rec["batch_id"], e)
+            continue
+        if status == "waiting":
+            log.info("%s: batch still running", vod["id"])
+            continue
+        if highlights.budget_left(cfg, state) <= 0:
+            print("::notice::today's Claude budget is used up; finishing judged streams tomorrow", flush=True)
+            return
+        windows, words = rec["windows"], batch.words_of(rec)
+        try:
+            if status == "fallback":
+                print(f"::notice::{vod['streamer']['name']}: {data}; judging the normal way", flush=True)
+                picks = highlights.judge(cfg, vod, windows, client, max_picks=rec["max_picks"])
+            else:
+                picks = highlights.judge_picks(cfg, data, windows, rec["max_picks"])
+            picks = highlights.edit_hooks(cfg, picks, windows, client)
+            _make_from_picks(cfg, state, vod, picks, words)
+        except Exception as e:
+            log.exception("finishing %s failed: %s", vod["id"], e)
+        batch.drop(rec)
+        save_state(state)
+
+
+def _make_from_picks(cfg, state, vod, picks, words):
+    d = WORK / _clip_id(vod["id"], 1)
+    d.mkdir(parents=True, exist_ok=True)
+    try:
+        bar = cfg["clip"]["min_score"]
+        for p in picks:
+            if clipqueue.email_mode(cfg) and clipqueue.room(cfg, state) <= 0:
+                break
+            if cfg["review"]["mode"] == "auto" and int(p["score"]) < bar:
+                continue
+            if overlaps_existing(state, vod["id"], p["start"], p["end"]):
+                continue
+            make_clip(cfg, state, vod, p, words, d)
+        made = sum(1 for c in state["clips"].values() if c.get("vod") == vod["id"])
+        print(f"::notice::{vod['streamer']['name']}: {len(picks)} picks judged, {made} clip(s) in the queue from this "
+              "stream", flush=True)
+    finally:
         shutil.rmtree(d, ignore_errors=True)
 
 
