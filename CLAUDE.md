@@ -29,7 +29,10 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
     watcher and merged in on load.
 - `.github/workflows/clipper.yml`: post every 15 min, process hourly, analytics daily, learn Mondays, plus manual
   runs and test runs. All share one concurrency group, so a long run delays the others.
-- `.github/workflows/live.yml`: live watcher at :07/:27/:47, own concurrency group, writes only `data/live.json`.
+- `.github/workflows/live.yml`: live watcher, own concurrency group, writes only `data/live.json`. It runs for
+  ~6h, then dispatches itself again (`live.Heartbeat.hand_over`); its cron at :07/:27/:47 is only a backup.
+  GitHub skips many scheduled runs, so the watcher is also the heartbeat: it dispatches clipper.yml `post` every
+  15 min and `process` hourly, and catches up `analytics`/`learn` from `state["last_run"]`.
 - `config.yaml`: every setting Elie can change. `tests/test_pipeline.py`: offline end-to-end test, no keys needed.
 
 ## Rules

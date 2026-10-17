@@ -784,3 +784,27 @@ _tw._gql = _two
 assert _live.live_info("xqc")["vod_id"] == "9"
 _tw._gql = _g
 print("LIVE HICCUP OK")
+
+# ---------- 19. heartbeat: starts post every 15 min, process hourly, catches up skipped daily jobs ----------
+hb = _live.Heartbeat(cfg)
+calls = []
+hb.dispatch = lambda wf, job=None: calls.append((wf, job)) or True
+t0 = hb.next_post - 60
+for minute in range(0, 61):
+    hb.tick(t0 + minute * 60)
+posts = [c for c in calls if c == ("clipper.yml", "post")]
+procs = [c for c in calls if c == ("clipper.yml", "process")]
+assert len(posts) == 4 and len(procs) == 1, calls
+st = common.load_state()
+st["last_run"] = {"analytics": (common.now_utc() - timedelta(hours=30)).isoformat()}
+common.save_state(st)
+calls.clear()
+hb._catch_up()
+_local_hour = common.now_local(cfg).hour
+assert (("clipper.yml", "analytics") in calls) == (_local_hour >= 7), (calls, _local_hour)
+calls.clear()
+hb._catch_up()   # already started it once: no second dispatch even though the local state still looks stale
+assert ("clipper.yml", "analytics") not in calls, calls
+hb.hand_over()
+assert calls[-1] == ("live.yml", None)
+print("HEARTBEAT OK")

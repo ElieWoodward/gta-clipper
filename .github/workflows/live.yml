@@ -1,7 +1,9 @@
 name: live
 
-# Watches enabled streamers while they're live on GTA and clips big moments within minutes.
-# Each run lasts up to ~5.8 hours while someone is live (seconds if nobody is); the next one picks up after it.
+# Always on: watches enabled streamers while they're live on GTA and clips big moments within minutes, and works as
+# the heartbeat that starts the posting check every 15 min and the stream check hourly (GitHub skips many scheduled
+# runs). Each run lasts ~5.8 hours and starts the next one before it ends; the cron below restarts the chain if it
+# ever breaks.
 on:
   schedule:
     - cron: "7,27,47 * * * *"   # off the round minutes, where GitHub delays and drops scheduled runs
@@ -10,6 +12,7 @@ on:
 permissions:
   contents: write
   issues: write
+  actions: write
 
 concurrency:
   group: clipper-live
@@ -18,7 +21,7 @@ concurrency:
 jobs:
   watch:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 358
     steps:
       - uses: actions/checkout@v5
 

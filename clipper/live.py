@@ -34,7 +34,7 @@ LIVE_DEFAULTS = {
     "post_now_score": 8,        # live clips scoring this or more post right away
     "extra_posts_per_day": 1,   # live posts allowed on top of the normal daily ramp
     "vod_lag_seconds": 75,      # how far Twitch's in-progress VOD trails the live stream
-    "max_minutes": 345,         # one watcher run; the next scheduled run takes over
+    "max_minutes": 345,         # one watcher run; it then starts the next one itself (Heartbeat.hand_over)
 }
 CLIP_POLL_SECONDS = 90
 TEST_MINUTES = 10
@@ -282,6 +282,75 @@ def maybe_post_now(cfg, state, clip):
         jobs.post_clip(cfg, state, clip, platform)
 
 
+# ------------------------------------------------------------------ heartbeat
+class Heartbeat:
+    """GitHub skips or delays many scheduled runs, so this always-running job starts the others itself: the posting
+    check every 15 minutes, the stream check every hour, the daily campaign scan and the Monday report when they're
+    overdue. Before GitHub's 6-hour limit it starts the next copy of itself. The cron schedules stay as a backup."""
+
+    POST_EVERY, PROCESS_EVERY = 15 * 60, 60 * 60
+
+    def __init__(self, cfg):
+        self.cfg = cfg
+        now = time.time()
+        self.next_post, self.next_process, self.next_daily = now + 60, now + 300, now + 600
+        self.started = {}   # job -> when this heartbeat started it (the state file here may lag behind)
+
+    def dispatch(self, workflow, job=None):
+        if os.environ.get("GITHUB_ACTIONS") != "true" or jobs.DRY_RUN:
+            return False
+        import requests
+        body = {"ref": os.environ.get("GITHUB_REF_NAME") or "main"}
+        if job:
+            body["inputs"] = {"job": job}
+        try:
+            r = requests.post(f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/workflows/"
+                              f"{workflow}/dispatches", json=body, timeout=30,
+                              headers={"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+                                       "Accept": "application/vnd.github+json"})
+            if r.status_code >= 300:
+                log.warning("couldn't start %s %s: %s %s", workflow, job or "", r.status_code, r.text[:200])
+                return False
+            return True
+        except Exception as e:
+            log.warning("couldn't start %s %s: %s", workflow, job or "", e)
+            return False
+
+    def tick(self, now):
+        if now >= self.next_post:
+            self.next_post = now + self.POST_EVERY
+            self.dispatch("clipper.yml", "post")
+        if now >= self.next_process:
+            self.next_process = now + self.PROCESS_EVERY
+            self.dispatch("clipper.yml", "process")
+        if now >= self.next_daily:
+            self.next_daily = now + 3600
+            self._catch_up()
+
+    def _catch_up(self):
+        """Run the daily campaign scan / Monday report if their scheduled runs were skipped."""
+        from datetime import datetime, timedelta, timezone
+        from zoneinfo import ZoneInfo
+        st = load_state()
+        last = (st.get("last_run") or {})
+        now = datetime.now(timezone.utc)
+        local = now.astimezone(ZoneInfo(self.cfg.get("timezone", "UTC")))
+        def stale(job, gap):
+            seen = [datetime.fromisoformat(t) for t in (last.get(job), self.started.get(job)) if t]
+            return not seen or now - max(seen) > gap
+        if local.hour >= 7 and stale("analytics", timedelta(hours=20)):
+            self.started["analytics"] = now.isoformat()
+            self.dispatch("clipper.yml", "analytics")
+        if local.weekday() == 0 and local.hour >= 8 and stale("learn", timedelta(days=6)):
+            self.started["learn"] = now.isoformat()
+            self.dispatch("clipper.yml", "learn")
+
+    def hand_over(self):
+        """Start the next heartbeat (it queues behind this run and takes over when this one ends)."""
+        if self.dispatch("live.yml"):
+            log.info("next heartbeat started")
+
+
 # ------------------------------------------------------------------ syncing with the other jobs
 def git_sync(message):
     """Commit data/live.json and pull the other jobs' latest state (posts made today, etc.)."""
@@ -334,8 +403,11 @@ def watch():
     test_give_up = time.time() + 300   # a test keeps asking Twitch for 5 minutes before deciding nobody's live
     next_pull = time.time() + 600
     allowed = True
+    beat = None if test else Heartbeat(cfg)
     while time.time() < deadline:
         now = time.time()
+        if beat:
+            beat.tick(now)
         if now >= next_check:   # who's live (every 2 minutes), and is there room in the queue / budget
             next_check = now + 120
             if now >= next_pull:
@@ -369,7 +441,6 @@ def watch():
                     log.info("%s is no longer live on GTA", login)
             if not watching and not test:
                 log.info("nobody is live on GTA right now")
-                return
             if not watching and test and pending.empty() and not busy.is_set() and time.time() > test_give_up:
                 print(f"::warning::{streamers[0]['channel']} isn't live on GTA right now; nothing to test", flush=True)
                 return
@@ -417,6 +488,8 @@ def watch():
         time.sleep(5)
     for w in watching.values():
         w["chat"].stop = True
+    if beat:
+        beat.hand_over()
     if test:
         _test_summary()
 

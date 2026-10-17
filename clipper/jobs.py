@@ -678,8 +678,13 @@ def email_post(cfg):
 
 
 # ------------------------------------------------------------------ analytics + prune
+def _ran(state, job):
+    state.setdefault("last_run", {})[job] = now_utc().isoformat()
+
+
 def analytics():
     cfg, state = load_config(), load_state()
+    _ran(state, "analytics")
     if clipqueue.email_mode(cfg):   # posting is by hand: no Blotato stats; look for paid campaigns instead
         from . import campaigns
         try:
@@ -875,6 +880,8 @@ def _weekly_email(cfg, rows, out):
 def learn(client=None):
     import anthropic
     cfg, state = load_config(), load_state()
+    _ran(state, "learn")
+    save_state(state)
     rows = []
     for c in state["clips"].values():
         for pl, p in c["posts"].items():

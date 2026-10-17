@@ -46,7 +46,7 @@ emails you a ready-to-post clip at each posting time. Everything runs on GitHub 
 |---|---|---|
 | clipper: post | every 15 minutes | Reads TikTok/YouTube/replies, expires old clips, emails a clip when a slot is due, updates the dashboard |
 | clipper: process | hourly | Finishes half-price judging from earlier runs, checks for new finished streams while the queue has room |
-| live | every 20 minutes | Watches streamers who are live on GTA and clips big moments within minutes |
+| live | always on (restarts itself every ~6h) | Watches streamers who are live on GTA and clips big moments within minutes. It also starts the post and process runs on time, because GitHub often skips scheduled runs |
 | clipper: analytics | daily ~7am Pacific | Scans paid clipping campaigns |
 | clipper: learn | Mondays | Weekly report and new picker rules |
 
