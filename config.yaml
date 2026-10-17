@@ -17,6 +17,10 @@ streamers:
     platform: twitch
     channel: cinna
     enabled: true
+  - name: vanillamace
+    platform: twitch
+    channel: vanillamace
+    enabled: true
   - name: AnthonyZ
     platform: twitch
     channel: anthonyz
