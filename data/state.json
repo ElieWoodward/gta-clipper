@@ -885,6 +885,47 @@
     "zzend__texting-stories": "2026-10-16"
   },
   "clips": {
+    "12ab7e8ade": {
+      "asset_id": 649600609,
+      "caption": "the way she just said sorry sir and bailed \ud83d\ude2d",
+      "created": "2026-10-17T05:05:09.020533+00:00",
+      "duration": 41.0,
+      "end": 15892.0,
+      "facecam": true,
+      "file": "12ab7e8ade.mp4",
+      "framing": "The facecam is at the left, and the character or car stays near the center, so a narrow slice works.",
+      "hook": "POV: you panic and jump in a random man's car \ud83d\udc80",
+      "hook_options": [
+        "POV: you jump in the wrong car during a getaway \ud83d\ude2d",
+        "I got in a random man's car \ud83d\udc80",
+        "When you panic and pick the wrong ride in GTA RP \ud83d\ude2d",
+        "Bro didn't check whose car that was \ud83d\udc80",
+        "Chat, he really just hopped in a stranger's ride \ud83e\udd23",
+        "POV: you jump in the wrong car during a getaway \ud83d\ude2d"
+      ],
+      "hook_score": 8,
+      "id": "12ab7e8ade",
+      "issue": 9,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/45628caccd/12ab7e8ade.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/12ab7e8ade.mp4",
+      "posts": {},
+      "punch_at": 8.46,
+      "punch_text": "Don't try it",
+      "said": "Get out! You bitch! Get out! Don't try it. Oh! Where do you want to go? Never mind. How about I stay? Sorry, sir. He said don't try it. I'm getting another four right now. I just got into a random man's car and he said don't try it. So I had to get out.",
+      "score": 7,
+      "start": 15851.0,
+      "status": "approved",
+      "streamer": "Cinna",
+      "tags": [
+        "funny_line",
+        "chaos"
+      ],
+      "title": "I got in a random man's car and he said don't try it \ud83d\udc80",
+      "vod": "twitch:v2902461688",
+      "vod_url": "https://www.twitch.tv/videos/2902461688",
+      "why": "She frantically hops into a stranger's car, gets kicked out, then deadpans the explanation; chat erupted."
+    },
     "150849d268": {
       "asset_id": 647826701,
       "caption": "the confidence before the disaster \ud83d\ude2d\ud83d\udc80",
@@ -1314,7 +1355,7 @@
   },
   "spend": {
     "2026-10-16": 0.1561,
-    "2026-10-17": 0.1103
+    "2026-10-17": 0.1383
   },
   "status_updated": "2026-10-17T04:59:45.445180+00:00",
   "streamers": {
