@@ -18,12 +18,18 @@ class PreflightFailed(RuntimeError):
     pass
 
 
+VERBOSE = {"on": True}   # scheduled runs turn this off so the run page keeps room for the notices that matter
+
+
 def _check(name, fn, results):
     t0 = time.time()
     try:
         detail = fn() or ""
         results.append((name, True, f"{detail} ({time.time() - t0:.0f}s)"))
-        print(f"::notice::preflight ok: {name}: {detail}", flush=True)
+        if VERBOSE["on"]:
+            print(f"::notice::preflight ok: {name}: {detail}", flush=True)
+        else:
+            log.info("preflight ok: %s: %s", name, detail)
     except Exception as e:
         results.append((name, False, f"{type(e).__name__}: {str(e)[:300]}"))
         print(f"::error::preflight FAILED: {name}: {type(e).__name__}: {str(e)[:400]}", flush=True)
@@ -155,4 +161,6 @@ def run_all(cfg, vod=None, client=None, posting=False):
     if bad:
         raise PreflightFailed("; ".join(f"{n}: {m}" for n, _, m in bad))
     log.info("preflight passed: %s", results)
+    if not VERBOSE["on"]:
+        print(f"::notice::preflight ok ({len(results)} checks)", flush=True)
     return results

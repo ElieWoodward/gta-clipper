@@ -27,9 +27,11 @@ def load_config():
     try:
         from .campaigns import joined_streamers
         state = json.loads(STATE_FILE.read_text()) if STATE_FILE.exists() else {}
-        have = {(s.get("channel") or s.get("name") or "").lower() for s in cfg.get("streamers") or []}
+        mine = {(s.get("channel") or s.get("name") or "").lower(): s for s in cfg.get("streamers") or []}
         for s in joined_streamers(state):
-            if s["channel"] not in have:
+            if s["channel"] in mine:   # already clipped: just note the campaign so it gets priority
+                mine[s["channel"]].update(campaign=s["campaign"], campaign_joined=s["campaign_joined"], enabled=True)
+            else:
                 cfg.setdefault("streamers", []).append(s)
     except Exception as e:
         log.warning("couldn't add campaign streamers: %s", e)

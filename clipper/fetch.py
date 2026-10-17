@@ -20,7 +20,9 @@ def list_new_vods(cfg, state):
     out = []
     # Streamers who show their face go first: when the queue fills up, their clips are the ones that get made.
     cams = state.get("streamers", {})
-    order = sorted(cfg.get("streamers", []), key=lambda s: not (s.get("facecam") or cams.get(s["name"], {}).get("facecam")))
+    # Paid campaigns you joined go first, then other campaigns, then streamers who show their face.
+    order = sorted(cfg.get("streamers", []), key=lambda s: (not s.get("campaign_joined"), not s.get("campaign"),
+                                                            not (s.get("facecam") or cams.get(s["name"], {}).get("facecam"))))
     for s in order:
         if not s.get("enabled", True):
             continue

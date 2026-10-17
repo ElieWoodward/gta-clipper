@@ -524,7 +524,13 @@ assert big["auto_clip"] and big["twitch_login"] == "bigrp_live" and not flower["
 assert flower["name"] == "Flower In A Hurricane [GTA 6 CLIPPING]", flower["name"]
 assert flower["join_url"] == "https://clippingalpha.com/go/1063378?via=detail", flower["join_url"]
 assert len(sent) == n + 1 and sent[n]["subject"].startswith("Campaign:") and "Bigrp" in sent[n]["subject"]
-assert 'Reply "join"' in sent[n]["text"] and "bigrp_live" in sent[n]["text"]
+assert 'reply "join"' in sent[n]["text"] and "bigrp_live" in sent[n]["text"]
+# found campaign streamers are clipped right away (before you join), but don't get priority yet
+st0 = dict(st, clips={})
+common.save_state(st)
+_cfg_found = common.load_config()
+_bs = [s for s in _cfg_found["streamers"] if s["channel"] == "bigrp_live"]
+assert _bs and _bs[0]["campaign"] and not _bs[0]["campaign_joined"], _bs
 assert st["campaigns"][flower["id"]]["status"] == "noted", "edit campaigns are recorded, not emailed"
 assert campaigns.scan(cfg, st) == [] and len(sent) == n + 1, "a campaign is only emailed once"
 # replying "join" adds the streamer to the ones the bot clips
@@ -534,7 +540,11 @@ replies[:] = []
 assert st["campaigns"][big["id"]]["status"] == "joined"
 common.save_state(st)
 cfg2 = common.load_config()
-assert any(s["channel"] == "bigrp_live" and s.get("campaign") for s in cfg2["streamers"]), cfg2["streamers"]
+assert any(s["channel"] == "bigrp_live" and s.get("campaign_joined") for s in cfg2["streamers"]), cfg2["streamers"]
+# joined campaign streamers are checked first
+from clipper import fetch as _f  # noqa: E402
+_order = sorted(cfg2["streamers"], key=lambda s: (not s.get("campaign_joined"), not s.get("campaign")))
+assert _order[0]["channel"] == "bigrp_live"
 assert mail.reply_verdict("join") == "join"
 # a clip of that streamer: the email says how to claim, and a claim email goes out once it's posted
 st = common.load_state()
@@ -689,3 +699,52 @@ jobs.finish_batches(cfg_b, st, client=bclient)          # stuck too long: cancel
 assert not batch.pending() and bclient.batches.cancelled == [rec2["batch_id"]]
 assert any(c.get("vod") == "twitch:v556" for c in st["clips"].values())
 print("BATCH OK")
+
+
+# ---------- 16. campaign priority, campaign end, reply commands ----------
+st = common.load_state()
+pc = fake_clip("paid8", 7, 1, "paid streamer caption")
+pc["streamer"] = "bigrp_live"
+fc = fake_clip("free8", 8, 1, "free streamer caption")
+fc["streamer"] = "someoneelse"
+ids = [c["id"] for c in clipqueue.queue(st)]
+assert ids.index("paid8") < ids.index("free8"), "a joined-campaign 7 ranks with an 8"
+# the campaign disappears from the directory: streamer stops being clipped, you get told
+campaigns._get = lambda url: ('<article><a href="/campaigns/other/x">x</a>Board: Content Rewards LOW 1 Other thing '
+                              'Platforms TikTok CLIPPING $1.00 per 1K views $1K of $1K left</article>'
+                              if url.endswith("/campaigns") else "")
+n = len(sent)
+campaigns.scan(cfg2, st)
+assert st["campaigns"][big["id"]]["status"] == "ended" and any("campaign ended" in x["subject"] for x in sent[n:])
+common.save_state(st)
+assert not any(s["channel"] == "bigrp_live" for s in common.load_config()["streamers"])
+# reply commands: pause / resume / next
+assert mail.reply_verdict("pause please") == "pause" and mail.reply_verdict("resume") == "resume"
+assert mail.reply_verdict("next") == "next"
+st = common.load_state()
+replies[:] = [("<x@y>", "pause")]
+clipqueue.refresh_posted(cfg, st)
+assert st["email"]["paused"]
+common.save_state(st)
+replies[:] = []
+n = len(sent)
+jobs.FORCE = False
+jobs.email_post(cfg)
+assert len(sent) == n, "paused: no posting email"
+st = common.load_state()
+replies[:] = [("<x@y>", "resume"), ("<x@y>", "next")]
+clipqueue.refresh_posted(cfg, st)
+replies[:] = []
+assert not st["email"]["paused"] and st["email"]["send_next"]
+common.save_state(st)
+_today = common.now_local(cfg).date().isoformat()
+_before = clipqueue.emailed_on(common.load_state(), _today, cfg.get("timezone", "UTC"))
+jobs.email_post(cfg)
+st = common.load_state()
+assert len(sent) == n + 1 and sent[-1]["subject"].startswith("Post now"), [x["subject"] for x in sent[n:]]
+assert clipqueue.emailed_on(st, _today, cfg.get("timezone", "UTC")) == _before, "an extra clip doesn't use up a slot"
+# dashboard renders in email mode without crashing (posts missing times included)
+st["clips"]["paid8"]["posts"] = {"tiktok": {"url": "u", "views": 5}}
+body = jobs._status_issue(cfg, st)
+assert "Queue (" in body and "Today's posting times" in body and "Streamers being clipped" in body
+print("PRIORITY + REPLIES OK")

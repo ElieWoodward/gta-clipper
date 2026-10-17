@@ -45,12 +45,19 @@ def _posting_ready(cfg=None):
     return False
 
 
+def open_room(cfg, state):
+    """Queue room left after the clips that streams already handed to half-price judging will probably add."""
+    from . import batch
+    expected = sum(min(int(r.get("max_picks") or 2), 2) for r in batch.pending())
+    return clipqueue.room(cfg, state) - expected
+
+
 def claude_allowed(cfg, state, why=""):
     """Room in the queue and in today's Claude budget? Prints why not."""
     if TEST_SOURCE:
         return True
     if clipqueue.email_mode(cfg):
-        free = clipqueue.room(cfg, state)
+        free = open_room(cfg, state)
         if free <= 0:
             print(f"::notice::queue is full ({clipqueue.settings(cfg)['max_size']} clips waiting); not looking for "
                   f"new clips{why}", flush=True)
@@ -83,8 +90,7 @@ def process():
             return
     vods = fetch.list_new_vods(cfg, state)
     if vods:
-        from . import preflight
-        preflight.run_all(cfg, vods[0], posting=not DRY_RUN)   # stop before downloading if anything is broken
+        _preflight_if_due(cfg, state, vods[0])   # stop before downloading if anything is broken
     for vod in vods:
         if clipqueue.email_mode(cfg) and not claude_allowed(cfg, state, "; leaving the rest of the streams for later"):
             break
@@ -95,9 +101,28 @@ def process():
             continue
         except Exception as e:  # one bad VOD shouldn't stop the rest
             log.exception("failed on %s: %s", vod["id"], e)
+            tries = state.setdefault("vod_failures", {})
+            tries[vod["id"]] = tries.get(vod["id"], 0) + 1
+            print(f"::warning::{vod['streamer']['name']}'s stream {vod['id']} failed ({type(e).__name__}: "
+                  f"{str(e)[:160]}); {'giving up on it' if tries[vod['id']] >= 2 else 'will retry next run'}", flush=True)
+            if tries[vod["id"]] < 2:
+                save_state(state)
+                continue
         state["processed_vods"].append(vod["id"])
         state["processed_vods"] = state["processed_vods"][-500:]
         save_state(state)
+
+
+def _preflight_if_due(cfg, state, vod, hours=12):
+    """The full service check costs a little Claude each time, so scheduled runs do it twice a day at most."""
+    from . import preflight
+    last = (state.get("preflight") or {}).get("ok")
+    if last and now_utc() - datetime.fromisoformat(last) < timedelta(hours=hours):
+        return
+    preflight.VERBOSE["on"] = False
+    preflight.run_all(cfg, vod, posting=not DRY_RUN)
+    state.setdefault("preflight", {})["ok"] = now_utc().isoformat()
+    save_state(state)
 
 
 def _process_vod(cfg, state, vod, client=None):
@@ -107,7 +132,7 @@ def _process_vod(cfg, state, vod, client=None):
         wav = fetch.download_audio(vod, d)
         limit = None
         if clipqueue.email_mode(cfg) and not TEST_SOURCE:
-            limit = max(1, clipqueue.room(cfg, state))   # only as many as the queue has room for
+            limit = max(1, open_room(cfg, state))   # only as many as the queue has room for
         from . import batch
         if batch.enabled(cfg) and not TEST_SOURCE and not DRY_RUN:
             windows, words, max_picks = highlights.prepare(cfg, vod, wav, limit)
@@ -348,7 +373,9 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
     auto = cfg["review"]["mode"] == "auto"
     clip["status"] = ("approved" if clip["score"] >= cfg["clip"]["min_score"] else "rejected") if auto else "queued"
     if not DRY_RUN:
-        verdict = {"approved": "Will post automatically.", "rejected": "Below the score bar, won't post.",
+        verdict = {"approved": ("Waiting in the queue; it'll be emailed to you at a posting time."
+                                if clipqueue.email_mode(cfg) else "Will post automatically."),
+                   "rejected": "Below the score bar, won't post.",
                    "queued": "Add the `approve` label to post it, or close this issue to skip it."}[clip["status"]]
         body = (f"**Score {clip['score']}/10** · {clip['streamer']} · {clip['duration']}s\n\n"
                 f"Video: {media_url}\n\n**Hook:** {clip['hook']}\n\n"
@@ -523,14 +550,23 @@ def overlaps_existing(state, vod_id, start, end, min_share=0.5):
 
 # ------------------------------------------------------------------ email mode: one email per posting slot
 def cleanup_assets(state):
-    """Delete the stored video of clips that left the queue."""
+    """Delete the stored video of clips that left the queue, and close their GitHub issues."""
     for c in state["clips"].values():
-        if c.get("asset_id") and not c.get("asset_deleted") and c.get("status") != "approved":
+        if c.get("status") == "approved":
+            continue
+        if c.get("asset_id") and not c.get("asset_deleted"):
             try:
                 services.release_delete(c["asset_id"])
                 c["asset_deleted"] = True
             except Exception as e:
                 log.info("couldn't delete stored video for %s: %s", c["id"], e)
+        if c.get("issue") and not c.get("issue_closed") and not DRY_RUN:
+            try:
+                services.gh_comment(c["issue"], f"Left the queue: {c['status']}.")
+                services.gh_update(c["issue"], state="closed")
+                c["issue_closed"] = True
+            except Exception as e:
+                log.info("couldn't close issue for %s: %s", c["id"], e)
 
 
 def emails_due(cfg, state, now):
@@ -614,13 +650,27 @@ def email_post(cfg):
     due, sent = emails_due(cfg, state, now)
     q = clipqueue.queue(state)
     log.info("queue %d, emails due today %d, sent %d", len(q), due, sent)
-    if FORCE or sent < due:
+    em = state.setdefault("email", {})
+    if em.pop("send_next", False):   # you replied "next": one more clip now, on top of the day's count
+        clip = clipqueue.pick_for_email(state)
+        if clip:
+            clip["extra"] = True
+            send_package(cfg, state, clip)
+    elif em.get("paused") and not FORCE:
+        log.info("posting emails are paused (reply resume to turn them back on)")
+    elif FORCE or sent < due:
         clip = clipqueue.pick_for_email(state)
         if clip:
             send_package(cfg, state, clip)
         else:
             log.info("a posting slot is due but nothing new is waiting")
     health.check_quiet(cfg, state, len(clipqueue.queue(state)))
+    last = state.get("status_updated")
+    if not last or now_utc() - datetime.fromisoformat(last) > timedelta(minutes=55):
+        try:
+            _status_issue(cfg, state)
+        except Exception as e:
+            log.info("dashboard update failed: %s", e)
     save_state(state)
 
 
@@ -698,23 +748,60 @@ def _prune(cfg, state):
     save_state(state)
 
 
+def _status_email_mode(cfg, state):
+    """Dashboard body for email mode: queue, today's posting times, streamers, campaigns, spend, recent posts."""
+    from . import batch, campaigns
+    from .common import spend_today
+    now = now_local(cfg)
+    q = clipqueue.queue(state)
+    out = [f"Updated {now:%a %b %d %I:%M %p}. Day {days_since_start(cfg)}: {_quota(cfg)} posting email(s) a day."]
+    slots = _slots(cfg, _quota(cfg), state)
+    due, sent = emails_due(cfg, state, now)
+    nxt = next((sl for sl in slots if now.strftime("%H:%M") < sl), None)
+    out.append(f"Today's posting times: {', '.join(slots) or 'none'} ({sent} sent so far"
+               + (f", next at {nxt})" if nxt else ")"))
+    if (state.get("email") or {}).get("paused"):
+        out.append("**Emails are paused.** Reply `resume` to any bot email to turn them back on.")
+    out.append(f"\n### Queue ({len(q)}/{clipqueue.settings(cfg)['max_size']})")
+    out += [f"- {c['score']}/10 · {c['streamer']} · {int((now_utc() - datetime.fromisoformat(c['created'])).total_seconds() // 3600)}h old"
+            f"{' · emailed' if c.get('emailed_at') else ''} · {c['hook']}" for c in q] or ["- empty: it's looking for clips"]
+    pend = batch.pending()
+    if pend:
+        out.append(f"\n{len(pend)} stream(s) being judged at half price: " + ", ".join(r['vod']['streamer']['name'] for r in pend))
+    names = [f"{x['name']}{' (paid campaign)' if x.get('campaign') else ''}" for x in cfg.get("streamers", [])
+             if x.get("enabled", True)]
+    out.append("\n### Streamers being clipped\n" + ", ".join(names))
+    camps = [r for r in (state.get("campaigns") or {}).values() if r.get("status") in ("notified", "joined", "auto")]
+    if camps:
+        out.append("\n### Paid campaigns\n" + "\n".join(
+            f"- {r['name']} ({r.get('rate') or '?'} per 1K) · {r['status']} · {r.get('join_url') or r['url']}" for r in camps))
+    week = sum(v for d, v in (state.get("spend") or {}).items()
+               if d >= (now_utc() - timedelta(days=7)).date().isoformat())
+    out.append(f"\nClaude spend: ${spend_today(state):.2f} today, ${week:.2f} in the last 7 days.")
+    return "\n".join(out)
+
+
 def _status_issue(cfg, state):
     rows = []
     posts = [(c, pl, p) for c in state["clips"].values() for pl, p in c["posts"].items()]
-    posts.sort(key=lambda x: x[2]["posted_at"], reverse=True)
+    posts.sort(key=lambda x: x[2].get("posted_at") or x[2].get("seen_at") or "", reverse=True)
     for c, pl, p in posts[:40]:
-        rows.append(f"| {p['date']} | {pl} | {c['streamer']} | {c['hook'][:40]} | {p.get('views') if p.get('views') is not None else '…'} "
+        rows.append(f"| {p.get('date', '')} | {pl} | {c['streamer']} | {c['hook'][:40]} | {p.get('views') if p.get('views') is not None else '…'} "
                     f"| {'hidden' if p.get('hidden') else ('low' if p.get('prune_flagged') else '')} | {p.get('url') or p.get('error') or ''} |")
     total = defaultdict(int)
     for c, pl, p in posts:
         total[pl] += p.get("views") or 0
-    body = (f"Updated {now_local(cfg):%b %d %I:%M %p}. Day {days_since_start(cfg)} since launch, "
-            f"{_quota(cfg)} posts/day per platform.\n\n"
-            + " · ".join(f"**{pl}**: {v:,} total views" for pl, v in total.items())
-            + f"\n\nQueue: {len(_queued(state))} clips ready.\n\n"
-            "| date | platform | streamer | hook | views | flag | link |\n|---|---|---|---|---|---|---|\n"
+    head = (_status_email_mode(cfg, state) if clipqueue.email_mode(cfg) else
+            f"Updated {now_local(cfg):%b %d %I:%M %p}. Day {days_since_start(cfg)} since launch, "
+            f"{_quota(cfg)} posts/day per platform.\n\nQueue: {len(_queued(state))} clips ready.")
+    body = (head + "\n\n### Posts\n"
+            + (" · ".join(f"**{pl}**: {v:,} total views" for pl, v in total.items()) or "nothing posted yet")
+            + "\n\n| date | platform | streamer | hook | views | flag | link |\n|---|---|---|---|---|---|---|\n"
             + "\n".join(rows))
-    services.gh_upsert_pinned("status", "Clip dashboard", body)
+    if not DRY_RUN:
+        services.gh_upsert_pinned("status", "Clip dashboard", body)
+    state["status_updated"] = now_utc().isoformat()
+    return body
 
 
 # ------------------------------------------------------------------ learn

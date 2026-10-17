@@ -170,8 +170,9 @@ def _steps(m):
              f"Click Join (it opens the board: {m['join_url']}) and sign in with the channel Gmail.",
              "Read the brief there. The key rules are copied below, but the board's page is the one that counts."]
     if m["auto_clip"]:
-        steps.append(f'Reply "join" to this email and the bot starts clipping {m["twitch_login"]} on Twitch. Every '
-                     "posting email for their clips will include the link to submit.")
+        steps.append(f'The bot has already started clipping {m["twitch_login"]} (GTA only). Once you\'ve joined, reply '
+                     '"join" to this email: their clips then go to the front of the queue and every posting email for '
+                     'them includes the link to submit. Reply "skip" if you don\'t want this one.')
     else:
         steps.append("This one needs edits the bot doesn't make (for example trailer edits set to a song). "
                      'Reply "skip" to stop hearing about it.')
@@ -203,6 +204,27 @@ def scan(cfg, state):
     log.info("campaign scan: %d live campaigns", len(cards))
     print(f"::notice::campaign scan: {len(cards)} live campaigns listed", flush=True)
     found, sent = [], 0
+    live_ids = {c["id"] for c in cards}
+    dry = os.environ.get("DRY_RUN") == "1"
+    for rec in book.values():   # campaigns that disappeared (budget spent, ended): stop clipping for them
+        if rec.get("status") in ACTIVE and rec["id"] not in live_ids and cards:
+            rec["status"] = "ended"
+            rec["ended"] = now_utc().isoformat()
+            print(f"::notice::campaign ended: {rec['name']}", flush=True)
+            if rec.get("joined") and mail.configured() and not dry:
+                try:
+                    mail.send(f"Clip bot: campaign ended: {rec['name'][:60]}",
+                              f"{rec['name']} is no longer listed (budget used up or ended). The bot stopped clipping "
+                              f"{rec.get('twitch_login')} for it. Submit any clips you haven't yet at "
+                              f"{rec.get('join_url') or rec['url']} while the page is still up.")
+                except Exception as e:
+                    log.info("couldn't send the campaign-ended email: %s", e)
+    for rec in book.values():   # matches found earlier but not emailed yet (daily email cap)
+        if rec.get("status") == "found" and rec.get("auto_clip") and mail.configured() and not dry \
+                and sent < MAX_EMAILS_PER_SCAN:
+            rec["email_message_id"] = notify(state, dict(rec, brief=rec.get("brief") or ""))
+            rec["status"] = "notified"
+            sent += 1
     for c in cards:
         if c["id"] in seen or c["id"] in book:
             continue
@@ -217,7 +239,6 @@ def scan(cfg, state):
         rec = {k: m.get(k) for k in ("id", "name", "url", "join_url", "rate", "left", "budget", "platforms", "kind",
                                      "twitch_login", "auto_clip", "why")}
         rec.update(brief=m["brief"][:1500], found=now_utc().isoformat(), status="found")
-        dry = os.environ.get("DRY_RUN") == "1"
         if dry:
             print(f"::notice::[dry run] would email: {rec['name']} | {rec.get('rate')}/1K | twitch={rec.get('twitch_login')} "
                   f"| join={rec.get('join_url')}", flush=True)
@@ -243,23 +264,32 @@ def apply_reply(state, ref, verdict):
                 rec["status"] = "joined" if rec.get("auto_clip") else "joined_manual"
                 rec["joined"] = now_utc().isoformat()
             elif verdict == "skip":
-                rec["status"] = "skipped"
+                rec["status"] = "skipped"   # also stops clipping them (unless they're in config.yaml)
             return True
     return False
 
 
+ACTIVE = ("found", "notified", "joined")   # campaigns whose streamer is being clipped
+
+
 def joined_streamers(state):
-    """Streamer entries (config format) for campaigns Elie joined."""
+    """Streamer entries (config format) for campaigns that pay for a GTA streamer's clips. They're clipped as soon as
+    they're found, so clips are ready by the time you join; joined ones go first."""
     out = []
-    for rec in (state.get("campaigns") or {}).values():
-        if rec.get("status") == "joined" and rec.get("twitch_login"):
+    recs = sorted((state.get("campaigns") or {}).values(), key=lambda r: r.get("status") != "joined")
+    for rec in recs:
+        if rec.get("status") in ACTIVE and rec.get("auto_clip") and rec.get("twitch_login"):
             out.append({"name": rec["twitch_login"], "platform": "twitch", "channel": rec["twitch_login"],
-                        "enabled": True, "campaign": rec["name"], "campaign_id": rec["id"]})
+                        "enabled": True, "campaign": rec["name"], "campaign_id": rec["id"],
+                        "campaign_joined": rec.get("status") == "joined"})
     return out
 
 
-def campaign_for(state, streamer_name):
+def campaign_for(state, streamer_name, joined_only=False):
+    """The active campaign that pays for this streamer's clips (None if there isn't one)."""
     for rec in (state.get("campaigns") or {}).values():
-        if rec.get("status") == "joined" and (rec.get("twitch_login") or "").lower() == (streamer_name or "").lower():
+        if (rec.get("twitch_login") or "").lower() != (streamer_name or "").lower():
+            continue
+        if rec.get("status") == "joined" or (not joined_only and rec.get("status") in ACTIVE):
             return rec
     return None

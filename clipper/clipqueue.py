@@ -31,9 +31,14 @@ def _created(c):
 
 
 def queue(state):
-    """Clips waiting to be posted, best first."""
+    """Clips waiting to be posted, best first. A clip from a paid campaign you joined counts one point higher."""
+    paid = {(r.get("twitch_login") or "").lower() for r in (state.get("campaigns") or {}).values()
+            if r.get("status") == "joined"}
     q = [c for c in state["clips"].values() if c.get("status") == "approved"]
-    return sorted(q, key=lambda c: (c["score"], bool(c.get("facecam")), c["created"]), reverse=True)
+    def is_paid(c):
+        return (c.get("streamer") or "").lower() in paid
+    return sorted(q, key=lambda c: (c["score"] + (1 if is_paid(c) else 0), is_paid(c), bool(c.get("facecam")),
+                                    c["created"]), reverse=True)
 
 
 def room(cfg, state):
@@ -63,7 +68,7 @@ def emailed_on(state, day, tz):
     from zoneinfo import ZoneInfo
     n = 0
     for c in state["clips"].values():
-        if c.get("emailed_at") and c.get("status") != "skipped":
+        if c.get("emailed_at") and c.get("status") != "skipped" and not c.get("extra"):
             if datetime.fromisoformat(c["emailed_at"]).astimezone(ZoneInfo(tz)).date().isoformat() == day:
                 n += 1
     return n
@@ -120,11 +125,15 @@ def package(cfg, clip, queue_now, state=None):
         ("Source", source or "(manual upload)"),
         ("Still in the queue", waiting),
     ]
-    if rec:
+    if rec and rec.get("status") == "joined":
         blocks.insert(0, ("Paid campaign", f"{rec['name']} ({rec.get('rate') or '?'} per 1K views).\nFollow the brief's "
                           f"caption/hashtag rules (on the board), post, then submit your link at "
                           f"{rec.get('join_url') or rec['url']}. You'll also get a Claim email with the exact link once "
                           "the post is seen."))
+    elif rec:
+        blocks.insert(0, ("Paid campaign (not joined yet)", f"{rec['name']} pays {rec.get('rate') or '?'} per 1K views "
+                          f"for clips of this streamer. Join at {rec.get('join_url') or rec['url']} BEFORE posting, then "
+                          "follow the brief's caption rules and submit your link to get paid for this one."))
     return {"subject": f"Post now: {clip['hook']} ({clip['score']}/10)", "blocks": blocks,
             "tiktok_caption": tiktok_caption, "yt_title": yt_title}
 
@@ -135,8 +144,9 @@ def render_email(pkg, download_url=None, attached=True):
         lines += [f"=== {label.upper()} ===", text, ""]
     note = ("The video is attached." if attached else "The video was too big to attach.") + \
         (f" Backup download: {download_url}" if download_url else "")
-    lines += [note, "", 'Reply "posted" once it\'s up, or "skip" to drop it. (It also notices on its own when it '
-                        "shows up on your TikTok.)"]
+    lines += [note, "", 'Reply "posted" once it\'s up, or "skip" to drop it (a skipped clip gets replaced). It also '
+                        "notices on its own when it shows up on your TikTok.",
+              'Other replies: "next" sends another clip now, "pause" stops posting emails, "resume" starts them again.']
     text = "\n".join(lines)
 
     def esc(t):
@@ -147,7 +157,8 @@ def render_email(pkg, download_url=None, attached=True):
                     f'<div style="background:#f3f3f3;border-radius:8px;padding:12px;white-space:pre-wrap;'
                     f'user-select:all">{esc(text_)}</div>')
     html.append(f'<p style="margin-top:20px;color:#444">{esc(note)}</p>'
-                f'<p style="color:#444">Reply <b>posted</b> once it\'s up, or <b>skip</b> to drop it.</p></div>')
+                f'<p style="color:#444">Reply <b>posted</b> once it\'s up, or <b>skip</b> to drop it (it gets replaced). '
+                f'Also: <b>next</b> sends another clip now, <b>pause</b> / <b>resume</b> the posting emails.</p></div>')
     return text, "".join(html)
 
 
@@ -336,7 +347,7 @@ def youtube_uploads(channel_id):
 def claim_email(cfg, state, clip, platform):
     """If the clip belongs to a joined campaign, email the exact link to submit for payment (once per platform)."""
     from . import campaigns, mail
-    rec = campaigns.campaign_for(state, clip.get("streamer"))
+    rec = campaigns.campaign_for(state, clip.get("streamer"), joined_only=True)
     url = (clip.get("posts", {}).get(platform) or {}).get("url")
     if not rec or not url or clip.setdefault("claim_sent", {}).get(platform) or not mail.configured():
         return
@@ -396,6 +407,15 @@ def refresh_posted(cfg, state):
             from . import campaigns
             by_msg = {c.get("email_message_id"): c for c in state["clips"].values() if c.get("email_message_id")}
             for ref, verdict in mail.read_replies():
+                em = state.setdefault("email", {})
+                if verdict in ("pause", "resume"):
+                    em["paused"] = verdict == "pause"
+                    notes.append("you paused the posting emails" if em["paused"] else "you resumed the posting emails")
+                    continue
+                if verdict == "next":
+                    em["send_next"] = True
+                    notes.append("you asked for another clip now")
+                    continue
                 if campaigns.apply_reply(state, ref, verdict):
                     notes.append(f"campaign reply: {verdict}")
                     continue

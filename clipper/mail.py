@@ -84,6 +84,12 @@ def reply_verdict(text):
             continue
         if re.match(r"^(on .+ wrote:|-{2,}|sent from)", line):
             return None
+        if re.match(r"^(pause|stop|vacation)\b", line):
+            return "pause"
+        if re.match(r"^(resume|unpause|start|back)\b", line):
+            return "resume"
+        if re.match(r"^(next|another|more|send another)\b", line):
+            return "next"
         if re.match(r"^(join|joined|in|sign me up)\b", line):
             return "join"
         if re.match(r"^(posted|post|done|uploaded|yes)\b", line):
@@ -101,7 +107,7 @@ def read_replies(since_days=7):
     try:
         m.select("INBOX")
         nums = []
-        for subj in ('"Post now"', '"Campaign:"'):
+        for subj in ('"Post now"', '"Campaign:"', '"Claim:"', '"Weekly:"', '"Clip bot"'):
             typ, data = m.search(None, "UNSEEN", "SUBJECT", subj)
             nums += data[0].split() if data and data[0] else []
         for num in dict.fromkeys(nums):
