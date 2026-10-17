@@ -57,8 +57,8 @@ posting:
   ramp:
     - {from_day: 0, per_day: 1}
     - {from_day: 3, per_day: 2}
-    - {from_day: 21, per_day: 3}
-    - {from_day: 42, per_day: 4}
+    - {from_day: 7, per_day: 3}
+    - {from_day: 14, per_day: 4}
   slots: ["11:00", "15:00", "18:00", "20:30"]   # local times; first N used each day
   adaptive_slots: true            # after enough data, shift slots toward hours that perform best (blotato mode)
   time_test:                      # email mode: try different posting times and keep the ones that get views fastest
@@ -94,7 +94,7 @@ live:
   extra_posts_per_day: 1          # live posts allowed on top of the daily ramp
 
 queue:                            # email mode only
-  max_size: 5                     # stop looking for new clips once this many are waiting (saves Claude money)
+  max_size: 8                     # stop looking for new clips once this many are waiting (saves Claude money)
   max_age_hours: 48               # clips older than this are dropped; fresh beats a big backlog
 
 accounts:                         # your pages; checked every hour to see which emailed clips you've posted

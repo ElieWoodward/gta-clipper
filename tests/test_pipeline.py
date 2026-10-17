@@ -294,7 +294,8 @@ print("LIVE OK")
 # ---------- 9. email mode: queue, emails, posted detection, spend cap, alerts ----------
 from datetime import datetime as _dt, timezone as _tz  # noqa: E402
 from clipper import clipqueue, mail, health  # noqa: E402
-(TMP / "config.yaml").write_text(_cfg_text.replace("  mode: blotato ", "  mode: email ", 1))
+(TMP / "config.yaml").write_text(_cfg_text.replace("  mode: blotato ", "  mode: email ", 1)
+                                 .replace("  max_size: 8 ", "  max_size: 5 ", 1))   # the queue tests assume 5
 os.environ.pop("DRY_RUN", None)
 jobs.DRY_RUN = False
 os.environ.update(GMAIL_ADDRESS="bot@example.com", GMAIL_APP_PASSWORD="abcd efgh ijkl mnop", NOTIFY_EMAIL="me@example.com")
