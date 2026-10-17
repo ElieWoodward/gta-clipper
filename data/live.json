@@ -1,0 +1,52 @@
+{
+  "alerts": {},
+  "clips": {
+    "9d7b9a4591": {
+      "asset_id": 651505210,
+      "caption": "the way he just ran screaming \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-17T20:21:24.151683+00:00",
+      "duration": 35.0,
+      "end": 6443.5,
+      "facecam": true,
+      "file": "9d7b9a4591.mp4",
+      "framing": "A webcam sits at the left, and the only action is the car driving near the center, so a narrow slice around it works.",
+      "hook": "Bro got robbed and hit on at the same time \ud83d\ude2d\ud83d\udc80",
+      "hook_options": [
+        "POV: you rob him and then ask for his number",
+        "When you hold him up and shoot your shot at the same time",
+        "She robbed him then asked for his number \ud83d\ude2d\ud83d\udc80",
+        "Bro got jumped by a rizz tactic and ran",
+        "Who taught her to pick up guys like this \ud83d\ude2d",
+        "POV: you rob him and then ask for his number \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "9d7b9a4591",
+      "issue": 10,
+      "layout": "cam+fill",
+      "live": true,
+      "live_signal": "chat exploded live (3.3x normal)",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/live_v2903457060_6378/9d7b9a4591.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/9d7b9a4591.mp4",
+      "posts": {},
+      "punch_at": 31.8,
+      "punch_text": "He's still running to this day",
+      "said": "wasn't the harassment part apart when she held a gun to their head and then said give me your number Don said oh if you hold them up for their wallet and you take it and then you say while you're giving me your wallet can I have your number I didn't think that was that crazy but apparently apparently that's a no-go Don apparently that's a no-go yeah I mean that guy ran like I don't know Yeah, like, I don't know. He just ran screaming. He's still running to this day. I think he's still running. I'm being told. I'm getting reports.",
+      "score": 7,
+      "start": 6408.5,
+      "status": "approved",
+      "streamer": "Cinna",
+      "tags": [
+        "funny_line",
+        "rp_drama"
+      ],
+      "title": "She held him up, then asked for his number \ud83d\ude2d",
+      "vod": "twitch:v2903457060",
+      "vod_url": "https://www.twitch.tv/videos/2903457060",
+      "why": "Deadpan retelling of a gun-point wallet robbery with a number request, ending with the guy still running; chat exploded laughing."
+    }
+  },
+  "health": {},
+  "spend": {
+    "2026-10-17": 0.0319
+  }
+}
