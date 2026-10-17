@@ -325,9 +325,35 @@ def youtube_channel_id(handle):
     return m.group(1)
 
 
-def youtube_uploads(channel_id):
-    r = requests.get("https://www.youtube.com/feeds/videos.xml", params={"channel_id": channel_id}, timeout=30)
-    r.raise_for_status()
+def youtube_shorts(handle, n=30):
+    """Backup when the RSS feed is down: the channel's Shorts tab via yt-dlp (titles, links, view counts)."""
+    raw = run(["yt-dlp", "--flat-playlist", "-J", "--playlist-end", str(n), f"https://www.youtube.com/@{handle}/shorts"])
+    out = []
+    for e in json.loads(raw).get("entries") or []:
+        vid = e.get("id")
+        out.append({"text": e.get("title") or "", "url": f"https://www.youtube.com/shorts/{vid}",
+                    "timestamp": e.get("timestamp"), "views": _int(e.get("view_count")), "likes": None})
+    return out
+
+
+def youtube_uploads(channel_id, handle=None):
+    """Latest uploads from the channel's RSS feed (with one retry); falls back to the Shorts tab if the feed is down."""
+    import time
+    r = None
+    for attempt in range(2):
+        try:
+            r = requests.get("https://www.youtube.com/feeds/videos.xml", params={"channel_id": channel_id}, timeout=30)
+            r.raise_for_status()
+            break
+        except Exception as e:
+            r = None
+            if attempt == 0:
+                time.sleep(10)
+            elif handle:
+                log.info("YouTube feed failed (%s); reading the Shorts tab instead", e)
+                return youtube_shorts(handle)
+            else:
+                raise
     ns = {"a": "http://www.w3.org/2005/Atom", "m": "http://search.yahoo.com/mrss/"}
     out = []
     for e in ET.fromstring(r.content).findall("a:entry", ns):
@@ -393,7 +419,7 @@ def refresh_posted(cfg, state):
             ids = state.setdefault("accounts", {})
             if not ids.get("youtube_channel_id"):
                 ids["youtube_channel_id"] = youtube_channel_id(yt)
-            yups = youtube_uploads(ids["youtube_channel_id"])
+            yups = youtube_uploads(ids["youtube_channel_id"], yt)
             for c in match_uploads(state, yups, "youtube"):
                 notes.append(f"seen on YouTube: {c['hook']}")
             update_stats(state, yups, "youtube", cfg.get("timezone", "UTC"))

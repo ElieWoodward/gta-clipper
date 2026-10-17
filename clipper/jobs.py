@@ -297,7 +297,7 @@ def _check_accounts(cfg):
     if acct.get("youtube"):
         try:
             cid = clipqueue.youtube_channel_id(acct["youtube"])
-            ups = clipqueue.youtube_uploads(cid)
+            ups = clipqueue.youtube_uploads(cid, acct["youtube"])
             print(f"::notice::YouTube channel readable ({cid}): {len(ups)} recent upload(s)", flush=True)
         except Exception as e:
             print(f"::warning::YouTube channel not readable ({str(e)[-160:]})", flush=True)
