@@ -1004,6 +1004,7 @@
       "why": "Streamer commits hard to a weird rolled-R rizz tactic while chat screams ew, and the group's verdict of harassment versus medical episode lands as a deadpan roast."
     },
     "150849d268": {
+      "asset_deleted": true,
       "asset_id": 647826701,
       "caption": "the confidence before the disaster \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-16T15:57:24.512606+00:00",
@@ -1024,6 +1025,7 @@
       "hook_score": 8,
       "id": "150849d268",
       "issue": 2,
+      "issue_closed": true,
       "layout": "cam+wide",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/02279cbb8e/150849d268.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/150849d268.mp4",
@@ -1033,7 +1035,7 @@
       "said": "I can put oh oh son of a bitch oh he made it worse god damn it I expected this thing to be repaired to a hundred percent condition What the hell? What the hell did you do? You son of a bitch! Well, there's your problem. Blew up. You know what? Ness is not gonna let you go. You deal with him, I'm getting the camera replacement, goddammit. What the fuck did you do, you cunt? Alright, listen. You broke the goddamn game. You broke the goddamn game. I've set a little bit of fault here.",
       "score": 7,
       "start": 17610,
-      "status": "approved",
+      "status": "expired",
       "streamer": "xQc",
       "tags": [
         "fail",
@@ -1805,6 +1807,10 @@
             [
               "2026-10-18T15:55:28.813763+00:00",
               1430
+            ],
+            [
+              "2026-10-18T16:10:54.680679+00:00",
+              1433
             ]
           ],
           "hour": "11:00",
@@ -1815,7 +1821,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/h-i9oBUzpow",
-          "views": 1430
+          "views": 1433
         }
       },
       "punch_at": 44.32,
@@ -1915,7 +1921,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-18T15:55:28.570999+00:00"
+      "ok": "2026-10-18T16:10:54.512292+00:00"
     }
   },
   "last_run": {
