@@ -1052,17 +1052,21 @@
             [
               "2026-10-18T03:17:55.021110+00:00",
               199
+            ],
+            [
+              "2026-10-18T03:33:05.153173+00:00",
+              225
             ]
           ],
           "hour": "18:00",
-          "likes": 6,
+          "likes": 9,
           "match": 1.1,
           "posted_at": "2026-10-18T01:09:30+00:00",
           "seen_at": "2026-10-18T01:11:23.627622+00:00",
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7697808721518267678",
-          "views": 199
+          "views": 225
         },
         "youtube": {
           "comments": null,
@@ -1412,6 +1416,10 @@
             [
               "2026-10-17T21:31:58.779853+00:00",
               1028
+            ],
+            [
+              "2026-10-18T03:33:05.153207+00:00",
+              1029
             ]
           ],
           "hour": "11:00",
@@ -1422,7 +1430,7 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7697338138603031821",
-          "views": 1028
+          "views": 1029
         },
         "youtube": {
           "comments": null,
@@ -1637,7 +1645,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-18T03:17:55.021140+00:00"
+      "ok": "2026-10-18T03:33:05.153214+00:00"
     }
   },
   "last_run": {
