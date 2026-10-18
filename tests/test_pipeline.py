@@ -808,3 +808,9 @@ assert ("clipper.yml", "analytics") not in calls, calls
 hb.hand_over()
 assert calls[-1] == ("live.yml", None)
 print("HEARTBEAT OK")
+
+# ---------- 20. TikTok upload time read from the video id when the listing has no timestamp ----------
+from clipper.clipqueue import upload_time as _ut
+assert _ut({"url": "https://www.tiktok.com/@a/video/7697808721518267678"}).isoformat().startswith("2026-10-18T01:09")
+assert _ut({"url": "https://www.youtube.com/shorts/appSZJXvGMc"}) is None
+print("UPLOAD TIME OK")

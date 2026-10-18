@@ -212,7 +212,7 @@ def match_uploads(state, uploads, platform):
         sent = datetime.fromisoformat(c["emailed_at"]) - timedelta(minutes=10)
         best, best_u = 0.0, None
         for u in uploads:
-            if u.get("timestamp") and datetime.fromtimestamp(u["timestamp"], timezone.utc) < sent:
+            if upload_time(u) and upload_time(u) < sent:
                 continue
             score = max(similarity(c.get("caption", ""), u.get("text", "")),
                         similarity(c.get("title", ""), u.get("text", "")),
@@ -222,7 +222,7 @@ def match_uploads(state, uploads, platform):
             if score > best:
                 best, best_u = score, u
         if best >= MATCH_THRESHOLD:
-            posted = (datetime.fromtimestamp(best_u["timestamp"], timezone.utc) if best_u.get("timestamp") else now_utc())
+            posted = upload_time(best_u) or now_utc()
             c.setdefault("posts", {})[platform] = {"status": "published", "url": best_u.get("url"), "seen_at": now_utc().isoformat(),
                                                   "date": posted.date().isoformat(), "posted_at": posted.isoformat(),
                                                   "match": round(best, 2), "views": None, "history": []}
@@ -234,6 +234,19 @@ def _vid_key(url):
     """The part of a post URL that identifies the video (TikTok id or YouTube id)."""
     m = re.search(r"/video/(\d+)|[?&]v=([\w-]{11})|/shorts/([\w-]{11})", url or "")
     return next((g for g in m.groups() if g), None) if m else (url or None)
+
+
+def upload_time(u):
+    """When a video went up (UTC). TikTok listings often leave the timestamp out, but a TikTok video id carries its
+    upload time in its top 32 bits, so that is used instead of guessing."""
+    if u.get("timestamp"):
+        return datetime.fromtimestamp(u["timestamp"], timezone.utc)
+    m = re.search(r"/video/(\d{15,})", u.get("url") or "")
+    if m:
+        t = int(m.group(1)) >> 32
+        if 1_500_000_000 < t < 4_000_000_000:
+            return datetime.fromtimestamp(t, timezone.utc)
+    return None
 
 
 def update_stats(state, uploads, platform, tz="UTC"):
@@ -249,8 +262,10 @@ def update_stats(state, uploads, platform, tz="UTC"):
         if not u or u.get("views") is None:
             continue
         p.update(views=int(u["views"]), likes=u.get("likes"), comments=u.get("comments"), shares=u.get("shares"))
-        if not p.get("posted_at") and u.get("timestamp"):
-            p["posted_at"] = datetime.fromtimestamp(u["timestamp"], timezone.utc).isoformat()
+        real = upload_time(u)
+        if real and (not p.get("posted_at") or abs(datetime.fromisoformat(p["posted_at"]) - real) > timedelta(minutes=2)):
+            p["posted_at"], p["date"] = real.isoformat(), real.date().isoformat()   # fix a time guessed from when we saw it
+            p.pop("hour", None)
         if not p.get("hour") and p.get("posted_at"):
             p["hour"] = datetime.fromisoformat(p["posted_at"]).astimezone(ZoneInfo(tz)).strftime("%H:00")
         hist = p.setdefault("history", [])
