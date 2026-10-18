@@ -1020,17 +1020,21 @@
             [
               "2026-10-18T01:17:43.086891+00:00",
               11
+            ],
+            [
+              "2026-10-18T01:32:43.848874+00:00",
+              41
             ]
           ],
           "hour": "18:00",
-          "likes": 0,
+          "likes": 1,
           "match": 1.1,
           "posted_at": "2026-10-18T01:09:30+00:00",
           "seen_at": "2026-10-18T01:11:23.627622+00:00",
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7697808721518267678",
-          "views": 11
+          "views": 41
         },
         "youtube": {
           "comments": null,
@@ -1055,17 +1059,21 @@
             [
               "2026-10-18T01:17:43.495892+00:00",
               195
+            ],
+            [
+              "2026-10-18T01:32:54.789529+00:00",
+              192
             ]
           ],
           "hour": "17:00",
-          "likes": 13,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-18T00:29:39+00:00",
           "seen_at": "2026-10-18T00:32:41.799268+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/appSZJXvGMc",
-          "views": 195
+          "views": 192
         }
       },
       "punch_at": 43.84,
@@ -1451,17 +1459,21 @@
             [
               "2026-10-18T01:11:23.820718+00:00",
               1398
+            ],
+            [
+              "2026-10-18T01:32:54.789557+00:00",
+              1300
             ]
           ],
           "hour": "11:00",
-          "likes": 28,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-16T18:41:23+00:00",
           "seen_at": "2026-10-16T21:12:13.954365+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/h-i9oBUzpow",
-          "views": 1398
+          "views": 1300
         }
       },
       "punch_at": 44.32,
@@ -1561,7 +1573,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-18T01:17:43.086915+00:00"
+      "ok": "2026-10-18T01:32:43.848904+00:00"
     }
   },
   "last_run": {
