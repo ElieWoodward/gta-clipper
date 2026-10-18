@@ -1394,6 +1394,7 @@
       "why": "A friendly smile test gets roasted, then a stranger interrupts and gets snapped at, proving the roast right."
     },
     "921330081b": {
+      "asset_deleted": true,
       "asset_id": 647819499,
       "caption": "the speed he gave in lmaooo \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-16T15:54:32.971702+00:00",
@@ -1414,6 +1415,7 @@
       "hook_score": 8,
       "id": "921330081b",
       "issue": 1,
+      "issue_closed": true,
       "layout": "cam+wide",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/02279cbb8e/921330081b.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/921330081b.mp4",
@@ -1423,7 +1425,7 @@
       "said": "Oh, don't be a pussy. Smoke it. Will you be a pop-top pussy, I swear? Come on, brother. Okay, one pop it and stuff it. I got a call from Mr. Beef. Just one. I think tomorrow or Saturday, they're going to put an effect in with jank. So they're going to start charging. I'm a bitch! Hey! Delete that photo! Out, out, out, out, out. Delete that photo! I didn't get the photo he did it too fast",
       "score": 7,
       "start": 5449.0,
-      "status": "approved",
+      "status": "expired",
       "streamer": "xQc",
       "tags": [
         "reaction",
@@ -1799,6 +1801,10 @@
             [
               "2026-10-18T14:10:16.531058+00:00",
               1433
+            ],
+            [
+              "2026-10-18T15:55:28.813763+00:00",
+              1430
             ]
           ],
           "hour": "11:00",
@@ -1809,7 +1815,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/h-i9oBUzpow",
-          "views": 1433
+          "views": 1430
         }
       },
       "punch_at": 44.32,
@@ -1909,7 +1915,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-18T15:40:36.093137+00:00"
+      "ok": "2026-10-18T15:55:28.570999+00:00"
     }
   },
   "last_run": {
