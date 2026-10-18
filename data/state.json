@@ -971,6 +971,8 @@
       "caption": "harassment or a medical episode, no in between \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-18T07:45:35.427801+00:00",
       "duration": 41.0,
+      "email_message_id": "<179235791756.3777.3792258874367876686@gmail.com>",
+      "emailed_at": "2026-10-18T21:12:06.031386+00:00",
       "end": 3485.0,
       "facecam": false,
       "file": "15068fdfe0.mp4",
@@ -995,6 +997,8 @@
       "punch_text": "Harassment vs medical episode",
       "said": "they like it okay okay now this is this is the riz tactic the riz tactic let me let me see ready okay okay okay ready uh okay i'm gonna roll my r's is that good so you don't like that so okay so that both are harassment not one of them was riz no no the second one people might be worried that you might be having like a medical episode okay okay so so so neither are riz then harassment versus medical episode that's what i'm working",
       "score": 7,
+      "sent_caption": "harassment or a medical episode, no in between \ud83d\ude2d\ud83d\udc80\n\nStreamer: Cinna\n#gta6 #gtarp #gta #funny #fyp #cinna",
+      "sent_title": "My rizz tactic got two ratings and both are bad \ud83d\udc80 #shorts",
       "start": 3444.0,
       "status": "approved",
       "streamer": "Cinna",
@@ -1964,12 +1968,19 @@
         "date": "2026-10-17",
         "subject": "Post now: POV: you beg a stranger to drive you to the bathroom \ud83d\ude2d\ud83d\udc80 (8/10)",
         "test": false
+      },
+      {
+        "at": "2026-10-18T21:12:06.031386+00:00",
+        "clip": "15068fdfe0",
+        "date": "2026-10-18",
+        "subject": "Post now: He really thought rolling his R's was rizz \ud83d\udc80 (7/10)",
+        "test": false
       }
     ]
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-18T20:56:48.010333+00:00"
+      "ok": "2026-10-18T21:11:56.559850+00:00"
     }
   },
   "last_run": {
