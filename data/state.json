@@ -939,6 +939,47 @@
       "vod_url": "https://www.twitch.tv/videos/2902461688",
       "why": "She frantically hops into a stranger's car, gets kicked out, then deadpans the explanation; chat erupted."
     },
+    "15068fdfe0": {
+      "asset_id": 652843023,
+      "caption": "harassment or a medical episode, no in between \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-18T07:45:35.427801+00:00",
+      "duration": 41.0,
+      "end": 3485.0,
+      "facecam": false,
+      "file": "15068fdfe0.mp4",
+      "framing": "There's no facecam. The two characters stand close together near the center-left (about x 0.35\u20130.55), so a narrow crop around 0.5 works.",
+      "hook": "He really thought rolling his R's was rizz \ud83d\udc80",
+      "hook_options": [
+        "POV: you try the rizz tactic on a stranger's ear",
+        "She tried to teach me rizz and it went so wrong \ud83d\ude2d",
+        "When your rizz tactic gets ranked by chat \ud83d\udc80",
+        "Chat helps me find my rizz in GTA RP \ud83d\ude2d",
+        "He's rating my rizz and it's not good \ud83d\udc80",
+        "POV: you try the rizz tactic on a stranger's ear \ud83d\ude2d"
+      ],
+      "hook_score": 8,
+      "id": "15068fdfe0",
+      "issue": 11,
+      "layout": "fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/eb6ab5514e/15068fdfe0.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/15068fdfe0.mp4",
+      "posts": {},
+      "punch_at": 38.7,
+      "punch_text": "Harassment vs medical episode",
+      "said": "they like it okay okay now this is this is the riz tactic the riz tactic let me let me see ready okay okay okay ready uh okay i'm gonna roll my r's is that good so you don't like that so okay so that both are harassment not one of them was riz no no the second one people might be worried that you might be having like a medical episode okay okay so so so neither are riz then harassment versus medical episode that's what i'm working",
+      "score": 7,
+      "start": 3444.0,
+      "status": "approved",
+      "streamer": "Cinna",
+      "tags": [
+        "funny_line",
+        "reaction"
+      ],
+      "title": "My rizz tactic got two ratings and both are bad \ud83d\udc80",
+      "vod": "twitch:v2903457060",
+      "vod_url": "https://www.twitch.tv/videos/2903457060",
+      "why": "Streamer commits hard to a weird rolled-R rizz tactic while chat screams ew, and the group's verdict of harassment versus medical episode lands as a deadpan roast."
+    },
     "150849d268": {
       "asset_id": 647826701,
       "caption": "the confidence before the disaster \ud83d\ude2d\ud83d\udc80",
@@ -1786,7 +1827,8 @@
   },
   "spend": {
     "2026-10-16": 0.1561,
-    "2026-10-17": 0.168
+    "2026-10-17": 0.168,
+    "2026-10-18": 0.0322
   },
   "status_updated": "2026-10-18T07:39:32.381110+00:00",
   "streamers": {
