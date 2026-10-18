@@ -1009,6 +1009,25 @@
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/dbed87459a/5e059eaf31.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/5e059eaf31.mp4",
       "posts": {
+        "tiktok": {
+          "comments": 0,
+          "date": "2026-10-18",
+          "history": [
+            [
+              "2026-10-18T01:11:23.627892+00:00",
+              0
+            ]
+          ],
+          "hour": "18:00",
+          "likes": 0,
+          "match": 1.1,
+          "posted_at": "2026-10-18T01:09:30+00:00",
+          "seen_at": "2026-10-18T01:11:23.627622+00:00",
+          "shares": 0,
+          "status": "published",
+          "url": "https://www.tiktok.com/@wantedlevelclips8/video/7697808721518267678",
+          "views": 0
+        },
         "youtube": {
           "comments": null,
           "date": "2026-10-18",
@@ -1024,17 +1043,21 @@
             [
               "2026-10-18T01:02:48.778634+00:00",
               184
+            ],
+            [
+              "2026-10-18T01:11:23.820698+00:00",
+              192
             ]
           ],
           "hour": "17:00",
-          "likes": null,
+          "likes": 13,
           "match": 1.0,
           "posted_at": "2026-10-18T00:29:39+00:00",
           "seen_at": "2026-10-18T00:32:41.799268+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/appSZJXvGMc",
-          "views": 184
+          "views": 192
         }
       },
       "punch_at": 43.84,
@@ -1416,17 +1439,21 @@
             [
               "2026-10-18T01:02:48.778658+00:00",
               1300
+            ],
+            [
+              "2026-10-18T01:11:23.820718+00:00",
+              1398
             ]
           ],
           "hour": "11:00",
-          "likes": null,
+          "likes": 28,
           "match": 1.0,
           "posted_at": "2026-10-16T18:41:23+00:00",
           "seen_at": "2026-10-16T21:12:13.954365+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/h-i9oBUzpow",
-          "views": 1300
+          "views": 1398
         }
       },
       "punch_at": 44.32,
@@ -1526,7 +1553,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-18T01:02:37.767664+00:00"
+      "ok": "2026-10-18T01:11:23.627914+00:00"
     }
   },
   "last_run": {
