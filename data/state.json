@@ -982,6 +982,7 @@
       "why": "A repair attempt backfires instantly, the chopper catches fire and the group scrambles to blame and haggle on fees."
     },
     "5e059eaf31": {
+      "asset_deleted": true,
       "asset_id": 649228301,
       "caption": "the poor driver had no escape \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-17T01:53:48.732167+00:00",
@@ -1003,18 +1004,40 @@
       "hook_score": 8,
       "id": "5e059eaf31",
       "issue": 6,
+      "issue_closed": true,
       "layout": "cam+fill",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/dbed87459a/5e059eaf31.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/5e059eaf31.mp4",
-      "posts": {},
+      "posts": {
+        "youtube": {
+          "comments": null,
+          "date": "2026-10-18",
+          "history": [
+            [
+              "2026-10-18T00:32:41.799382+00:00",
+              0
+            ]
+          ],
+          "hour": "17:00",
+          "likes": 0,
+          "match": 1.0,
+          "posted_at": "2026-10-18T00:29:39+00:00",
+          "seen_at": "2026-10-18T00:32:41.799268+00:00",
+          "shares": null,
+          "status": "published",
+          "url": "https://www.youtube.com/shorts/appSZJXvGMc",
+          "views": 0
+        }
+      },
       "punch_at": 43.84,
       "punch_text": "It doesn't smell that bad",
+      "reply": "posted",
       "said": "your name oh my name is Callie and I'm so sorry I have an irritable bowel syndrome what 120 76 to the burger shot what is the 120 76 does that mean you're getting shitty too no I don't know I thought you were trying to relate to me I thought we could relate I was a relatable thing my god sir sir I'm so sorry but I have to let this one out. No, no, please! Please don't take me to the burger shop! Please! I have... It doesn't smell that bad, it doesn't. No, no, it doesn't...",
       "score": 8,
       "sent_caption": "the poor driver had no escape \ud83d\ude2d\ud83d\udc80\n\nStreamer: Cinna\n#gta6 #gtarp #gta #funny #fyp #cinna",
       "sent_title": "She begged a stranger to drive her to the bathroom \ud83d\ude2d\ud83d\udc80 #shorts",
       "start": 1886.0,
-      "status": "approved",
+      "status": "posted",
       "streamer": "Cinna",
       "tags": [
         "rp_drama",
@@ -1487,7 +1510,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-18T00:17:39.545724+00:00"
+      "ok": "2026-10-18T00:32:41.556037+00:00"
     }
   },
   "last_run": {
