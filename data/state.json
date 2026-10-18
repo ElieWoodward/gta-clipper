@@ -1016,17 +1016,21 @@
             [
               "2026-10-18T00:32:41.799382+00:00",
               0
+            ],
+            [
+              "2026-10-18T00:47:50.694741+00:00",
+              82
             ]
           ],
           "hour": "17:00",
-          "likes": 0,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-18T00:29:39+00:00",
           "seen_at": "2026-10-18T00:32:41.799268+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/appSZJXvGMc",
-          "views": 0
+          "views": 82
         }
       },
       "punch_at": 43.84,
@@ -1400,17 +1404,21 @@
             [
               "2026-10-17T23:17:31.380354+00:00",
               1398
+            ],
+            [
+              "2026-10-18T00:47:50.694766+00:00",
+              1400
             ]
           ],
           "hour": "11:00",
-          "likes": 28,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-16T18:41:23+00:00",
           "seen_at": "2026-10-16T21:12:13.954365+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/h-i9oBUzpow",
-          "views": 1398
+          "views": 1400
         }
       },
       "punch_at": 44.32,
@@ -1510,7 +1518,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-18T00:32:41.556037+00:00"
+      "ok": "2026-10-18T00:47:39.684550+00:00"
     }
   },
   "last_run": {
