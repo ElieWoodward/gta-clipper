@@ -2108,6 +2108,47 @@
       "vod_url": "https://www.twitch.tv/videos/2901708053",
       "why": "A cop makes him put his wife on speaker mid-stop, his sweet-talk call is interrupted by the car coming back stolen; chat spammed LOL."
     },
+    "e1eee15461": {
+      "asset_id": 655084273,
+      "caption": "bro really ordered the entire duck \ud83d\ude2d",
+      "created": "2026-10-19T03:02:03.426646+00:00",
+      "duration": 36.0,
+      "end": 24892.0,
+      "facecam": true,
+      "file": "e1eee15461.mp4",
+      "framing": "The facecam is a small box on the left in the game frame. The car and the streamer holding food are both near the center, so a narrow center crop works.",
+      "hook": "POV: you thought peking duck was just a serving \ud83d\udc80",
+      "hook_options": [
+        "When you order peking duck and get the WHOLE duck \ud83d\ude2d",
+        "POV: you thought it was just the serving \ud83d\udc80",
+        "Bro did not read the menu \ud83d\ude2d",
+        "I ordered dinner and it showed up alive-ish \ud83d\udc80",
+        "Chat, how do you mess up a food order this bad \ud83e\udd23",
+        "POV: you thought it was just the serving \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "e1eee15461",
+      "issue": 13,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/3aabab3208/e1eee15461.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/e1eee15461.mp4",
+      "posts": {},
+      "punch_at": 19.52,
+      "punch_text": "I accidentally ordered the whole duck",
+      "said": "When I ordered pecking duck, it was just the serving. It's not just the serving. Look. Me, Six, and then whoever else wants to chop, they could join us. I accidentally ordered the whole duck. I'll swing by. That's the whole duck. I'm just messing some windows. I did not mean to do that. I shit his ass, buddy. I thought it was just the serving. Yeah, I",
+      "score": 7,
+      "start": 24856.0,
+      "status": "approved",
+      "streamer": "Cinna",
+      "tags": [
+        "fail",
+        "reaction"
+      ],
+      "title": "POV: you thought it was just the serving \ud83d\udc80",
+      "vod": "twitch:v2904440876",
+      "vod_url": "https://www.twitch.tv/videos/2904440876",
+      "why": "Streamer realizes the order is a whole duck, not a portion, and panics; chat reacted 31x."
+    },
     "f62ddcbe99": {
       "asset_deleted": true,
       "asset_id": 647860254,
@@ -2228,7 +2269,8 @@
   "spend": {
     "2026-10-16": 0.1561,
     "2026-10-17": 0.168,
-    "2026-10-18": 0.0473
+    "2026-10-18": 0.0473,
+    "2026-10-19": 0.05
   },
   "status_updated": "2026-10-19T02:42:32.222898+00:00",
   "streamers": {
