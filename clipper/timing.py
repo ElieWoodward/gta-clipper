@@ -62,6 +62,40 @@ def results(cfg, state, tz):
     return out
 
 
+def like_rates(cfg, state, tz):
+    """{candidate time: [likes per view, ...]} from posts so far (tie-breaker for the best times)."""
+    from zoneinfo import ZoneInfo
+    s = settings(cfg)
+    out = {c: [] for c in s["candidates"]}
+    for c in state["clips"].values():
+        p = (c.get("posts") or {}).get(s["platform"])
+        if not p or not p.get("posted_at") or not p.get("views"):
+            continue
+        local = datetime.fromisoformat(p["posted_at"]).astimezone(ZoneInfo(tz)).strftime("%H:%M")
+        out[nearest(s["candidates"], local)].append((p.get("likes") or 0) / max(1, p["views"]))
+    return out
+
+
+def best_times(cfg, state, n, tz, hours=range(7, 24)):
+    """Launch mode: the n hours expected to do best, from everything the experiment learned. Each hour takes the
+    score of the nearest tested time (views after measure_hours, then likes per view); exact winners go first, the
+    rest fill in around them. With nothing measured yet, the times are spread evenly."""
+    res, likes = results(cfg, state, tz), like_rates(cfg, state, tz)
+    tested = {c: (statistics.median(v), statistics.median(likes[c]) if likes[c] else 0.0) for c, v in res.items() if v}
+    hours = list(hours)
+    if not tested:   # nothing measured: spread evenly over the day
+        step = len(hours) / max(1, n)
+        return sorted({f"{hours[min(len(hours) - 1, int(i * step))]:02d}:00" for i in range(n)})
+    def score(hhmm):
+        m = _minutes(hhmm)
+        near = min(tested, key=lambda c: min(abs(_minutes(c) - m), 1440 - abs(_minutes(c) - m)))
+        dist = min(abs(_minutes(near) - m), 1440 - abs(_minutes(near) - m))
+        views, lk = tested[near]
+        return (-views, dist, -lk)
+    cands = sorted({f"{h:02d}:00" for h in hours} | set(tested), key=score)
+    return sorted(cands[:n])
+
+
 def _spaced(chosen, cand, gap):
     return all(min(abs(_minutes(cand) - _minutes(x)), 1440 - abs(_minutes(cand) - _minutes(x))) >= gap * 60
                for x in chosen)
@@ -71,6 +105,16 @@ def plan(cfg, state, day, n, tz):
     """The posting times for a local date (decided once, then kept so every run that day agrees)."""
     s = settings(cfg)
     book = state.setdefault("slot_plan", {})
+    launch_on = bool((cfg.get("_launch") or {}).get("on"))
+    modes = state.setdefault("slot_plan_mode", {})
+    if launch_on and modes.get(day) != "best" and n > 0:
+        best = best_times(cfg, state, n, tz)   # GTA 6 is out: only the times that did best, no more testing
+        if best:
+            book[day] = best
+            modes[day] = "best"
+            for old in sorted(modes)[:-14]:
+                modes.pop(old)
+            return sorted(book[day][:n])
     if day in book and len(book[day]) >= n:
         return sorted(book[day][:n])
     if n <= 0:

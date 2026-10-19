@@ -30,6 +30,9 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
     spreads posting times hourly, and adds the biggest English GTA 6 streams to the live watcher. `daily()` (from
     the post job) sends the week-before setup email, the Blotato confirmation and the "launch mode is on" email.
     `jobs.deliver` posts through Blotato in launch mode and falls back to the email. Job `launch_check` reports it.
+    Launch days use `timing.best_times` (exploit only). `refresh_streamers` (analytics job) re-picks extra
+    streamers daily into `state["launch"]["streamers"]`. Claude cap: `launch.daily_cap` ($1, $2 from 3 posts/day,
+    `launch.claude_usd_per_day` from launch).
   - `common.py`: config, state. `data/state.json` is the main state; `data/live.json` is written only by the live
     watcher and merged in on load.
 - `.github/workflows/clipper.yml`: post every 15 min, process hourly, analytics daily, learn Mondays, plus manual

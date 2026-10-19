@@ -744,8 +744,10 @@ def analytics():
     _ran(state, "analytics")
     if clipqueue.email_mode(cfg):   # posting is by hand: no Blotato stats; look for paid campaigns instead
         from . import campaigns
+        from . import launch
         try:
             campaigns.scan(cfg, state)
+            launch.refresh_streamers(cfg, state, dry_run=DRY_RUN)   # GTA 6 launch: paid campaigns, then the biggest
         finally:
             save_state(state)
         _status_issue(cfg, state)
@@ -851,7 +853,9 @@ def _status_email_mode(cfg, state):
             f"- {r['name']} ({r.get('rate') or '?'} per 1K) · {r['status']} · {r.get('join_url') or r['url']}" for r in camps))
     week = sum(v for d, v in (state.get("spend") or {}).items()
                if d >= (now_utc() - timedelta(days=7)).date().isoformat())
-    out.append(f"\nClaude spend: ${spend_today(state):.2f} today, ${week:.2f} in the last 7 days.")
+    cap = (cfg.get("limits") or {}).get("claude_usd_per_day")
+    out.append(f"\nClaude spend: ${spend_today(state):.2f} today" + (f" (cap ${float(cap):.2f})" if cap else "")
+               + f", ${week:.2f} in the last 7 days.")
     return "\n".join(out)
 
 

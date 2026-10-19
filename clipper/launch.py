@@ -18,7 +18,8 @@ from datetime import date, datetime, timedelta
 from .common import log, now_utc
 
 DEFAULTS = {"enabled": True, "date": "2026-11-19", "remind_days_before": 7, "remind_hour": 9,
-            "multiplier": 3, "email_multiplier": 2, "auto_post": True, "watch_top": 4,
+            "multiplier": 3, "email_multiplier": 2, "auto_post": True, "watch_top": 4, "claude_usd_per_day": 4.0,
+            "clip_top": 6, "campaign_emails": 8,
             "games": ["Grand Theft Auto VI", "Grand Theft Auto 6"]}
 
 
@@ -60,12 +61,21 @@ def apply(cfg, state=None):
     """Turn a config into its launch-mode version in place (called by load_config). Returns cfg."""
     import copy
     s = settings(cfg)
-    base = cfg.setdefault("_launch_base", {k: copy.deepcopy(cfg.get(k) or {}) for k in ("posting", "queue", "live")})
+    base = cfg.setdefault("_launch_base", {k: copy.deepcopy(cfg.get(k) or {})
+                                           for k in ("posting", "queue", "live", "limits")})
     for k, v in base.items():   # start from the untouched settings, so applying twice never doubles twice
         cfg[k] = copy.deepcopy(v)
     cfg["_launch"] = {"on": launched(cfg, state), "auto": False, "multiplier": 1}
+    lim = cfg.setdefault("limits", {})
+    lim["claude_usd_per_day"] = daily_cap(cfg)
     if not cfg["_launch"]["on"]:
         return cfg
+    lim["claude_usd_per_day"] = max(float(lim["claude_usd_per_day"]), float(s["claude_usd_per_day"]))
+    # streamers picked on launch day (paid GTA 6 campaigns first, then the biggest GTA 6 streams), refreshed daily
+    have = {(x.get("channel") or "").lower() for x in cfg.get("streamers") or []}
+    for x in ((state or {}).get("launch") or {}).get("streamers") or []:
+        if x["channel"] not in have:
+            cfg.setdefault("streamers", []).append(dict(x, platform="twitch", enabled=True, auto_found=True))
     auto = auto_post(cfg, state)
     mult = int(s["multiplier"] if auto else s["email_multiplier"])
     cfg["_launch"].update(auto=auto, multiplier=mult, watch_top=int(s["watch_top"]), games=list(s["games"]))
@@ -73,14 +83,29 @@ def apply(cfg, state=None):
     p["ramp"] = [dict(r, per_day=int(r["per_day"]) * mult) for r in p.get("ramp") or [{"from_day": 0, "per_day": 1}]]
     q = cfg.setdefault("queue", {})
     q["max_size"] = int(q.get("max_size", 5)) * mult
-    most = max(r["per_day"] for r in p["ramp"])
-    tt = dict(p.get("time_test") or {})
-    tt["candidates"] = [f"{h:02d}:00" for h in range(7, 24)]   # every hour from 7am to 11pm
-    tt["min_gap_hours"] = max(1, min(int(tt.get("min_gap_hours", 3)), 16 // max(1, most)))
-    p["time_test"] = tt
     live = cfg.setdefault("live", {})
     live["extra_posts_per_day"] = int(live.get("extra_posts_per_day", 1)) * mult
     return cfg
+
+
+def daily_cap(cfg):
+    """Claude budget for today before launch: limits.claude_usd_per_day, raised by limits.claude_usd_per_day_from
+    once the ramp reaches that many posts a day (e.g. {3: 2.00} = $2 a day from 3 posts a day)."""
+    from .common import days_since_start
+    lim = cfg.get("limits") or {}
+    cap = float(lim.get("claude_usd_per_day", 1.0))
+    try:
+        day = days_since_start(cfg)
+    except Exception:
+        return cap
+    per = 0
+    for r in (cfg.get("posting") or {}).get("ramp") or []:
+        if day >= r["from_day"]:
+            per = int(r["per_day"])
+    for posts, usd in sorted(((int(k), float(v)) for k, v in (lim.get("claude_usd_per_day_from") or {}).items())):
+        if per >= posts:
+            cap = max(cap, usd)
+    return cap
 
 
 # ------------------------------------------------------------------ emails
@@ -107,6 +132,14 @@ def reminder_text(cfg, state):
         "",
         "That's it. Within about 15 minutes you'll get an email saying whether both accounts are connected. "
         "Until launch day nothing changes: you keep getting the posting emails like now.",
+        "",
+        f"Turn on Claude auto-reload too. From launch day the bot may spend up to ${float(s['claude_usd_per_day']):.0f} "
+        "a day on Claude (about 4x the clips), and if the credit balance hits $0 it stops making clips:",
+        "1. Go to platform.claude.com and sign in.",
+        "2. Open Settings > Billing.",
+        "3. In the Credit balance section, click Set up auto-reload.",
+        "4. When credit balance reaches: 10. Bring credit balance back up to: 40.",
+        "5. Click Turn on.",
         "",
         "If the release date moves, reply to this email with the new date, like: launch 2026-12-03",
     ])
@@ -223,3 +256,56 @@ def top_streams(cfg, n=None, exclude=()):
         if out:
             break
     return out
+
+
+# ------------------------------------------------------------------ launch day: who to clip
+def refresh_streamers(cfg, state, dry_run=False):
+    """From launch day, once a day (from the analytics job, after the campaign scan): re-pick the extra streamers.
+    Streamers with a paid campaign come first (best rate first), then the biggest English GTA 6 streamers. On launch
+    day one email lists the best-paying GTA campaigns and who is being clipped. Returns the new list."""
+    from . import campaigns
+    from .common import now_local
+    if not (cfg.get("_launch") or {}).get("on"):
+        return None
+    rec = state.setdefault("launch", {})
+    today = now_local(cfg).date().isoformat()
+    if rec.get("streamers_on") == today:
+        return rec.get("streamers")
+    s = settings(cfg)
+    configured = {(x.get("channel") or "").lower() for x in cfg.get("streamers") or [] if not x.get("auto_found")}
+    paid = sorted((r for r in (state.get("campaigns") or {}).values()
+                   if r.get("status") in campaigns.ACTIVE and r.get("twitch_login")),
+                  key=lambda r: (r.get("status") != "joined", -(r.get("rate") or 0)))
+    picked = []
+    for r in paid:
+        login = r["twitch_login"].lower()
+        if login not in configured and login not in [x["channel"] for x in picked]:
+            picked.append({"name": r["twitch_login"], "channel": login, "campaign": r["name"]})
+    try:
+        top = top_streams(dict(cfg, _launch=dict(cfg["_launch"], watch_top=int(s["clip_top"]))),
+                          exclude=configured | {x["channel"] for x in picked})
+    except Exception as e:
+        log.warning("couldn't list the biggest GTA 6 streams: %s", e)
+        top = []
+    picked += [{"name": login, "channel": login} for login in top]
+    rec.update(streamers=picked, streamers_on=today)
+    print(f"::notice::launch streamers: {', '.join(x['name'] for x in picked) or 'none found yet'}", flush=True)
+    if not rec.get("digest") and not dry_run:
+        camps = sorted((r for r in (state.get("campaigns") or {}).values()
+                        if r.get("status") in ("found", "notified", "joined", "joined_manual", "noted")
+                        and (r.get("gta6") or r.get("twitch_login"))),
+                       key=lambda r: -(r.get("rate") or 0))[:10]
+        lines = ["GTA 6 is out. Here's what the bot is doing today.", "",
+                 "Best-paying GTA clipping campaigns right now:"]
+        lines += [f"{i}. {r['name']}: ${r['rate']:.2f} per 1K views" if r.get("rate") else f"{i}. {r['name']}"
+                  for i, r in enumerate(camps, 1)] or ["- none listed yet (the bot checks every day and emails new ones)"]
+        if camps:
+            lines += ["", "Each one has its own Campaign email with the join link and steps. The boards need you to "
+                      "sign in yourself, so the bot can't join for you. After you join one, reply join to its email."]
+        names = [x["name"] for x in cfg.get("streamers") or [] if x.get("enabled", True) and not x.get("auto_found")]
+        lines += ["", "Streamers being clipped:", "- your list: " + (", ".join(names) or "none"),
+                  "- picked for launch: " + (", ".join(x["name"] + (" (paid campaign)" if x.get("campaign") else "")
+                                                   for x in picked) or "none yet"),
+                  "", "The launch picks are redone every morning to follow who's actually streaming GTA 6."]
+        _send(state, "digest", "Clip bot: GTA 6 launch day, campaigns and streamers", "\n".join(lines))
+    return picked

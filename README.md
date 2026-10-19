@@ -41,6 +41,13 @@ TikTok and YouTube are both connected. From launch day (Nov 19) it switches on i
 - with automatic posting, each clip goes straight to TikTok and YouTube at its time; if Blotato fails, that clip is
   emailed to you instead
 - the live watcher also watches the 4 biggest English GTA 6 streams, not only your saved streamers
+- posting times switch to the hours that got the most views (then likes) in the time test, with no more testing
+- the streamers are re-picked that morning and every morning after: streamers with a paid campaign first (best rate
+  first), then the 6 biggest English GTA 6 streamers, on top of your own list. GTA 6 clipping campaigns are emailed
+  best-paying first, plus one email listing the top campaigns and who's being clipped. The boards need you to sign
+  in, so joining is up to you: reply `join` to a campaign's email once you have.
+- the Claude budget goes to $4 a day (it's $1 a day now and $2 a day once posting reaches 3 a day). The week-before
+  email includes turning on auto-reload so the credit balance never runs out
 
 If the date moves, reply `launch YYYY-MM-DD` to any bot email. The dashboard shows the countdown. The manual
 `launch_check` job shows what launch mode would do right now.

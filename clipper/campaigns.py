@@ -23,6 +23,7 @@ NOISE = re.compile(r"\$[\d,.]+k?|\b(clipping|clips?|campaign|streamer|stream|twi
                    r"highlights?|vods?|cuts?|daily|weekly|program|army|rewards?|content|the)\b|\[.*?\]|\(.*?\)|[^\w\s]",
                    re.I)
 MAX_EMAILS_PER_SCAN = 3
+GTA6_RE = re.compile(r"\bgta ?(6|vi)\b|grand theft auto:? ?(6|vi)\b|leonida", re.I)
 
 
 class _Cards(HTMLParser):
@@ -162,6 +163,9 @@ def evaluate(card, game_re):
         return None
     m = dict(card, **d, twitch_login=login, why=why if login else "mentions GTA")
     m["auto_clip"] = bool(login)   # the bot can clip a Twitch streamer's VODs; edits/music campaigns need you
+    # GTA 6 gameplay clipping (not music/trailer edits, which the bot can't make)
+    m["gta6"] = (card["kind"] in ("CLIPPING", "") and bool(GTA6_RE.search(card["name"]) or GTA6_RE.search(d["brief"]))
+                 and not re.search(r"\b(trailer|music|song|edits?)\b", f"{card['name']} {d['brief'][:300]}", re.I))
     return m
 
 
@@ -173,6 +177,10 @@ def _steps(m):
         steps.append(f'The bot has already started clipping {m["twitch_login"]} (GTA only). Once you\'ve joined, reply '
                      '"join" to this email: their clips then go to the front of the queue and every posting email for '
                      'them includes the link to submit. Reply "skip" if you don\'t want this one.')
+    elif m.get("gta6"):
+        steps.append("It pays for GTA 6 clips, and the bot is clipping GTA 6 from the biggest streams. Check the brief "
+                     "allows clips of any streamer; if it does, join and submit your GTA 6 posts there. "
+                     'Reply "join" so the dashboard tracks it, or "skip" to drop it.')
     else:
         steps.append("This one needs edits the bot doesn't make (for example trailer edits set to a song). "
                      'Reply "skip" to stop hearing about it.')
@@ -204,6 +212,12 @@ def scan(cfg, state):
     log.info("campaign scan: %d live campaigns", len(cards))
     print(f"::notice::campaign scan: {len(cards)} live campaigns listed", flush=True)
     found, sent = [], 0
+    launch_on = bool((cfg.get("_launch") or {}).get("on"))
+    if launch_on:
+        from .launch import settings as _ls
+        cap = int(_ls(cfg)["campaign_emails"])
+    else:
+        cap = MAX_EMAILS_PER_SCAN
     live_ids = {c["id"] for c in cards}
     dry = os.environ.get("DRY_RUN") == "1"
     for rec in book.values():   # campaigns that disappeared (budget spent, ended): stop clipping for them
@@ -219,12 +233,6 @@ def scan(cfg, state):
                               f"{rec.get('join_url') or rec['url']} while the page is still up.")
                 except Exception as e:
                     log.info("couldn't send the campaign-ended email: %s", e)
-    for rec in book.values():   # matches found earlier but not emailed yet (daily email cap)
-        if rec.get("status") == "found" and rec.get("auto_clip") and mail.configured() and not dry \
-                and sent < MAX_EMAILS_PER_SCAN:
-            rec["email_message_id"] = notify(state, dict(rec, brief=rec.get("brief") or ""))
-            rec["status"] = "notified"
-            sent += 1
     for c in cards:
         if c["id"] in seen or c["id"] in book:
             continue
@@ -237,20 +245,32 @@ def scan(cfg, state):
         if not m:
             continue
         rec = {k: m.get(k) for k in ("id", "name", "url", "join_url", "rate", "left", "budget", "platforms", "kind",
-                                     "twitch_login", "auto_clip", "why")}
+                                     "twitch_login", "auto_clip", "why", "gta6")}
         rec.update(brief=m["brief"][:1500], found=now_utc().isoformat(), status="found")
         if dry:
             print(f"::notice::[dry run] would email: {rec['name']} | {rec.get('rate')}/1K | twitch={rec.get('twitch_login')} "
                   f"| join={rec.get('join_url')}", flush=True)
-        elif not rec["auto_clip"]:
+        elif not rec["auto_clip"] and not rec["gta6"]:
             rec["status"] = "noted"   # GTA edit/music campaigns: recorded, not emailed (the bot can't make those)
-        elif mail.configured() and sent < MAX_EMAILS_PER_SCAN:
-            rec["email_message_id"] = notify(state, m)
-            rec["status"] = "notified"
-            sent += 1
         book[c["id"]] = rec
         found.append(rec)
         print(f"::notice::campaign match: {rec['name']} ({rec.get('rate')} per 1K) | {rec['why']}", flush=True)
+    if launch_on:   # GTA 6 campaigns noted before launch get their email now
+        for r in book.values():
+            text = f"{r.get('name')} {r.get('brief')}"
+            if (r.get("status") == "noted" and r.get("kind") in ("CLIPPING", "") and GTA6_RE.search(text)
+                    and not re.search(r"\b(trailer|music|song|edits?)\b", text[:500], re.I)):
+                r.update(gta6=True, status="found")
+    # Email what fits, best paying first: streamer campaigns the bot clips, and from launch day GTA 6 campaigns too.
+    def emailable(r):
+        return r.get("status") == "found" and (r.get("auto_clip") or (launch_on and r.get("gta6")))
+    if mail.configured() and not dry:
+        for rec in sorted((r for r in book.values() if emailable(r)), key=lambda r: -(r.get("rate") or 0)):
+            if sent >= cap:
+                break
+            rec["email_message_id"] = notify(state, dict(rec, brief=rec.get("brief") or ""))
+            rec["status"] = "notified"
+            sent += 1
     for k in sorted(seen, key=seen.get)[:-3000]:   # keep the seen list bounded
         seen.pop(k)
     return found
@@ -261,7 +281,7 @@ def apply_reply(state, ref, verdict):
     for rec in (state.get("campaigns") or {}).values():
         if rec.get("email_message_id") == ref:
             if verdict == "join":
-                rec["status"] = "joined" if rec.get("auto_clip") else "joined_manual"
+                rec["status"] = "joined" if rec.get("auto_clip") or rec.get("gta6") else "joined_manual"
                 rec["joined"] = now_utc().isoformat()
             elif verdict == "skip":
                 rec["status"] = "skipped"   # also stops clipping them (unless they're in config.yaml)

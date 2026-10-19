@@ -834,6 +834,7 @@ st.pop("launch", None)
 sent.clear()
 launch.daily(cfg, st)
 assert len(sent) == 1 and "set up automatic posting" in sent[0]["subject"] and "BLOTATO_API_KEY" in sent[0]["text"], sent
+assert "Set up auto-reload" in sent[0]["text"] and "$4 a day" in sent[0]["text"]
 launch.daily(cfg, st)
 assert len(sent) == 1   # only once
 # Elie adds the key: the next check confirms the connections by email
@@ -856,6 +857,22 @@ assert cfg["_launch"] == dict(cfg["_launch"], on=True, auto=True, multiplier=3),
 launch.apply(cfg, common.load_state())
 assert max(r["per_day"] for r in cfg["posting"]["ramp"]) == 12 and cfg["queue"]["max_size"] == 15
 assert len(timing.plan(cfg, {"clips": {}}, _today.isoformat(), 12, cfg["timezone"])) == 12
+# with results, launch days use only the best times: 18:00 did best, so the hours around it come first
+_ztz = ZoneInfo(cfg["timezone"])
+def _post_at(hh, views):
+    t0 = _dt(2026, 10, 20, hh, 5, tzinfo=_ztz).astimezone(_tz.utc)
+    hist = [[(t0 + timedelta(hours=4)).isoformat(), views]]
+    return {"posts": {"tiktok": {"posted_at": t0.isoformat(), "history": hist, "views": views, "likes": views // 20}}}
+_st = {"clips": {f"c{i}": _post_at(hh, v) for i, (hh, v) in enumerate([(18, 900), (18, 1100), (10, 200), (10, 300),
+                                                                       (14, 500), (14, 400)])}}
+_best = timing.plan(cfg, _st, "2030-01-01", 3, cfg["timezone"])
+assert _best == ["17:00", "18:00", "19:00"], _best
+assert _st["slot_plan_mode"]["2030-01-01"] == "best"
+# Claude budget: $1, $2 from 3 posts a day, $4 from launch day
+assert cfg["limits"]["claude_usd_per_day"] == 4.0, cfg["limits"]
+_c2 = dict(_c, launch=dict(_c["launch"], enabled=False))
+assert launch.daily_cap(dict(_c2, start_date=_today.isoformat())) == 1.0
+assert launch.daily_cap(dict(_c2, start_date=(_today - timedelta(days=8)).isoformat())) == 2.0
 os.environ.pop("BLOTATO_API_KEY")
 assert common.load_config()["_launch"]["multiplier"] == 2   # no key: still by email, doubled
 os.environ["BLOTATO_API_KEY"] = "test-key"
@@ -888,5 +905,21 @@ def _top(q):
     return {"data": {"game": {"streams": {"edges": edges}}}}
 _tw._gql = _top
 assert launch.top_streams(cfg, n=2, exclude={"xqc"}) == ["kai", "jynxzi"]
+# launch day re-picks the streamers: paid campaign streamers first (best rate), then the biggest GTA 6 streams
+st = common.load_state()
+st["campaigns"] = {"a": {"id": "a", "name": "Low RP", "status": "notified", "twitch_login": "lowrp", "rate": 0.5,
+                         "auto_clip": True},
+                   "b": {"id": "b", "name": "Big GTA 6 Clips", "status": "found", "gta6": True, "rate": 3.0},
+                   "c": {"id": "c", "name": "Top RP", "status": "joined", "twitch_login": "toprp", "rate": 1.0,
+                         "auto_clip": True}}
+st.pop("launch", None)
+sent.clear()
+picked = launch.refresh_streamers(cfg, st)
+assert [x["channel"] for x in picked][:2] == ["toprp", "lowrp"] and "kai" in [x["channel"] for x in picked], picked
+assert "xqc" not in [x["channel"] for x in picked]   # already one of your streamers
+assert len(sent) == 1 and "launch day" in sent[0]["subject"] and sent[0]["text"].index("Big GTA 6") < sent[0]["text"].index("Top RP")
+assert launch.refresh_streamers(cfg, st) == picked and len(sent) == 1   # once a day, one digest
+common.save_state(st)
+assert "kai" in [x["channel"] for x in common.load_config()["streamers"]]
 _tw._gql = _g
 print("LAUNCH OK")
