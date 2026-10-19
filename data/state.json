@@ -2267,7 +2267,8 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-19T05:27:52.065071+00:00"
+      "at": "2026-10-19T05:42:54.812115+00:00",
+      "error": "to extract secondary user ID. If you are able to get the channel_id from a video posted by this user, try using \"tiktokuser:channel_id\" as the input URL (replacing `channel_id` with its actual value)\n"
     }
   },
   "last_run": {
@@ -2307,7 +2308,7 @@
     "2026-10-18": 0.0473,
     "2026-10-19": 0.05
   },
-  "status_updated": "2026-10-19T04:43:01.143084+00:00",
+  "status_updated": "2026-10-19T05:43:07.469408+00:00",
   "streamers": {
     "Cinna": {
       "facecam": true
