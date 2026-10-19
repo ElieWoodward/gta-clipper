@@ -105,6 +105,15 @@ live:
   post_now_score: 8               # live clips scoring this or more post right away instead of waiting for a slot
   extra_posts_per_day: 1          # live posts allowed on top of the daily ramp
 
+launch:                           # GTA 6 launch day: switches on by itself, nothing to edit on the day
+  enabled: true
+  date: "2026-11-19"              # if it moves, reply "launch YYYY-MM-DD" to any bot email (or edit this)
+  remind_days_before: 7           # email with the automatic-posting setup steps this many days before
+  multiplier: 3                   # posts per day x3 from launch day when automatic posting (Blotato) is set up...
+  email_multiplier: 2             # ...x2 if posting is still by email
+  auto_post: true                 # post through Blotato from launch day once BLOTATO_API_KEY is added and checked
+  watch_top: 4                    # also watch this many of the biggest English GTA 6 streams live
+
 queue:                            # email mode only
   max_size: 8                     # stop looking for new clips once this many are waiting (saves Claude money)
   max_age_hours: 48               # clips older than this are dropped; fresh beats a big backlog

@@ -70,13 +70,33 @@ def _campaigns():
         save_state(state)
 
 
+def _launch_check():
+    """What GTA 6 launch mode would do right now: days left, Blotato, and which big streams it would watch."""
+    from . import launch, twitch
+    from .common import load_config, load_state
+    cfg, state = load_config(), load_state()
+    rec = state.get("launch") or {}
+    print(f"::notice::launch {launch.launch_date(cfg, state)} ({launch.days_left(cfg, state)} days left); on now: "
+          f"{cfg['_launch']['on']}; Blotato key: {launch.blotato_key()}; Blotato checked ok: {bool(rec.get('blotato_ok'))}",
+          flush=True)
+    probe_cfg = dict(cfg, _launch={"watch_top": 4})
+    for game in launch.settings(cfg)["games"] + ["Grand Theft Auto V"]:
+        data = twitch._gql({"query": 'query { game(name: "%s") { id name viewersCount } }' % game}) or {}
+        g = (data.get("data") or {}).get("game")
+        probe_cfg["_launch"]["games"] = [game]
+        top = launch.top_streams(probe_cfg) if g else []
+        print(f"::notice::Twitch category {game!r}: {'found, ' + str(g.get('viewersCount')) + ' viewers' if g else 'not found'}"
+              f"{'; would watch ' + ', '.join(top) if top else ''}", flush=True)
+
+
 def _live():
     from . import live
     live.watch()
 
 
 CMDS = {"process": jobs.process, "post": jobs.post, "analytics": jobs.analytics, "learn": jobs.learn,
-        "accounts": lambda: print(services.blotato_accounts()), "probe": probe, "preflight": jobs.preflight_only, "live": _live, "campaigns": _campaigns, "check_streamers": check_streamers}
+        "accounts": lambda: print(services.blotato_accounts()), "probe": probe, "preflight": jobs.preflight_only, "live": _live, "campaigns": _campaigns, "check_streamers": check_streamers,
+        "launch_check": _launch_check}
 
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in CMDS:

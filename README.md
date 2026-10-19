@@ -30,6 +30,21 @@ emails you a ready-to-post clip at each posting time. Everything runs on GitHub 
 7. **It watches its own health.** Claude spend is capped at $1 a day. If a job fails twice in a row, or clips are
    waiting but nothing has been emailed for 36 hours, you get one alert email saying what broke.
 
+## GTA 6 launch day
+
+Nothing to edit on the day. A week before (Nov 12) you get an email with the steps to set up automatic posting
+through Blotato. Once the `BLOTATO_API_KEY` secret is added, the bot emails you within 15 minutes to say whether
+TikTok and YouTube are both connected. From launch day (Nov 19) it switches on its own:
+
+- 3x the posts per day with automatic posting (2x if posting is still by email), a bigger queue, posting times
+  spread over the whole day
+- with automatic posting, each clip goes straight to TikTok and YouTube at its time; if Blotato fails, that clip is
+  emailed to you instead
+- the live watcher also watches the 4 biggest English GTA 6 streams, not only your saved streamers
+
+If the date moves, reply `launch YYYY-MM-DD` to any bot email. The dashboard shows the countdown. The manual
+`launch_check` job shows what launch mode would do right now.
+
 ## Replying to the emails
 
 | Reply | What it does |
@@ -38,6 +53,7 @@ emails you a ready-to-post clip at each posting time. Everything runs on GitHub 
 | `skip` | Drops the clip; the next check sends a replacement so you keep your daily count |
 | `next` | Sends another clip right now, on top of the day's count |
 | `pause` / `resume` | Stops / restarts the posting emails (clips keep collecting) |
+| `launch 2026-12-03` | GTA 6's release date moved: launch mode and its reminder follow the new date |
 | `join` (to a Campaign email) | You joined that campaign: its streamer's clips get priority and claim links |
 
 ## What runs when

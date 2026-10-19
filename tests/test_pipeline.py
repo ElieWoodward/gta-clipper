@@ -15,6 +15,9 @@ shutil.copy(REPO / "config.yaml", TMP / "config.yaml")
 # Sections 1-8 test the Blotato auto-posting path; section 9 switches to email mode.
 _cfg_text = (TMP / "config.yaml").read_text().replace("  mode: email ", "  mode: blotato ", 1)
 assert "mode: blotato" in _cfg_text
+_cfg_text = _cfg_text.replace("launch:                           # GTA 6", "launch:  # GTA 6", 1).replace(
+    "  enabled: true\n  date: \"2026-11-19\"", "  enabled: false\n  date: \"2026-11-19\"", 1)
+assert "enabled: false\n  date:" in _cfg_text   # launch mode is tested on its own in section 21
 (TMP / "config.yaml").write_text(_cfg_text)
 os.environ.update(CLIPPER_ROOT=str(TMP), CLIPPER_WORK=str(TMP / "work"), FORCE="1", BLOTATO_API_KEY="test-key")
 sys.path.insert(0, str(REPO))
@@ -814,3 +817,75 @@ from clipper.clipqueue import upload_time as _ut
 assert _ut({"url": "https://www.tiktok.com/@a/video/7697808721518267678"}).isoformat().startswith("2026-10-18T01:09")
 assert _ut({"url": "https://www.youtube.com/shorts/appSZJXvGMc"}) is None
 print("UPLOAD TIME OK")
+
+# ---------- 21. GTA 6 launch: reminder, Blotato check, more posts, automatic posting with email fallback ----------
+from clipper import launch  # noqa: E402
+import yaml as _yaml  # noqa: E402
+_c = _yaml.safe_load((TMP / "config.yaml").read_text())
+_today = common.now_local(_c).date()
+_c["launch"].update(enabled=True, date=(_today + timedelta(days=5)).isoformat(), remind_hour=0)
+(TMP / "config.yaml").write_text(_yaml.safe_dump(_c, sort_keys=False))
+os.environ.pop("BLOTATO_API_KEY", None)
+cfg = common.load_config()
+assert not cfg["_launch"]["on"] and max(r["per_day"] for r in cfg["posting"]["ramp"]) == 4
+st = common.load_state()
+st.pop("launch", None)
+sent.clear()
+launch.daily(cfg, st)
+assert len(sent) == 1 and "set up automatic posting" in sent[0]["subject"] and "BLOTATO_API_KEY" in sent[0]["text"], sent
+launch.daily(cfg, st)
+assert len(sent) == 1   # only once
+# Elie adds the key: the next check confirms the connections by email
+os.environ["BLOTATO_API_KEY"] = "test-key"
+services.blotato_accounts = lambda: [{"platform": "tiktok", "id": 1}]
+launch.daily(cfg, st)
+assert "isn't connected yet" in sent[-1]["subject"] and "youtube" in sent[-1]["text"] and not st["launch"].get("blotato_ok")
+st["launch"]["blotato_checked"] = (common.now_utc() - timedelta(hours=21)).isoformat()
+services.blotato_accounts = lambda: [{"platform": "tiktok", "id": 1}, {"platform": "youtube", "id": 2}]
+launch.daily(cfg, st)
+assert sent[-1]["subject"] == "Clip bot: automatic posting is ready" and st["launch"]["blotato_ok"]
+common.save_state(st)
+# a reply moves the date
+assert mail.reply_verdict("launch 2026-12-3") == "launch:2026-12-03"
+# launch day: x3 with automatic posting, applying twice doesn't multiply twice, hourly posting times
+_c["launch"]["date"] = _today.isoformat()
+(TMP / "config.yaml").write_text(_yaml.safe_dump(_c, sort_keys=False))
+cfg = common.load_config()
+assert cfg["_launch"] == dict(cfg["_launch"], on=True, auto=True, multiplier=3), cfg["_launch"]
+launch.apply(cfg, common.load_state())
+assert max(r["per_day"] for r in cfg["posting"]["ramp"]) == 12 and cfg["queue"]["max_size"] == 15
+assert len(timing.plan(cfg, {"clips": {}}, _today.isoformat(), 12, cfg["timezone"])) == 12
+os.environ.pop("BLOTATO_API_KEY")
+assert common.load_config()["_launch"]["multiplier"] == 2   # no key: still by email, doubled
+os.environ["BLOTATO_API_KEY"] = "test-key"
+sent.clear()
+launch.daily(cfg, st)
+assert sent and "launch mode is on" in sent[-1]["subject"]
+# a slot's clip is posted through Blotato; if Blotato fails, it's emailed instead
+st = common.load_state()
+_clip = dict(next(iter(st["clips"].values())), id="launchclip", status="approved", posts={}, emailed_at=None,
+             created=common.now_utc().isoformat(), local_file=str(next(iter(rendered))), media_url="https://gh/dl/x.mp4")
+st["clips"]["launchclip"] = _clip
+posted.clear()
+jobs.deliver(cfg, st, _clip)
+assert {p for p, *_ in posted} == {"tiktok", "youtube"} and _clip["status"] == "posted" and _clip["emailed_at"]
+_clip2 = dict(_clip, id="launchclip2", status="approved", posts={}, emailed_at=None)
+st["clips"]["launchclip2"] = _clip2
+_bp = services.blotato_post
+services.blotato_post = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("blotato down"))
+sent.clear()
+jobs.deliver(cfg, st, _clip2)
+assert sent and _clip2["emailed_at"] and _clip2["status"] == "approved"   # emailed instead
+services.blotato_post = _bp
+# the live watcher also picks the biggest English GTA 6 streams that are recording
+def _top(q):
+    edges = [{"node": {"viewersCount": v, "broadcaster": {"login": l, "broadcastSettings": {"language": lang},
+              "videos": {"edges": [{"node": {"status": s}}]}}}}
+             for l, v, lang, s in [("bigES", 9e5, "ES", "RECORDING"), ("xqc", 8e5, "EN", "RECORDING"),
+                                   ("novod", 7e5, "EN", "RECORDED"), ("kai", 6e5, "EN", "RECORDING"),
+                                   ("jynxzi", 5e5, "EN", "RECORDING")]]
+    return {"data": {"game": {"streams": {"edges": edges}}}}
+_tw._gql = _top
+assert launch.top_streams(cfg, n=2, exclude={"xqc"}) == ["kai", "jynxzi"]
+_tw._gql = _g
+print("LAUNCH OK")

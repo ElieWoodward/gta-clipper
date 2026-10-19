@@ -613,6 +613,61 @@ def send_package(cfg, state, clip, test=False):
     return mid
 
 
+def deliver(cfg, state, clip):
+    """At a posting slot: post through Blotato in launch mode with automatic posting, otherwise email it.
+    A failed automatic post falls back to the email, so the slot isn't lost."""
+    from . import launch
+    if launch.auto_post(cfg, state) and not DRY_RUN:
+        try:
+            return auto_post_clip(cfg, state, clip)
+        except Exception as e:
+            log.exception("automatic post failed: %s", e)
+            print(f"::warning::automatic post failed ({str(e)[:150]}); emailing the clip instead", flush=True)
+    return send_package(cfg, state, clip)
+
+
+def auto_post_clip(cfg, state, clip):
+    """Upload one queued clip to Blotato and post it to every platform. Raises if no platform worked."""
+    d = WORK / f"auto_{clip['id']}"
+    d.mkdir(parents=True, exist_ok=True)
+    try:
+        src = clip.get("local_file")
+        if not (src and os.path.exists(src)):
+            src = services.download(clip["media_url"], d / "clip.mp4")
+        url = services.blotato_upload(src)
+    except Exception:
+        shutil.rmtree(d, ignore_errors=True)
+        raise
+    now = now_local(cfg)
+    ok = []
+    for platform in cfg["posting"]["platforms"]:
+        if platform in clip.get("posts", {}):
+            continue
+        try:
+            acct = services.blotato_account_id(platform)
+            sub = services.blotato_post(platform, acct, url, _caption(cfg, clip, platform), title=clip["title"],
+                                        ai_label=cfg["posting"].get("label_ai_generated"))
+            status, info = services.blotato_wait(sub)
+        except Exception as e:
+            log.warning("%s post failed: %s", platform, e)
+            continue
+        if status == "failed":
+            log.warning("%s post failed: %s", platform, info)
+            continue
+        clip.setdefault("posts", {})[platform] = {
+            "via": "blotato", "submission": sub, "status": status, "url": info if status == "published" else None,
+            "date": now.date().isoformat(), "posted_at": now_utc().isoformat(), "hour": now.strftime("%H:00"),
+            "views": None, "history": []}
+        ok.append(platform)
+    shutil.rmtree(d, ignore_errors=True)
+    if not ok:
+        raise RuntimeError("no platform accepted the post")
+    clip.update(status="posted", emailed_at=now_utc().isoformat(), auto_posted=True, blotato_url=url)
+    print(f"::notice::posted automatically to {', '.join(ok)}: {clip['hook']}", flush=True)
+    save_state(state)
+    return None
+
+
 def _email_test(cfg, state):
     """test_source=email: send one real package for the best queued clip, or a freshly rendered sample."""
     clip = clipqueue.pick_for_email(state) or (clipqueue.queue(state) or [None])[0]
@@ -658,15 +713,17 @@ def email_post(cfg):
         clip = clipqueue.pick_for_email(state)
         if clip:
             clip["extra"] = True
-            send_package(cfg, state, clip)
+            deliver(cfg, state, clip)
     elif em.get("paused") and not FORCE:
         log.info("posting emails are paused (reply resume to turn them back on)")
     elif FORCE or sent < due:
         clip = clipqueue.pick_for_email(state)
         if clip:
-            send_package(cfg, state, clip)
+            deliver(cfg, state, clip)
         else:
             log.info("a posting slot is due but nothing new is waiting")
+    from . import launch
+    launch.daily(cfg, state, dry_run=DRY_RUN)
     health.check_quiet(cfg, state, len(clipqueue.queue(state)))
     last = state.get("status_updated")
     if not last or now_utc() - datetime.fromisoformat(last) > timedelta(minutes=55):
@@ -770,6 +827,15 @@ def _status_email_mode(cfg, state):
                + (f", next at {nxt})" if nxt else ")"))
     if (state.get("email") or {}).get("paused"):
         out.append("**Emails are paused.** Reply `resume` to any bot email to turn them back on.")
+    from . import launch
+    L, lrec = cfg.get("_launch") or {}, state.get("launch") or {}
+    if L.get("on"):
+        out.append(f"**GTA 6 launch mode is on:** {L['multiplier']}x posts, "
+                   + ("posting automatically through Blotato." if L.get("auto") else "still by email."))
+    elif launch.settings(cfg)["enabled"]:
+        out.append(f"GTA 6 launch mode starts in {launch.days_left(cfg, state)} day(s) "
+                   f"({launch.launch_date(cfg, state):%b %d}). Automatic posting: "
+                   + ("ready." if lrec.get("blotato_ok") else "not set up yet (reminder email a week before)."))
     out.append(f"\n### Queue ({len(q)}/{clipqueue.settings(cfg)['max_size']})")
     out += [f"- {c['score']}/10 · {c['streamer']} · {int((now_utc() - datetime.fromisoformat(c['created'])).total_seconds() // 3600)}h old"
             f"{' · emailed' if c.get('emailed_at') else ''} · {c['hook']}" for c in q] or ["- empty: it's looking for clips"]

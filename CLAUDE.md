@@ -25,6 +25,11 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
   - `batch.py`: full-stream judging through the half-price Message Batches API. `process` hands off and exits;
     a later hourly `process` run finishes it (`jobs.finish_batches`); falls back to a normal call after 6h.
   - `timing.py`: posting-time experiment (candidate times, views 3h after posting, explore/exploit plan per day).
+  - `launch.py`: GTA 6 launch day (`launch.date`, Nov 19 2026). `apply()` runs inside `load_config` and, from the
+    launch date, multiplies the ramp/queue (x3 with Blotato checked ok in `state["launch"]["blotato_ok"]`, else x2),
+    spreads posting times hourly, and adds the biggest English GTA 6 streams to the live watcher. `daily()` (from
+    the post job) sends the week-before setup email, the Blotato confirmation and the "launch mode is on" email.
+    `jobs.deliver` posts through Blotato in launch mode and falls back to the email. Job `launch_check` reports it.
   - `common.py`: config, state. `data/state.json` is the main state; `data/live.json` is written only by the live
     watcher and merged in on load.
 - `.github/workflows/clipper.yml`: post every 15 min, process hourly, analytics daily, learn Mondays, plus manual

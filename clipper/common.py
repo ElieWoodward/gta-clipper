@@ -35,6 +35,12 @@ def load_config():
                 cfg.setdefault("streamers", []).append(s)
     except Exception as e:
         log.warning("couldn't add campaign streamers: %s", e)
+    # GTA 6 launch day: more posts, a bigger queue, automatic posting when it's set up (see launch.py).
+    try:
+        from .launch import apply
+        apply(cfg, _merge_live(json.loads(STATE_FILE.read_text())) if STATE_FILE.exists() else {})
+    except Exception as e:
+        log.warning("launch settings not applied: %s", e)
     return cfg
 
 

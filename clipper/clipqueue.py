@@ -453,6 +453,15 @@ def refresh_posted(cfg, state):
                     em["paused"] = verdict == "pause"
                     notes.append("you paused the posting emails" if em["paused"] else "you resumed the posting emails")
                     continue
+                if verdict.startswith("launch:"):
+                    from datetime import date as _date
+                    try:
+                        new = _date.fromisoformat(verdict.split(":", 1)[1]).isoformat()
+                        state.setdefault("launch", {}).update(date=new, reminded=None)
+                        notes.append(f"GTA 6 launch date set to {new}")
+                    except ValueError:
+                        pass
+                    continue
                 if verdict == "next":
                     em["send_next"] = True
                     notes.append("you asked for another clip now")

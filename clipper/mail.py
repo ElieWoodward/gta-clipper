@@ -84,6 +84,10 @@ def reply_verdict(text):
             continue
         if re.match(r"^(on .+ wrote:|-{2,}|sent from)", line):
             return None
+        m = re.match(r"^(?:launch|release|gta ?6?)\D{0,12}(\d{4}-\d{1,2}-\d{1,2})", line)
+        if m:
+            y, mo, d = m.group(1).split("-")
+            return f"launch:{int(y):04d}-{int(mo):02d}-{int(d):02d}"
         if re.match(r"^(pause|stop|vacation)\b", line):
             return "pause"
         if re.match(r"^(resume|unpause|start|back)\b", line):

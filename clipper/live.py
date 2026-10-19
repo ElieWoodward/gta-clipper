@@ -265,7 +265,7 @@ def maybe_post_now(cfg, state, clip):
         if clipqueue.emailed_on(state, today, cfg.get("timezone", "UTC")) >= jobs._quota(cfg) + s["extra_posts_per_day"]:
             log.info("daily email limit reached; the live clip waits for the next slot")
             return
-        jobs.send_package(cfg, state, clip)
+        jobs.deliver(cfg, state, clip)
         save_state(state)
         return
     if jobs.DRY_RUN or clip["status"] != "approved" or clip["score"] < s["post_now_score"]:
@@ -391,6 +391,7 @@ def watch():
             return
         streamers = [x for x in cfg.get("streamers", []) if x.get("enabled", True) and x["platform"] == "twitch"]
         minutes = s["max_minutes"]
+    base_streamers, extras, next_top = list(streamers), [], 0   # GTA 6 launch: the biggest streams are added too
     game_re = (cfg["fetch"].get("game_match") or "grand theft auto|gta")
     deadline = time.time() + minutes * 60
     watching = {}     # login -> {vod, chat, seen_clips, last_t, made, best}
@@ -408,6 +409,19 @@ def watch():
         now = time.time()
         if beat:
             beat.tick(now)
+        if not test and now >= next_top:   # launch mode switches on at midnight even mid-run
+            next_top = now + 600
+            from . import launch
+            launch.apply(cfg, load_state())
+            if cfg["_launch"]["on"]:
+                keep = [x for x in extras if x["channel"] in watching]
+                room_n = max(0, cfg["_launch"]["watch_top"] - len(keep))
+                have = {x["channel"] for x in base_streamers + keep}
+                fresh = [l for l in launch.top_streams(cfg, exclude=have)][:room_n]
+                extras = keep + [{"name": l, "platform": "twitch", "channel": l, "auto_found": True} for l in fresh]
+                streamers = base_streamers + extras
+                if fresh:
+                    log.info("launch mode: also watching %s", ", ".join(fresh))
         if now >= next_check:   # who's live (every 2 minutes), and is there room in the queue / budget
             next_check = now + 120
             if now >= next_pull:
