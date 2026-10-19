@@ -2544,8 +2544,7 @@
   },
   "health": {
     "tiktok_check": {
-      "at": "2026-10-19T22:01:11.106322+00:00",
-      "error": "to extract secondary user ID. If you are able to get the channel_id from a video posted by this user, try using \"tiktokuser:channel_id\" as the input URL (replacing `channel_id` with its actual value)\n"
+      "ok": "2026-10-19T22:15:26.588184+00:00"
     }
   },
   "last_run": {
