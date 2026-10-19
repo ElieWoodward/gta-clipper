@@ -79,6 +79,15 @@ def _launch_check():
     print(f"::notice::launch {launch.launch_date(cfg, state)} ({launch.days_left(cfg, state)} days left); on now: "
           f"{cfg['_launch']['on']}; Blotato key: {launch.blotato_key()}; Blotato checked ok: {bool(rec.get('blotato_ok'))}",
           flush=True)
+    try:
+        from . import launch as _l
+        import json as _j
+        raw = twitch._gql({"query": 'query { searchCategories(query: "grand theft auto", first: 25) { edges { node { name } } } }'})
+        names = [e["node"]["name"] for e in ((raw or {}).get("data") or {}).get("searchCategories", {}).get("edges", [])]
+        print(f"::notice::category search works: {', '.join(names[:12]) or _j.dumps(raw)[:300]}; "
+              f"looks like GTA 6: {_l.find_categories() or 'none yet'}", flush=True)
+    except Exception as e:
+        print(f"::warning::category search failed: {e}", flush=True)
     probe_cfg = dict(cfg, _launch={"watch_top": 4})
     for game in launch.settings(cfg)["games"] + ["Grand Theft Auto V"]:
         data = twitch._gql({"query": 'query { game(name: "%s") { id name viewersCount } }' % game}) or {}

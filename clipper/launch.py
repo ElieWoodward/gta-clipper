@@ -177,6 +177,16 @@ def daily(cfg, state, dry_run=False):
 
 
 # ------------------------------------------------------------------ live: the biggest GTA 6 streams
+def find_categories(query="grand theft auto"):
+    """Twitch category names that look like GTA 6 (in case it isn't named exactly as expected)."""
+    import re
+    from . import twitch
+    q = 'query { searchCategories(query: "%s", first: 25) { edges { node { name } } } }' % query
+    edges = ((((twitch._gql({"query": q}) or {}).get("data") or {}).get("searchCategories") or {}).get("edges")) or []
+    names = [((e.get("node") or {}).get("name") or "") for e in edges]
+    return [nm for nm in names if re.search(r"\b(vi|6)\b", nm, re.I) and re.search(r"grand theft|gta", nm, re.I)]
+
+
 def top_streams(cfg, n=None, exclude=()):
     """Logins of the biggest English GTA 6 streams with a recording VOD (so they can be clipped live)."""
     from . import twitch
@@ -185,7 +195,12 @@ def top_streams(cfg, n=None, exclude=()):
     if not n:
         return []
     out = []
-    for game in L.get("games") or DEFAULTS["games"]:
+    games = list(L.get("games") or DEFAULTS["games"])
+    try:
+        games += [g for g in find_categories() if g not in games]
+    except Exception as e:
+        log.info("category search failed: %s", e)
+    for game in games:
         q = ('query { game(name: "%s") { streams(first: 30) { edges { node { viewersCount broadcaster { login '
              'broadcastSettings { language } videos(first: 1, type: ARCHIVE, sort: TIME) { edges { node { status } } } '
              '} } } } } }' % game)
