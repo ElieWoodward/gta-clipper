@@ -1157,6 +1157,10 @@
             [
               "2026-10-19T21:15:47.416005+00:00",
               97
+            ],
+            [
+              "2026-10-19T23:00:36.233922+00:00",
+              98
             ]
           ],
           "hour": "14:00",
@@ -1167,7 +1171,7 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698124124585037069",
-          "views": 97
+          "views": 98
         },
         "youtube": {
           "comments": null,
@@ -1939,6 +1943,8 @@
       "caption": "the scam call had me in tears \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-19T08:55:03.475827+00:00",
       "duration": 49.0,
+      "email_message_id": "<179245085751.3714.682514873965106066@gmail.com>",
+      "emailed_at": "2026-10-19T23:01:14.902994+00:00",
       "end": 14567.0,
       "facecam": true,
       "file": "a25737b75d.mp4",
@@ -1963,6 +1969,8 @@
       "punch_text": "",
       "said": "I did a deposit of money, brother. Like, um... Oh, no. Deposit? Why, I mean, Mosley's car dealer. Is that not them? No, no, no, no, no, no. Because this is a Mosley's car dealer and mechanic. And there was something. They have something in their name. Because there are two businesses with the same name. And they are moving around in the Mosleys when I'm not around. and scamming people. Did you pay them something? How much did you pay them? Like, 200k? So, do I have to sue them or something? How do you get the money back then? No kidding. Don't worry, man. I'm just kidding, kidding. Okay, so fi",
       "score": 7,
+      "sent_caption": "the scam call had me in tears \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
+      "sent_title": "He got scammed and the real dealer found out \ud83d\udc80 #shorts",
       "start": 14518.0,
       "status": "approved",
       "streamer": "xQc",
@@ -2539,12 +2547,19 @@
         "date": "2026-10-18",
         "subject": "Post now: He really thought rolling his R's was rizz \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-10-19T23:01:14.902994+00:00",
+        "clip": "a25737b75d",
+        "date": "2026-10-19",
+        "subject": "Post now: He told a customer he got scammed out of 20k \ud83d\udc80 (7/10)",
+        "test": false
       }
     ]
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-19T22:45:28.480503+00:00"
+      "ok": "2026-10-19T23:00:36.233962+00:00"
     }
   },
   "last_run": {
