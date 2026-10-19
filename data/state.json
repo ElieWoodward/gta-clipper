@@ -926,6 +926,7 @@
   },
   "clips": {
     "12ab7e8ade": {
+      "asset_deleted": true,
       "asset_id": 649600609,
       "caption": "the way she just said sorry sir and bailed \ud83d\ude2d",
       "created": "2026-10-17T05:05:09.020533+00:00",
@@ -946,6 +947,7 @@
       "hook_score": 8,
       "id": "12ab7e8ade",
       "issue": 9,
+      "issue_closed": true,
       "layout": "cam+fill",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/45628caccd/12ab7e8ade.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/12ab7e8ade.mp4",
@@ -955,7 +957,7 @@
       "said": "Get out! You bitch! Get out! Don't try it. Oh! Where do you want to go? Never mind. How about I stay? Sorry, sir. He said don't try it. I'm getting another four right now. I just got into a random man's car and he said don't try it. So I had to get out.",
       "score": 7,
       "start": 15851.0,
-      "status": "approved",
+      "status": "expired",
       "streamer": "Cinna",
       "tags": [
         "funny_line",
@@ -2261,7 +2263,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-19T04:57:45.563698+00:00"
+      "ok": "2026-10-19T05:12:50.199943+00:00"
     }
   },
   "last_run": {
