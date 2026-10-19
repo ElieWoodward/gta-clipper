@@ -968,6 +968,47 @@
       "vod_url": "https://www.twitch.tv/videos/2902461688",
       "why": "She frantically hops into a stranger's car, gets kicked out, then deadpans the explanation; chat erupted."
     },
+    "14fc643cda": {
+      "asset_id": 655738034,
+      "caption": "thank you for your service \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-19T08:52:25.590046+00:00",
+      "duration": 37.0,
+      "end": 13642.0,
+      "facecam": true,
+      "file": "14fc643cda.mp4",
+      "framing": "Streamer webcam is at the left; the action is the player character or car near the center, so a narrow slice works.",
+      "hook": "Bro downplayed war crimes in his interview and still got hired \ud83d\udc80",
+      "hook_options": [
+        "He just got hired for the worst reason possible \ud83d\udc80",
+        "When your resume is just war stuff \ud83d\ude2d",
+        "POV: the interview ends with thank you for your service \ud83d\udc80",
+        "Bro casually mentions killing two dogs with his car \ud83d\ude2d",
+        "He said it's just war stuff really \ud83d\udc80",
+        "When your resume is just war stuff \ud83d\ude2d"
+      ],
+      "hook_score": 8,
+      "id": "14fc643cda",
+      "issue": 15,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/f0fc33904e/14fc643cda.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/14fc643cda.mp4",
+      "posts": {},
+      "punch_at": 16.48,
+      "punch_text": "It's just war stuff",
+      "said": "I did kill two dogs at once with my car. That was a collateral technically. I mean that counts, yeah. My stuff wasn't like collats that you get with like a sniper because it was mostly firebomb and family homes and stuff like that. So, it's just you know war stuff really. It's just war stuff. Okay, I mean it seems like you're pretty much fit for the pawn aisle. I mean on guard. Yeah, we're gonna send it up to Hong Kong Pawn right now. Yeah, I mean, we need that. You never know when you'll need that, right? Yeah, I'm going to go touch the safe. If I've got to kill all the people in there, I'm g",
+      "score": 7,
+      "start": 13605,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "rp_drama",
+        "funny_line"
+      ],
+      "title": "He's hired. No questions asked \ud83d\udc80",
+      "vod": "twitch:v2904505458",
+      "vod_url": "https://www.twitch.tv/videos/2904505458",
+      "why": "Recruit casually downplays firebombing family homes and the bosses approve him anyway; chat reacted heavily."
+    },
     "15068fdfe0": {
       "asset_deleted": true,
       "asset_id": 652843023,
@@ -1601,6 +1642,47 @@
       "vod_url": "https://www.twitch.tv/videos/2900719118",
       "why": "A desperate bathroom plea escalates into a stranger trapped in the car while she insists it doesn't smell, and chat explodes."
     },
+    "5e0a1521e5": {
+      "asset_id": 655731779,
+      "caption": "the unconfirmed kills part had me gone \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-19T08:49:41.944473+00:00",
+      "duration": 42.0,
+      "end": 13570.0,
+      "facecam": true,
+      "file": "5e0a1521e5.mp4",
+      "framing": "The player's character and car stay near the center of the frame, and the webcam is in the top-left corner.",
+      "hook": "Bro said his unconfirmed kills were family and friends \ud83d\ude2d",
+      "hook_options": [
+        "POV: the new hire's resume is getting scarier by the second \ud83d\udc80",
+        "He listed his confirmed kills like it's a LinkedIn flex \ud83d\ude2d",
+        "When the interview goes off the rails in GTA RP \ud83d\udc80",
+        "Bro said his unconfirmed kills were family and friends \ud83d\ude2d",
+        "Chat, who hired this guy \ud83d\udc80",
+        "POV: the new hire's resume is getting scarier by the second \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "5e0a1521e5",
+      "issue": 14,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/f0fc33904e/5e0a1521e5.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/5e0a1521e5.mp4",
+      "posts": {},
+      "punch_at": 26.98,
+      "punch_text": "Unconfirmed kills",
+      "said": "yeah he seems promising he was a he said he has a 700 confirmed kills and 300 unconfirmed they were like family and friends and shit why what what what I don't know you ask him you want to ask him here tell me about the confirmed kills so I military service hey what's up yes I was military um I had 250 confirmed kills and I'd say about 216 unconfirmed kills which are mostly people that are just non-combatants or future combatants the families of the combatants you know I mean what country deployment is that it I was in Estonia okay",
+      "score": 7,
+      "start": 13528.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "rp_drama",
+        "funny_line"
+      ],
+      "title": "Interviewing a guy with 700 kills in GTA RP \ud83d\udc80",
+      "vod": "twitch:v2904505458",
+      "vod_url": "https://www.twitch.tv/videos/2904505458",
+      "why": "A recruit deadpans absurd military stats with a straight face while the bosses react in disbelief."
+    },
     "77070a6472": {
       "asset_deleted": true,
       "asset_id": 649231894,
@@ -1773,6 +1855,47 @@
       "vod": "twitch:v2903457060",
       "vod_url": "https://www.twitch.tv/videos/2903457060",
       "why": "Deadpan retelling of a gun-point wallet robbery with a number request, ending with the guy still running; chat exploded laughing."
+    },
+    "a25737b75d": {
+      "asset_id": 655744544,
+      "caption": "the scam call had me in tears \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-19T08:55:03.475827+00:00",
+      "duration": 49.0,
+      "end": 14567.0,
+      "facecam": true,
+      "file": "a25737b75d.mp4",
+      "framing": "The phone banking UI on the right (balance and transactions) matters along with the car in the center, so a wider crop is needed.",
+      "hook": "He told a customer he got scammed out of 20k \ud83d\udc80",
+      "hook_options": [
+        "Bro finds out the car he paid for was never real \ud83d\ude2d",
+        "POV: you paid 20k to a guy who doesn't work there \ud83d\udc80",
+        "He still doesn't know who he gave the money to \ud83d\udc80",
+        "When the car dealer reveals the other dealer scammed you \ud83d\ude2d",
+        "Who let him scam people at the car lot \ud83d\ude2d\ud83d\udc80",
+        "POV: you paid 20k to a guy who doesn't work there \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "a25737b75d",
+      "issue": 16,
+      "layout": "cam+wide",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/f0fc33904e/a25737b75d.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/a25737b75d.mp4",
+      "posts": {},
+      "punch_at": 0,
+      "punch_text": "",
+      "said": "I did a deposit of money, brother. Like, um... Oh, no. Deposit? Why, I mean, Mosley's car dealer. Is that not them? No, no, no, no, no, no. Because this is a Mosley's car dealer and mechanic. And there was something. They have something in their name. Because there are two businesses with the same name. And they are moving around in the Mosleys when I'm not around. and scamming people. Did you pay them something? How much did you pay them? Like, 200k? So, do I have to sue them or something? How do you get the money back then? No kidding. Don't worry, man. I'm just kidding, kidding. Okay, so fi",
+      "score": 7,
+      "start": 14518.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "rp_drama",
+        "funny_line"
+      ],
+      "title": "He got scammed and the real dealer found out \ud83d\udc80",
+      "vod": "twitch:v2904505458",
+      "vod_url": "https://www.twitch.tv/videos/2904505458",
+      "why": "A scammed customer slowly realizes the guy he paid isn't an employee while the streamer toys with him before the reveal."
     },
     "c13a3ebabc": {
       "asset_deleted": true,
@@ -2362,7 +2485,7 @@
     "2026-10-16": 0.1561,
     "2026-10-17": 0.168,
     "2026-10-18": 0.0473,
-    "2026-10-19": 0.05
+    "2026-10-19": 0.1171
   },
   "status_updated": "2026-10-19T08:42:51.469533+00:00",
   "streamers": {
