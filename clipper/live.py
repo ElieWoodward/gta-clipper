@@ -288,12 +288,13 @@ class Heartbeat:
     check every 15 minutes, the stream check every hour, the daily campaign scan and the Monday report when they're
     overdue. Before GitHub's 6-hour limit it starts the next copy of itself. The cron schedules stay as a backup."""
 
-    POST_EVERY, PROCESS_EVERY = 15 * 60, 60 * 60
+    POST_EVERY, PROCESS_EVERY, SPARE_EVERY = 15 * 60, 60 * 60, 45 * 60
 
     def __init__(self, cfg):
         self.cfg = cfg
         now = time.time()
         self.next_post, self.next_process, self.next_daily = now + 60, now + 300, now + 600
+        self.next_spare = now + 120
         self.started = {}   # job -> when this heartbeat started it (the state file here may lag behind)
 
     def dispatch(self, workflow, job=None):
@@ -326,6 +327,9 @@ class Heartbeat:
         if now >= self.next_daily:
             self.next_daily = now + 3600
             self._catch_up()
+        if now >= self.next_spare:   # keep the next watcher queued, so even a crash or cancel hands straight over
+            self.next_spare = now + self.SPARE_EVERY
+            self.dispatch("live.yml")
 
     def _catch_up(self):
         """Run the daily campaign scan / Monday report if their scheduled runs were skipped."""

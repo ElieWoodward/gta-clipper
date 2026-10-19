@@ -798,6 +798,7 @@ for minute in range(0, 61):
 posts = [c for c in calls if c == ("clipper.yml", "post")]
 procs = [c for c in calls if c == ("clipper.yml", "process")]
 assert len(posts) == 4 and len(procs) == 1, calls
+assert 1 <= calls.count(("live.yml", None)) <= 2, calls   # a spare watcher stays queued
 st = common.load_state()
 st["last_run"] = {"analytics": (common.now_utc() - timedelta(hours=30)).isoformat()}
 common.save_state(st)
