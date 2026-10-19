@@ -1097,6 +1097,10 @@
             [
               "2026-10-19T01:45:16.872078+00:00",
               203
+            ],
+            [
+              "2026-10-19T01:57:12.201591+00:00",
+              204
             ]
           ],
           "hour": "14:00",
@@ -1107,7 +1111,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/BSs9jbBP9yw",
-          "views": 203
+          "views": 204
         }
       },
       "punch_at": 38.7,
@@ -1520,6 +1524,7 @@
       "why": "A desperate bathroom plea escalates into a stranger trapped in the car while she insists it doesn't smell, and chat explodes."
     },
     "77070a6472": {
+      "asset_deleted": true,
       "asset_id": 649231894,
       "caption": "the serial killer head came out immediately \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-17T01:55:32.931637+00:00",
@@ -1540,6 +1545,7 @@
       "hook_score": 8,
       "id": "77070a6472",
       "issue": 7,
+      "issue_closed": true,
       "layout": "cam+fill",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/dbed87459a/77070a6472.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/77070a6472.mp4",
@@ -1549,7 +1555,7 @@
       "said": "A lot of emotion. And, and... What's up, gangsters? Um, okay. See, right now... He's dead? Yeah, but you look like, like a... Okay, I don't want this to come off mean, but you kind of look like a dad that's gonna get outed as a serial killer in five years. Can you mind your own fucking business, please, sir? Keep him moving. Okay, fine. Fuck you, damn! What the fuck he say? See, and there it is. No, there's the serial killer's hedge. There it is, you know?",
       "score": 7,
       "start": 6310.0,
-      "status": "approved",
+      "status": "expired",
       "streamer": "Cinna",
       "tags": [
         "reaction",
@@ -2168,7 +2174,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-19T01:45:06.607008+00:00"
+      "ok": "2026-10-19T01:57:12.108059+00:00"
     }
   },
   "last_run": {
