@@ -1081,6 +1081,10 @@
             [
               "2026-10-18T22:57:14.427768+00:00",
               182
+            ],
+            [
+              "2026-10-19T00:57:03.680630+00:00",
+              197
             ]
           ],
           "hour": "14:00",
@@ -1091,7 +1095,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/BSs9jbBP9yw",
-          "views": 182
+          "views": 197
         }
       },
       "punch_at": 38.7,
@@ -1539,6 +1543,49 @@
       "vod": "twitch:v2900719118",
       "vod_url": "https://www.twitch.tv/videos/2900719118",
       "why": "A friendly smile test gets roasted, then a stranger interrupts and gets snapped at, proving the roast right."
+    },
+    "87c90d10bd": {
+      "asset_id": 654871700,
+      "caption": "bro really started doubting his own memory \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-19T00:52:12.171748+00:00",
+      "duration": 38.0,
+      "end": 21147.0,
+      "facecam": true,
+      "file": "87c90d10bd.mp4",
+      "framing": "A facecam sits at the left, and the characters and car stay clustered near the center of the frame.",
+      "hook": "POV: you act like the red car never existed \ud83d\udc80",
+      "hook_options": [
+        "POV: you gaslight your friend into thinking he never got in the car",
+        "He swears I was never in the red car \ud83d\udc80",
+        "Chat, I'm gaslighting him in GTA RP \ud83d\ude2d",
+        "When you deny the car ever existed \ud83d\ude2d\ud83d\udc80",
+        "I made my friend question reality in GTA \ud83d\ude2d",
+        "POV: you gaslight your friend into thinking he never got in the car \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "87c90d10bd",
+      "issue": 12,
+      "layout": "cam+fill",
+      "live": true,
+      "live_signal": "chat exploded live (3.3x normal)",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/live_v2904440876_21092/87c90d10bd.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/87c90d10bd.mp4",
+      "posts": {},
+      "punch_at": 16.9,
+      "punch_text": "There was never a car",
+      "said": "I found him he's at the bar you know you never got in a car what car there was never a car Wait Are you okay? I'm No I'm You got in the red car What red car? The red car I walked I walked",
+      "score": 7,
+      "start": 21109.0,
+      "status": "approved",
+      "streamer": "Cinna",
+      "tags": [
+        "funny_line",
+        "rp_drama"
+      ],
+      "title": "I gaslit him into thinking the red car never existed \ud83d\udc80",
+      "vod": "twitch:v2904440876",
+      "vod_url": "https://www.twitch.tv/videos/2904440876",
+      "why": "One player commits hard to denying the car existed while the other spirals in confusion, and chat called it gaslighting."
     },
     "921330081b": {
       "asset_deleted": true,
@@ -2101,7 +2148,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-19T00:41:51.680084+00:00"
+      "ok": "2026-10-19T00:56:52.757786+00:00"
     }
   },
   "last_run": {
