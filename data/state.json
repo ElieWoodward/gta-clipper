@@ -1104,7 +1104,7 @@
             ]
           ],
           "hour": "14:00",
-          "likes": 8,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-18T21:35:32+00:00",
           "seen_at": "2026-10-18T21:41:58.864012+00:00",
@@ -1490,17 +1490,21 @@
             [
               "2026-10-19T01:42:07.783466+00:00",
               1157
+            ],
+            [
+              "2026-10-19T02:12:22.901067+00:00",
+              1100
             ]
           ],
           "hour": "17:00",
-          "likes": 27,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-18T00:29:39+00:00",
           "seen_at": "2026-10-18T00:32:41.799268+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/appSZJXvGMc",
-          "views": 1157
+          "views": 1100
         }
       },
       "punch_at": 43.84,
@@ -1697,6 +1701,7 @@
       "why": "Deadpan retelling of a gun-point wallet robbery with a number request, ending with the guy still running; chat exploded laughing."
     },
     "c13a3ebabc": {
+      "asset_deleted": true,
       "asset_id": 649236531,
       "caption": "tough crowd fr \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-17T01:58:13.639590+00:00",
@@ -1717,6 +1722,7 @@
       "hook_score": 8,
       "id": "c13a3ebabc",
       "issue": 8,
+      "issue_closed": true,
       "layout": "cam+wide",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/dbed87459a/c13a3ebabc.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/c13a3ebabc.mp4",
@@ -2057,17 +2063,21 @@
             [
               "2026-10-19T01:42:07.783480+00:00",
               1466
+            ],
+            [
+              "2026-10-19T02:12:22.901092+00:00",
+              1400
             ]
           ],
           "hour": "11:00",
-          "likes": 28,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-16T18:41:23+00:00",
           "seen_at": "2026-10-16T21:12:13.954365+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/h-i9oBUzpow",
-          "views": 1466
+          "views": 1400
         }
       },
       "punch_at": 44.32,
@@ -2174,7 +2184,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-19T01:57:12.108059+00:00"
+      "ok": "2026-10-19T02:12:12.062214+00:00"
     }
   },
   "last_run": {
