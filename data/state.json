@@ -1886,6 +1886,7 @@
       "why": "Peer pressure from a cop buddy, xQc folds instantly, admits it, then panics about the photo; chat called it corrupting the cop."
     },
     "9d7b9a4591": {
+      "asset_deleted": true,
       "asset_id": 651505210,
       "caption": "the way he just ran screaming \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-17T20:21:24.151683+00:00",
@@ -1906,6 +1907,7 @@
       "hook_score": 8,
       "id": "9d7b9a4591",
       "issue": 10,
+      "issue_closed": true,
       "layout": "cam+fill",
       "live": true,
       "live_signal": "chat exploded live (3.3x normal)",
@@ -1917,7 +1919,7 @@
       "said": "wasn't the harassment part apart when she held a gun to their head and then said give me your number Don said oh if you hold them up for their wallet and you take it and then you say while you're giving me your wallet can I have your number I didn't think that was that crazy but apparently apparently that's a no-go Don apparently that's a no-go yeah I mean that guy ran like I don't know Yeah, like, I don't know. He just ran screaming. He's still running to this day. I think he's still running. I'm being told. I'm getting reports.",
       "score": 7,
       "start": 6408.5,
-      "status": "approved",
+      "status": "expired",
       "streamer": "Cinna",
       "tags": [
         "funny_line",
@@ -2141,10 +2143,6 @@
           "comments": null,
           "date": "2026-10-16",
           "history": [
-            [
-              "2026-10-17T13:15:38.689588+00:00",
-              1364
-            ],
             [
               "2026-10-17T15:30:53.246181+00:00",
               1353
@@ -2380,6 +2378,10 @@
             [
               "2026-10-19T20:15:03.143806+00:00",
               1533
+            ],
+            [
+              "2026-10-19T20:30:03.740438+00:00",
+              1527
             ]
           ],
           "hour": "11:00",
@@ -2390,7 +2392,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/h-i9oBUzpow",
-          "views": 1533
+          "views": 1527
         }
       },
       "punch_at": 44.32,
@@ -2538,7 +2540,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-19T20:15:02.920113+00:00"
+      "ok": "2026-10-19T20:30:03.297202+00:00"
     }
   },
   "last_run": {
