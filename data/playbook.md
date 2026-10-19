@@ -1,22 +1,20 @@
-**Data caveat: the data is only 3 distinct clips, each posted on both platforms (6 rows). It can't separate streamer, tag, hook, length, webcam, hour or platform effects. Treat everything below as a weak hunch to test, not a proven rule.**
+**Data caveat: the data has only 3 distinct clips (each posted on TikTok and YouTube), so 6 rows. Every rule below is a tentative lead to test, not a proven finding. Webcam, tags, hook style and streamer all change together across these clips, so I can't separate their effects.**
 
-What the data shows (descriptive only):
-- The 2 weaker rows were the Cinna "rolling his R's" clip: 93 views on TikTok and 223 on YouTube at 18h. It was tagged funny_line + reaction, had no webcam, ran 41s, and was posted at 14:00.
-- The two rp_drama clips did better. Cinna's bathroom clip had about 1.0k views on TikTok and 1.4k on YouTube at 38h. xQc's police clip had about 1.0k on TikTok and 1.5k on YouTube at 69h. Both had the webcam on, ran 48s, and were tagged rp_drama + funny_line.
-- Confounds: the weaker clip was also the youngest (18h vs 38h and 69h), had no webcam, and had no rp_drama tag. Webcam, tags, age and length all change together, so none of them can be isolated.
-- Like rate per view: TikTok was 1.1% for the R's clip, 5.8% for the bathroom clip and 4.7% for the police clip. YouTube was 3.6%, 2.2% and 1.9%. YouTube had more views than TikTok on every clip, but its like rate was lower on 2 of 3.
-- Shares are 0 on every TikTok row and unreported on YouTube, so there is no share signal.
+What the numbers show (views per hour of age, since clips are 23–74h old):
+- "POV: you beg a stranger to drive you to the bathroom" (Cinna, 48s, webcam, rp_drama/funny_line/chaos): about 23/h on TikTok and 31/h on YouTube. Best clip.
+- "POV: cop makes you put your wife on speaker mid-stop" (xQc, 48s, webcam, rp_drama/police/funny_line): about 14/h on TikTok and 21/h on YouTube.
+- "He really thought rolling his R's was rizz" (Cinna, 41s, no webcam, funny_line/reaction): about 4/h on TikTok and 10/h on YouTube. Worst clip, at roughly 1/4 to 1/6 of the best one.
 
-Rules for next week (provisional):
-1. Lean toward rp_drama or situational clips. Both of the stronger clips had a clear scenario with a person on the other end. Keep some other tags in the mix so you can compare.
-2. Prefer clips with the webcam on screen when the reaction is the joke. Both better clips had it, but this is unproven.
-3. Use a "POV: [specific absurd situation]" hook. Both better clips used it, for example "POV: cop makes you put your wife on speaker mid-stop 💀". The weaker clip used a "He really thought..." quip hook, so test that style against POV.
-4. Be careful with clips that depend on a single line and have no scenario, such as the R's clip. Don't ban them on this evidence. Run 2–3 more before deciding.
-5. Keep clips around 45–50s as the default until you have more data. The sample is 41s vs 48s, which is too few to set a range.
-6. Post each clip to both platforms. YouTube out-viewed TikTok on all 3 clips.
-7. Compare clips only at the same age. Record views at fixed checkpoints, such as 24h and 48h. The current data mixes 18h, 38h and 69h.
-8. Log TikTok shares properly and get YouTube shares if the platform exposes them. Right now the humor signal comes only from likes.
-9. Vary one thing at a time. Pick 8–10 clips next week where only the tag, or only the webcam, or only the hook style differs.
-10. Don't set a posting-time schedule yet. The hours posted (11:00, 14:00, 17:00, 18:00) are tied to individual clips, so there's no time effect to read.
-11. Check more than xQc and Cinna. There's one clip per streamer, so no streamer ranking is possible.
-12. Re-run this analysis once there are about 30 or more clips, ideally 5+ per streamer and per tag.
+Rules for next week:
+1. **Pick more RP-drama clips with a clear, relatable scenario.** The two rp_drama clips beat the reaction-only clip by 3–5x on views per hour.
+2. **Prefer clips with the webcam on screen.** Both webcam clips clearly beat the one without. This is confounded, so treat it as a hypothesis and test it directly.
+3. **Use "POV:" hooks that state an absurd situation.** Both "POV: ..." hooks did well. Example: "POV: cop makes you put your wife on speaker mid-stop 💀".
+4. **Be wary of hooks that only describe a reaction.** "He really thought rolling his R's was rizz 💀" was the weakest hook. It tells viewers about a reaction and gives them no scenario to picture.
+5. **Don't rely on a single funny line.** The weak clip's value rested on one line. Choose clips with a setup and a payoff, ideally with chaos.
+6. **Keep clips around 45–50s for now.** The winners were both 48s and the loser was 41s. That is too few clips to call a length effect, so don't read it as a rule. Test a spread of lengths, from under 30s to over 60s.
+7. **Post on both platforms.** YouTube got more views than TikTok on every clip (1.3–2.3x), but this is a small sample. Likes per view were mixed: TikTok was higher on the two winners, and YouTube was higher on the weak clip.
+8. **Fix tracking.** YouTube shares are not recorded and TikTok shows 0 shares on every clip. Until that is fixed, judge humor by likes per view. That ranges from about 1% to 6% here and is too noisy to rank.
+9. **Test more streamers.** There are only 2 streamers (Cinna, xQc), so no streamer ranking is possible. Cinna had both the best and worst clip, so the clip mattered more than the streamer.
+10. **Don't pick posting times yet.** The clips went out at 11:00, 14:00, 17:00 and 18:00, one clip each, and each is confounded with the clip itself. Run a deliberate time test next week.
+11. **Compare clips by views per hour of age, not raw views.** Raw views mix clips of different ages, and an account median needs many more clips.
+12. **Run a controlled test.** Post 10–15 clips that vary one thing at a time: webcam on/off, POV hook vs. plain hook, and length bucket. Then redo this analysis.
