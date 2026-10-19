@@ -1939,6 +1939,7 @@
       "why": "Deadpan retelling of a gun-point wallet robbery with a number request, ending with the guy still running; chat exploded laughing."
     },
     "a25737b75d": {
+      "asset_deleted": true,
       "asset_id": 655744544,
       "caption": "the scam call had me in tears \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-19T08:55:03.475827+00:00",
@@ -1961,10 +1962,50 @@
       "hook_score": 8,
       "id": "a25737b75d",
       "issue": 16,
+      "issue_closed": true,
       "layout": "cam+wide",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/f0fc33904e/a25737b75d.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/a25737b75d.mp4",
-      "posts": {},
+      "posts": {
+        "tiktok": {
+          "comments": 0,
+          "date": "2026-10-19",
+          "history": [
+            [
+              "2026-10-19T23:30:22.309461+00:00",
+              67
+            ]
+          ],
+          "hour": "16:00",
+          "likes": 5,
+          "match": 1.1,
+          "posted_at": "2026-10-19T23:16:02+00:00",
+          "seen_at": "2026-10-19T23:30:22.309156+00:00",
+          "shares": 0,
+          "status": "published",
+          "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698521613565791502",
+          "views": 67
+        },
+        "youtube": {
+          "comments": null,
+          "date": "2026-10-19",
+          "history": [
+            [
+              "2026-10-19T23:30:22.469592+00:00",
+              55
+            ]
+          ],
+          "hour": "16:00",
+          "likes": 2,
+          "match": 1.0,
+          "posted_at": "2026-10-19T23:17:49+00:00",
+          "seen_at": "2026-10-19T23:30:22.469491+00:00",
+          "shares": null,
+          "status": "published",
+          "url": "https://www.youtube.com/shorts/XNFTo8g_hrs",
+          "views": 55
+        }
+      },
       "punch_at": 0,
       "punch_text": "",
       "said": "I did a deposit of money, brother. Like, um... Oh, no. Deposit? Why, I mean, Mosley's car dealer. Is that not them? No, no, no, no, no, no. Because this is a Mosley's car dealer and mechanic. And there was something. They have something in their name. Because there are two businesses with the same name. And they are moving around in the Mosleys when I'm not around. and scamming people. Did you pay them something? How much did you pay them? Like, 200k? So, do I have to sue them or something? How do you get the money back then? No kidding. Don't worry, man. I'm just kidding, kidding. Okay, so fi",
@@ -1972,7 +2013,7 @@
       "sent_caption": "the scam call had me in tears \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
       "sent_title": "He got scammed and the real dealer found out \ud83d\udc80 #shorts",
       "start": 14518.0,
-      "status": "approved",
+      "status": "posted",
       "streamer": "xQc",
       "tags": [
         "rp_drama",
@@ -2155,10 +2196,6 @@
           "comments": null,
           "date": "2026-10-16",
           "history": [
-            [
-              "2026-10-17T23:17:31.380354+00:00",
-              1398
-            ],
             [
               "2026-10-18T00:47:50.694766+00:00",
               1400
@@ -2394,6 +2431,10 @@
             [
               "2026-10-19T22:30:15.563184+00:00",
               1560
+            ],
+            [
+              "2026-10-19T23:30:22.469607+00:00",
+              1562
             ]
           ],
           "hour": "11:00",
@@ -2404,7 +2445,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/h-i9oBUzpow",
-          "views": 1560
+          "views": 1562
         }
       },
       "punch_at": 44.32,
@@ -2559,7 +2600,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-19T23:15:27.958995+00:00"
+      "ok": "2026-10-19T23:30:22.309479+00:00"
     }
   },
   "last_run": {
