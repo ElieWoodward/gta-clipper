@@ -44,7 +44,51 @@
       "vod_url": "https://www.twitch.tv/videos/2904440876",
       "why": "One player commits hard to denying the car existed while the other spirals in confusion, and chat called it gaslighting."
     },
+    "8f14c79536": {
+      "asset_id": 658351967,
+      "caption": "the way she just kept naming new days \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-20T05:19:28.852211+00:00",
+      "duration": 31.5,
+      "end": 37086.5,
+      "facecam": false,
+      "file": "8f14c79536.mp4",
+      "framing": "No webcam is visible. The group of characters talking at the casino table is clustered around x\u22480.45, so a narrow slice covers them.",
+      "hook": "I made up a whole week just to not hire him \ud83d\udc80",
+      "hook_options": [
+        "POV: you ask for a job and every day has a different excuse \ud83d\ude2d",
+        "She has a whole weekly schedule for not hiring me \ud83d\udc80",
+        "When the boss turns \"no\" into a seven day cycle \ud83e\udd23",
+        "I tried to get hired and got a whole calendar instead \ud83d\ude2d",
+        "Chat made me keep rebranding the days \ud83d\udc80",
+        "POV: you ask for a job and every day has a different excuse \ud83d\ude2d"
+      ],
+      "hook_score": 8,
+      "id": "8f14c79536",
+      "issue": 18,
+      "layout": "fill",
+      "live": true,
+      "live_signal": "chat exploded live (3.1x normal)",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/live_v2905273323_37044/8f14c79536.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/8f14c79536.mp4",
+      "posts": {},
+      "punch_at": 26.16,
+      "punch_text": "Sorry About It Saturday",
+      "said": "person that I've ever met. Now, here's the thing, Larry. I let them know. I told them I'm actually great. I can't really hire him because tomorrow is, think about it, Tuesday, so I've got to think about it. And then Wednesday is, will we hire you? Probably not Wednesday. Thursday is, I mean, there's just a lot of different days. I just get so jumbled. Thought about it, probably not Thursday. And then there's Friday. That's right. Friday is, if you hired, you fired Friday. And Saturday is, sorry about it, you're not getting severance Saturday. You know what I mean? So there's just like a viciou",
+      "score": 7,
+      "start": 37055.0,
+      "status": "approved",
+      "streamer": "Cinna",
+      "tags": [
+        "rp_drama",
+        "funny_line"
+      ],
+      "title": "POV: you ask for a job and every day has a different excuse",
+      "vod": "twitch:v2905273323",
+      "vod_url": "https://www.twitch.tv/videos/2905273323",
+      "why": "Streamer commits way too hard to an escalating bit of rebranded weekdays for not hiring someone, with chat exploding at the stacked jokes."
+    },
     "9d7b9a4591": {
+      "asset_deleted": true,
       "asset_id": 651505210,
       "caption": "the way he just ran screaming \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-17T20:21:24.151683+00:00",
@@ -65,6 +109,7 @@
       "hook_score": 8,
       "id": "9d7b9a4591",
       "issue": 10,
+      "issue_closed": true,
       "layout": "cam+fill",
       "live": true,
       "live_signal": "chat exploded live (3.3x normal)",
@@ -76,7 +121,7 @@
       "said": "wasn't the harassment part apart when she held a gun to their head and then said give me your number Don said oh if you hold them up for their wallet and you take it and then you say while you're giving me your wallet can I have your number I didn't think that was that crazy but apparently apparently that's a no-go Don apparently that's a no-go yeah I mean that guy ran like I don't know Yeah, like, I don't know. He just ran screaming. He's still running to this day. I think he's still running. I'm being told. I'm getting reports.",
       "score": 7,
       "start": 6408.5,
-      "status": "approved",
+      "status": "expired",
       "streamer": "Cinna",
       "tags": [
         "funny_line",
@@ -91,6 +136,7 @@
   "health": {},
   "spend": {
     "2026-10-17": 0.0319,
-    "2026-10-19": 0.1062
+    "2026-10-19": 0.1062,
+    "2026-10-20": 0.0958
   }
 }
