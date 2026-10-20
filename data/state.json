@@ -2074,17 +2074,21 @@
             [
               "2026-10-20T05:01:24.542255+00:00",
               319
+            ],
+            [
+              "2026-10-20T05:16:30.726786+00:00",
+              0
             ]
           ],
           "hour": "16:00",
-          "likes": 15,
+          "likes": 0,
           "match": 1.1,
           "posted_at": "2026-10-19T23:16:02+00:00",
           "seen_at": "2026-10-19T23:30:22.309156+00:00",
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698521613565791502",
-          "views": 319
+          "views": 0
         },
         "youtube": {
           "comments": null,
@@ -2177,6 +2181,10 @@
             [
               "2026-10-20T05:01:35.485932+00:00",
               1000
+            ],
+            [
+              "2026-10-20T05:16:41.577535+00:00",
+              1100
             ]
           ],
           "hour": "16:00",
@@ -2187,7 +2195,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/XNFTo8g_hrs",
-          "views": 1000
+          "views": 1100
         }
       },
       "punch_at": 0,
@@ -2376,17 +2384,21 @@
             [
               "2026-10-20T02:01:01.561762+00:00",
               1035
+            ],
+            [
+              "2026-10-20T05:16:30.726811+00:00",
+              0
             ]
           ],
           "hour": "11:00",
-          "likes": 48,
+          "likes": 0,
           "match": 1.1,
           "posted_at": "2026-10-16T18:43:42+00:00",
           "seen_at": "2026-10-16T21:39:01.035782+00:00",
-          "shares": 1,
+          "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7697338138603031821",
-          "views": 1035
+          "views": 0
         },
         "youtube": {
           "comments": null,
@@ -2803,7 +2815,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-20T05:01:24.542276+00:00"
+      "ok": "2026-10-20T05:16:30.726817+00:00"
     }
   },
   "last_run": {
