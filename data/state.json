@@ -1001,6 +1001,8 @@
       "caption": "thank you for your service \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-19T08:52:25.590046+00:00",
       "duration": 37.0,
+      "email_message_id": "<179246532521.3691.13366590105391859208@gmail.com>",
+      "emailed_at": "2026-10-20T03:02:19.060271+00:00",
       "end": 13642.0,
       "facecam": true,
       "file": "14fc643cda.mp4",
@@ -1025,6 +1027,8 @@
       "punch_text": "It's just war stuff",
       "said": "I did kill two dogs at once with my car. That was a collateral technically. I mean that counts, yeah. My stuff wasn't like collats that you get with like a sniper because it was mostly firebomb and family homes and stuff like that. So, it's just you know war stuff really. It's just war stuff. Okay, I mean it seems like you're pretty much fit for the pawn aisle. I mean on guard. Yeah, we're gonna send it up to Hong Kong Pawn right now. Yeah, I mean, we need that. You never know when you'll need that, right? Yeah, I'm going to go touch the safe. If I've got to kill all the people in there, I'm g",
       "score": 7,
+      "sent_caption": "thank you for your service \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
+      "sent_title": "He's hired. No questions asked \ud83d\udc80 #shorts",
       "start": 13605,
       "status": "approved",
       "streamer": "xQc",
@@ -1239,7 +1243,7 @@
             ]
           ],
           "hour": "14:00",
-          "likes": 8,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-18T21:35:32+00:00",
           "seen_at": "2026-10-18T21:41:58.864012+00:00",
@@ -1737,17 +1741,21 @@
             [
               "2026-10-20T02:46:00.198724+00:00",
               1370
+            ],
+            [
+              "2026-10-20T03:01:13.805187+00:00",
+              1300
             ]
           ],
           "hour": "17:00",
-          "likes": 30,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-18T00:29:39+00:00",
           "seen_at": "2026-10-18T00:32:41.799268+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/appSZJXvGMc",
-          "views": 1370
+          "views": 1300
         }
       },
       "punch_at": 43.84,
@@ -2129,17 +2137,21 @@
             [
               "2026-10-20T02:46:00.198750+00:00",
               689
+            ],
+            [
+              "2026-10-20T03:01:13.805218+00:00",
+              709
             ]
           ],
           "hour": "16:00",
-          "likes": 15,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-19T23:17:49+00:00",
           "seen_at": "2026-10-19T23:30:22.469491+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/XNFTo8g_hrs",
-          "views": 689
+          "views": 709
         }
       },
       "punch_at": 0,
@@ -2344,10 +2356,6 @@
           "comments": null,
           "date": "2026-10-16",
           "history": [
-            [
-              "2026-10-18T07:09:28.834032+00:00",
-              1417
-            ],
             [
               "2026-10-18T08:09:41.979064+00:00",
               1419
@@ -2583,17 +2591,21 @@
             [
               "2026-10-20T02:46:00.198763+00:00",
               1562
+            ],
+            [
+              "2026-10-20T03:01:13.805233+00:00",
+              1500
             ]
           ],
           "hour": "11:00",
-          "likes": 29,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-16T18:41:23+00:00",
           "seen_at": "2026-10-16T21:12:13.954365+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/h-i9oBUzpow",
-          "views": 1562
+          "views": 1500
         }
       },
       "punch_at": 44.32,
@@ -2743,12 +2755,19 @@
         "date": "2026-10-19",
         "subject": "Post now: He told a customer he got scammed out of 20k \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-10-20T03:02:19.060271+00:00",
+        "clip": "14fc643cda",
+        "date": "2026-10-19",
+        "subject": "Post now: Bro downplayed war crimes in his interview and still got hired \ud83d\udc80 (7/10)",
+        "test": false
       }
     ]
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-20T02:46:00.071158+00:00"
+      "ok": "2026-10-20T03:01:02.821540+00:00"
     }
   },
   "last_run": {
