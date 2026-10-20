@@ -2436,6 +2436,48 @@
       "vod_url": "https://www.twitch.tv/videos/2904505458",
       "why": "A scammed customer slowly realizes the guy he paid isn't an employee while the streamer toys with him before the reveal."
     },
+    "c01052b884": {
+      "asset_id": 658784066,
+      "caption": "the calmest way to explain a crime scene \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-20T08:53:12.112827+00:00",
+      "duration": 36.0,
+      "end": 25997.0,
+      "facecam": true,
+      "file": "c01052b884.mp4",
+      "framing": "Webcam sits in the top-left, and the action is a single car driving near the center of the frame.",
+      "hook": "He explains the body count to the cops like it's nothing \ud83d\udc80",
+      "hook_options": [
+        "POV: the cops ask what happened and he explains with a straight face",
+        "He explained the whole thing to the cops like it was normal \ud83d\udc80",
+        "When you tell the cops you had to tap everybody \ud83d\ude2d",
+        "POV: you're the Joker and the cops show up to a mess \ud83d\udc80",
+        "Bro said it so calmly to the cops \ud83d\ude2d",
+        "POV: the cops ask what happened and he explains with a straight face"
+      ],
+      "hook_score": 8,
+      "id": "c01052b884",
+      "issue": 19,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/993b7cb1ff/c01052b884.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/c01052b884.mp4",
+      "posts": {},
+      "punch_at": 30.36,
+      "punch_text": "I had to tap her too",
+      "said": "Goodbye, American Mike. What the fuck happened? I mean, this guy pulled up and said, report a shot's fired. I mean, I didn't fire a shot. I pulled my gun earlier, but I didn't fire a shot. This guy pulled up. He says, yo, Joker man, stop here. He says, stop following me. I went down to the corner. I pulled out my gun. He did some shenanigans, some jumps. I mean, I was going to talk to him, but I mean, he went full roly-poly, so I had to tap him. And then lady pulls up, and she fucking tripped on the street. I mean, I have to tap her too. I mean, I don't know what they're doing there.",
+      "score": 7,
+      "start": 25961.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "rp_drama",
+        "funny_line",
+        "police"
+      ],
+      "title": "POV: cops ask what happened and he's way too calm \ud83d\udc80",
+      "vod": "twitch:v2905320411",
+      "vod_url": "https://www.twitch.tv/videos/2905320411",
+      "why": "The Joker gives the cops a deadpan, casual account of taking out everyone around him, and the way he says it makes the escalation funny. It was also the most-clipped moment in the batch."
+    },
     "c13a3ebabc": {
       "asset_deleted": true,
       "asset_id": 649236531,
@@ -3049,7 +3091,7 @@
   "launch": {},
   "posts": [],
   "preflight": {
-    "ok": "2026-10-19T20:19:26.790869+00:00"
+    "ok": "2026-10-20T08:53:32.836874+00:00"
   },
   "processed_vods": [
     "twitch:v2901708053",
@@ -3061,7 +3103,8 @@
     "twitch:v2903457060",
     "twitch:v2904440876",
     "twitch:v2904505458",
-    "twitch:v2905320411"
+    "twitch:v2905320411",
+    "twitch:v2905273323"
   ],
   "pruned": [],
   "slot_plan": {
@@ -3088,7 +3131,8 @@
     "2026-10-16": 0.1561,
     "2026-10-17": 0.168,
     "2026-10-18": 0.0473,
-    "2026-10-19": 0.132
+    "2026-10-19": 0.132,
+    "2026-10-20": 0.0622
   },
   "status_updated": "2026-10-20T08:46:59.425321+00:00",
   "streamers": {
