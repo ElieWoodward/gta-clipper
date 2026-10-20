@@ -958,6 +958,8 @@
       "caption": "the way she kept screaming for help while they left \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-20T09:51:41.296585+00:00",
       "duration": 47.0,
+      "email_message_id": "<179250855091.3701.11108259407383715550@gmail.com>",
+      "emailed_at": "2026-10-20T15:02:45.522328+00:00",
       "end": 3234.0,
       "facecam": true,
       "file": "0cd1adaee0.mp4",
@@ -982,6 +984,8 @@
       "punch_text": "",
       "said": "it out. But if they drive the other way, I'm fucked. Papa! Papa! Help! Oh my god, they're getting in cars and leaving. Help! Help! Oh my god. Wait, they're getting in cars? Wait! I gotta get ready, I gotta get ready to yell. Oh my god, I'm straining my voice. I'm straining my voice. Wait. Who's that? Help! Help! Help!",
       "score": 7,
+      "sent_caption": "the way she kept screaming for help while they left \ud83d\ude2d\ud83d\udc80\n\nStreamer: Cinna\n#gta6 #gtarp #gta #funny #fyp #cinna",
+      "sent_title": "POV: you're downed and everybody just drives away \ud83d\udc80 #shorts",
       "start": 3187.0,
       "status": "approved",
       "streamer": "Cinna",
@@ -2671,17 +2675,21 @@
             [
               "2026-10-20T14:47:38.920275+00:00",
               1977
+            ],
+            [
+              "2026-10-20T15:02:29.256045+00:00",
+              1986
             ]
           ],
           "hour": "16:00",
-          "likes": 44,
+          "likes": 43,
           "match": 1.0,
           "posted_at": "2026-10-19T23:17:49+00:00",
           "seen_at": "2026-10-19T23:30:22.469491+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/XNFTo8g_hrs",
-          "views": 1977
+          "views": 1986
         }
       },
       "punch_at": 0,
@@ -3342,12 +3350,19 @@
         "date": "2026-10-19",
         "subject": "Post now: Bro downplayed war crimes in his interview and still got hired \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-10-20T15:02:45.522328+00:00",
+        "clip": "0cd1adaee0",
+        "date": "2026-10-20",
+        "subject": "Post now: POV: you're downed and your whole crew drives off \ud83d\ude2d\ud83d\udc80 (7/10)",
+        "test": false
       }
     ]
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-20T14:47:38.770786+00:00"
+      "ok": "2026-10-20T15:02:29.019446+00:00"
     }
   },
   "last_run": {
