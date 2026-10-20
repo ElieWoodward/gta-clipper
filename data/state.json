@@ -997,6 +997,7 @@
       "why": "She frantically hops into a stranger's car, gets kicked out, then deadpans the explanation; chat erupted."
     },
     "14fc643cda": {
+      "asset_deleted": true,
       "asset_id": 655738034,
       "caption": "thank you for your service \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-19T08:52:25.590046+00:00",
@@ -1019,10 +1020,41 @@
       "hook_score": 8,
       "id": "14fc643cda",
       "issue": 15,
+      "issue_closed": true,
       "layout": "cam+fill",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/f0fc33904e/14fc643cda.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/14fc643cda.mp4",
-      "posts": {},
+      "posts": {
+        "tiktok": {
+          "comments": 0,
+          "date": "2026-10-20",
+          "history": [
+            [
+              "2026-10-20T05:46:29.180427+00:00",
+              0
+            ]
+          ],
+          "hour": "22:00",
+          "likes": 0,
+          "match": 1.1,
+          "posted_at": "2026-10-20T05:43:41+00:00",
+          "seen_at": "2026-10-20T05:46:29.180172+00:00",
+          "shares": 0,
+          "status": "published",
+          "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698621549863062798",
+          "views": 0
+        },
+        "youtube": {
+          "date": "2026-10-20",
+          "history": [],
+          "match": 1.0,
+          "posted_at": "2026-10-20T05:46:40.281711+00:00",
+          "seen_at": "2026-10-20T05:46:40.281713+00:00",
+          "status": "published",
+          "url": "https://www.youtube.com/shorts/S11fiaBKIEw",
+          "views": null
+        }
+      },
       "punch_at": 16.48,
       "punch_text": "It's just war stuff",
       "said": "I did kill two dogs at once with my car. That was a collateral technically. I mean that counts, yeah. My stuff wasn't like collats that you get with like a sniper because it was mostly firebomb and family homes and stuff like that. So, it's just you know war stuff really. It's just war stuff. Okay, I mean it seems like you're pretty much fit for the pawn aisle. I mean on guard. Yeah, we're gonna send it up to Hong Kong Pawn right now. Yeah, I mean, we need that. You never know when you'll need that, right? Yeah, I'm going to go touch the safe. If I've got to kill all the people in there, I'm g",
@@ -1030,7 +1062,7 @@
       "sent_caption": "thank you for your service \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
       "sent_title": "He's hired. No questions asked \ud83d\udc80 #shorts",
       "start": 13605,
-      "status": "approved",
+      "status": "posted",
       "streamer": "xQc",
       "tags": [
         "rp_drama",
@@ -1173,6 +1205,10 @@
             [
               "2026-10-20T01:00:42.658114+00:00",
               100
+            ],
+            [
+              "2026-10-20T05:46:29.180443+00:00",
+              101
             ]
           ],
           "hour": "14:00",
@@ -1183,7 +1219,7 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698124124585037069",
-          "views": 100
+          "views": 101
         },
         "youtube": {
           "comments": null,
@@ -2866,7 +2902,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-20T05:31:32.323354+00:00"
+      "ok": "2026-10-20T05:46:29.180470+00:00"
     }
   },
   "last_run": {
@@ -2912,7 +2948,7 @@
     "2026-10-18": 0.0473,
     "2026-10-19": 0.132
   },
-  "status_updated": "2026-10-20T04:46:38.718925+00:00",
+  "status_updated": "2026-10-20T05:46:46.817334+00:00",
   "streamers": {
     "Cinna": {
       "facecam": true
