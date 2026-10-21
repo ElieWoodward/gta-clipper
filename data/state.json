@@ -1695,6 +1695,10 @@
             [
               "2026-10-21T03:49:24.157154+00:00",
               2200
+            ],
+            [
+              "2026-10-21T04:05:05.726758+00:00",
+              2100
             ]
           ],
           "hour": "22:00",
@@ -1705,7 +1709,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/S11fiaBKIEw",
-          "views": 2200
+          "views": 2100
         }
       },
       "punch_at": 16.48,
@@ -3811,6 +3815,10 @@
             [
               "2026-10-21T03:49:13.258787+00:00",
               32
+            ],
+            [
+              "2026-10-21T04:04:54.746456+00:00",
+              72
             ]
           ],
           "hour": "20:00",
@@ -3821,17 +3829,26 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698951923587730719",
-          "views": 32
+          "views": 72
         },
         "youtube": {
+          "comments": null,
           "date": "2026-10-21",
-          "history": [],
+          "history": [
+            [
+              "2026-10-21T04:05:05.726834+00:00",
+              2
+            ]
+          ],
+          "hour": "20:00",
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-21T03:19:37.609908+00:00",
           "seen_at": "2026-10-21T03:19:37.609910+00:00",
+          "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/ogRQvVPGjT4",
-          "views": null
+          "views": 2
         }
       },
       "punch_at": 19.34,
@@ -3965,7 +3982,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-21T03:49:13.258790+00:00"
+      "ok": "2026-10-21T04:04:54.746472+00:00"
     }
   },
   "last_run": {
