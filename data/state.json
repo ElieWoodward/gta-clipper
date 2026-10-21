@@ -3705,6 +3705,48 @@
       "vod_url": "https://www.twitch.tv/videos/2904440876",
       "why": "Streamer realizes the order is a whole duck, not a portion, and panics; chat reacted 31x."
     },
+    "f4bcda9916": {
+      "asset_id": 661082872,
+      "caption": "the way she just introduced herself from inside the machine \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-21T02:08:51.311197+00:00",
+      "duration": 29.0,
+      "end": 5617.0,
+      "facecam": true,
+      "file": "f4bcda9916.mp4",
+      "framing": "The action moves from the crushed character at lower center in frame 1 to the standing cowboy at center in frames 2\u20133, and the vending machine on the left matters for context, so a wider crop works be",
+      "hook": "She got stuck in a vending machine and introduced herself \ud83d\udc80",
+      "hook_options": [
+        "POV: you get stuck in a vending machine and someone walks up",
+        "When you get stuck in a vending machine and the first person shows up \ud83d\ude2d",
+        "I got stuck in a vending machine before work \ud83d\udc80",
+        "Bro got trapped in a vending machine over some chips \ud83d\ude2d\ud83d\udc80",
+        "Chat, she really climbed inside the vending machine \ud83e\udd23",
+        "POV: you get stuck in a vending machine and someone walks up \ud83d\ude2d"
+      ],
+      "hook_score": 8,
+      "id": "f4bcda9916",
+      "issue": 21,
+      "layout": "cam+wide",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/50bc4da182/f4bcda9916.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/f4bcda9916.mp4",
+      "posts": {},
+      "punch_at": 19.34,
+      "punch_text": "A normal day?",
+      "said": "help me help me I'm stuck in a vending machine please hello what the can I just have a normal fucking day can I please have a normal day what are you doing I'm sorry to start your morning out like this I was just really hungry and uh just got a little too uh too",
+      "score": 7,
+      "start": 5588.0,
+      "status": "approved",
+      "streamer": "vanillamace",
+      "tags": [
+        "rp_drama",
+        "chaos",
+        "funny_line"
+      ],
+      "title": "POV: stuck in a vending machine and a stranger shows up \ud83d\udc80",
+      "vod": "twitch:v2906215166",
+      "vod_url": "https://www.twitch.tv/videos/2906215166",
+      "why": "Absurd premise of being stuck inside a vending machine, then a stranger finds her and she tries to act normal; chat laughed at 22x."
+    },
     "f62ddcbe99": {
       "asset_deleted": true,
       "asset_id": 647860254,
@@ -3863,11 +3905,14 @@
     "2026-10-18": 0.0473,
     "2026-10-19": 0.132,
     "2026-10-20": 0.0997,
-    "2026-10-21": 0.0152
+    "2026-10-21": 0.0616
   },
   "status_updated": "2026-10-21T01:49:29.251657+00:00",
   "streamers": {
     "Cinna": {
+      "facecam": true
+    },
+    "vanillamace": {
       "facecam": true
     },
     "xQc": {
