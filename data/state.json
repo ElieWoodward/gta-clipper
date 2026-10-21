@@ -1484,6 +1484,10 @@
             [
               "2026-10-21T00:34:03.050256+00:00",
               297
+            ],
+            [
+              "2026-10-21T01:04:07.667251+00:00",
+              298
             ]
           ],
           "hour": "22:00",
@@ -1494,7 +1498,7 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698621549863062798",
-          "views": 297
+          "views": 298
         },
         "youtube": {
           "comments": null,
@@ -2552,6 +2556,7 @@
       "why": "A friendly smile test gets roasted, then a stranger interrupts and gets snapped at, proving the roast right."
     },
     "87c90d10bd": {
+      "asset_deleted": true,
       "asset_id": 654871700,
       "caption": "bro really started doubting his own memory \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-19T00:52:12.171748+00:00",
@@ -2572,6 +2577,7 @@
       "hook_score": 8,
       "id": "87c90d10bd",
       "issue": 12,
+      "issue_closed": true,
       "layout": "cam+fill",
       "live": true,
       "live_signal": "chat exploded live (3.3x normal)",
@@ -2583,7 +2589,7 @@
       "said": "I found him he's at the bar you know you never got in a car what car there was never a car Wait Are you okay? I'm No I'm You got in the red car What red car? The red car I walked I walked",
       "score": 7,
       "start": 21109.0,
-      "status": "approved",
+      "status": "expired",
       "streamer": "Cinna",
       "tags": [
         "funny_line",
@@ -2875,10 +2881,6 @@
           "date": "2026-10-19",
           "history": [
             [
-              "2026-10-20T01:00:53.757552+00:00",
-              357
-            ],
-            [
               "2026-10-20T01:31:03.569082+00:00",
               445
             ],
@@ -3113,6 +3115,10 @@
             [
               "2026-10-21T00:49:01.961406+00:00",
               3595
+            ],
+            [
+              "2026-10-21T01:04:07.763921+00:00",
+              3604
             ]
           ],
           "hour": "16:00",
@@ -3123,7 +3129,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/XNFTo8g_hrs",
-          "views": 3595
+          "views": 3604
         }
       },
       "punch_at": 0,
@@ -3796,7 +3802,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-21T00:49:01.815741+00:00"
+      "ok": "2026-10-21T01:04:07.667303+00:00"
     }
   },
   "last_run": {
