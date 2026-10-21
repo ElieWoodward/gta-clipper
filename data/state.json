@@ -1122,6 +1122,10 @@
             [
               "2026-10-21T00:49:01.815675+00:00",
               297
+            ],
+            [
+              "2026-10-21T03:19:26.683237+00:00",
+              298
             ]
           ],
           "hour": "08:00",
@@ -1132,7 +1136,7 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698779687778127118",
-          "views": 297
+          "views": 298
         },
         "youtube": {
           "comments": null,
@@ -1285,17 +1289,21 @@
             [
               "2026-10-21T03:04:32.597133+00:00",
               1153
+            ],
+            [
+              "2026-10-21T03:19:37.609982+00:00",
+              1100
             ]
           ],
           "hour": "09:00",
-          "likes": 14,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-20T16:00:00+00:00",
           "seen_at": "2026-10-20T16:02:46.321624+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/2TkUQACBCi4",
-          "views": 1153
+          "views": 1100
         }
       },
       "punch_at": 0,
@@ -1675,17 +1683,21 @@
             [
               "2026-10-21T03:04:32.597164+00:00",
               2197
+            ],
+            [
+              "2026-10-21T03:19:37.609995+00:00",
+              2100
             ]
           ],
           "hour": "22:00",
-          "likes": 26,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-20T05:46:40.281711+00:00",
           "seen_at": "2026-10-20T05:46:40.281713+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/S11fiaBKIEw",
-          "views": 2197
+          "views": 2100
         }
       },
       "punch_at": 16.48,
@@ -1936,7 +1948,7 @@
             ]
           ],
           "hour": "14:00",
-          "likes": 8,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-18T21:35:32+00:00",
           "seen_at": "2026-10-18T21:41:58.864012+00:00",
@@ -2223,6 +2235,10 @@
             [
               "2026-10-21T03:04:22.350161+00:00",
               1031
+            ],
+            [
+              "2026-10-21T03:19:26.683274+00:00",
+              1033
             ]
           ],
           "hour": "18:00",
@@ -2233,16 +2249,12 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7697808721518267678",
-          "views": 1031
+          "views": 1033
         },
         "youtube": {
           "comments": null,
           "date": "2026-10-18",
           "history": [
-            [
-              "2026-10-18T02:02:55.878721+00:00",
-              345
-            ],
             [
               "2026-10-18T02:17:56.432726+00:00",
               350
@@ -2478,17 +2490,21 @@
             [
               "2026-10-21T02:49:26.835872+00:00",
               1381
+            ],
+            [
+              "2026-10-21T03:19:37.610011+00:00",
+              1300
             ]
           ],
           "hour": "17:00",
-          "likes": 31,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-18T00:29:39+00:00",
           "seen_at": "2026-10-18T00:32:41.799268+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/appSZJXvGMc",
-          "views": 1381
+          "views": 1300
         }
       },
       "punch_at": 43.84,
@@ -2921,10 +2937,6 @@
           "date": "2026-10-19",
           "history": [
             [
-              "2026-10-20T02:15:47.735714+00:00",
-              508
-            ],
-            [
               "2026-10-20T02:31:13.267158+00:00",
               611
             ],
@@ -3159,17 +3171,21 @@
             [
               "2026-10-21T02:49:26.835886+00:00",
               3604
+            ],
+            [
+              "2026-10-21T03:19:37.610024+00:00",
+              3600
             ]
           ],
           "hour": "16:00",
-          "likes": 49,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-19T23:17:49+00:00",
           "seen_at": "2026-10-19T23:30:22.469491+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/XNFTo8g_hrs",
-          "views": 3604
+          "views": 3600
         }
       },
       "punch_at": 0,
@@ -3425,10 +3441,6 @@
           "date": "2026-10-16",
           "history": [
             [
-              "2026-10-19T01:42:07.783480+00:00",
-              1466
-            ],
-            [
               "2026-10-19T02:12:22.901092+00:00",
               1400
             ],
@@ -3663,17 +3675,21 @@
             [
               "2026-10-21T02:19:35.616095+00:00",
               1728
+            ],
+            [
+              "2026-10-21T03:19:37.610034+00:00",
+              1700
             ]
           ],
           "hour": "11:00",
-          "likes": 31,
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-16T18:41:23+00:00",
           "seen_at": "2026-10-16T21:12:13.954365+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/h-i9oBUzpow",
-          "views": 1728
+          "views": 1700
         }
       },
       "punch_at": 44.32,
@@ -3740,6 +3756,7 @@
       "why": "Streamer realizes the order is a whole duck, not a portion, and panics; chat reacted 31x."
     },
     "f4bcda9916": {
+      "asset_deleted": true,
       "asset_id": 661082872,
       "caption": "the way she just introduced herself from inside the machine \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-21T02:08:51.311197+00:00",
@@ -3762,10 +3779,41 @@
       "hook_score": 8,
       "id": "f4bcda9916",
       "issue": 21,
+      "issue_closed": true,
       "layout": "cam+wide",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/50bc4da182/f4bcda9916.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/f4bcda9916.mp4",
-      "posts": {},
+      "posts": {
+        "tiktok": {
+          "comments": 0,
+          "date": "2026-10-21",
+          "history": [
+            [
+              "2026-10-21T03:19:26.683323+00:00",
+              14
+            ]
+          ],
+          "hour": "20:00",
+          "likes": 0,
+          "match": 1.1,
+          "posted_at": "2026-10-21T03:05:40+00:00",
+          "seen_at": "2026-10-21T03:19:26.682999+00:00",
+          "shares": 0,
+          "status": "published",
+          "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698951923587730719",
+          "views": 14
+        },
+        "youtube": {
+          "date": "2026-10-21",
+          "history": [],
+          "match": 1.0,
+          "posted_at": "2026-10-21T03:19:37.609908+00:00",
+          "seen_at": "2026-10-21T03:19:37.609910+00:00",
+          "status": "published",
+          "url": "https://www.youtube.com/shorts/ogRQvVPGjT4",
+          "views": null
+        }
+      },
       "punch_at": 19.34,
       "punch_text": "A normal day?",
       "said": "help me help me I'm stuck in a vending machine please hello what the can I just have a normal fucking day can I please have a normal day what are you doing I'm sorry to start your morning out like this I was just really hungry and uh just got a little too uh too",
@@ -3773,7 +3821,7 @@
       "sent_caption": "the way she just introduced herself from inside the machine \ud83d\ude2d\ud83d\udc80\n\nStreamer: vanillamace\n#gta6 #gtarp #gta #funny #fyp #vanillamace",
       "sent_title": "POV: stuck in a vending machine and a stranger shows up \ud83d\udc80 #shorts",
       "start": 5588.0,
-      "status": "approved",
+      "status": "posted",
       "streamer": "vanillamace",
       "tags": [
         "rp_drama",
@@ -3897,7 +3945,7 @@
   },
   "health": {
     "tiktok_check": {
-      "ok": "2026-10-21T03:04:22.350191+00:00"
+      "ok": "2026-10-21T03:19:26.683329+00:00"
     }
   },
   "last_run": {
