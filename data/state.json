@@ -4283,8 +4283,13 @@
     ]
   },
   "health": {
+    "post": {
+      "fails": 1,
+      "last_error": "SMTPServerDisconnected: Connection unexpectedly closed",
+      "last_fail": "2026-10-21T17:07:22.637953+00:00"
+    },
     "tiktok_check": {
-      "ok": "2026-10-21T16:51:19.712175+00:00"
+      "ok": "2026-10-21T17:06:27.139222+00:00"
     }
   },
   "last_run": {
