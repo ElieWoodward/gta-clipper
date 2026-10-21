@@ -4325,12 +4325,12 @@
   },
   "health": {
     "post": {
-      "fails": 8,
+      "fails": 9,
       "last_error": "SMTPServerDisconnected: Connection unexpectedly closed",
-      "last_fail": "2026-10-21T18:52:50.535765+00:00"
+      "last_fail": "2026-10-21T18:58:50.767773+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-21T18:52:03.923677+00:00"
+      "ok": "2026-10-21T18:57:56.336050+00:00"
     }
   },
   "last_run": {
