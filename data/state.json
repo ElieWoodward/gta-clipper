@@ -1649,6 +1649,10 @@
             [
               "2026-10-21T16:36:33.135950+00:00",
               308
+            ],
+            [
+              "2026-10-21T19:36:55.058556+00:00",
+              310
             ]
           ],
           "hour": "22:00",
@@ -1659,7 +1663,7 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698621549863062798",
-          "views": 308
+          "views": 310
         },
         "youtube": {
           "comments": null,
@@ -4333,12 +4337,12 @@
   },
   "health": {
     "post": {
-      "fails": 11,
+      "fails": 12,
       "last_error": "SMTPServerDisconnected: Connection unexpectedly closed",
-      "last_fail": "2026-10-21T19:22:35.067552+00:00"
+      "last_fail": "2026-10-21T19:37:41.297559+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-21T19:21:49.272625+00:00"
+      "ok": "2026-10-21T19:36:55.058605+00:00"
     }
   },
   "last_run": {
