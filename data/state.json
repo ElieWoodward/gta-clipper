@@ -4377,6 +4377,11 @@
       "last_error": "SMTPServerDisconnected: Connection unexpectedly closed",
       "last_fail": "2026-10-21T21:07:27.574461+00:00"
     },
+    "process": {
+      "fails": 1,
+      "last_error": "PreflightFailed: Gmail (sending + reading replies): SMTPServerDisconnected: Connection unexpectedly closed",
+      "last_fail": "2026-10-21T21:11:09.598393+00:00"
+    },
     "tiktok_check": {
       "ok": "2026-10-21T21:06:50.589549+00:00"
     }
@@ -4435,7 +4440,7 @@
     "2026-10-18": 0.0473,
     "2026-10-19": 0.132,
     "2026-10-20": 0.0997,
-    "2026-10-21": 0.0616
+    "2026-10-21": 0.077
   },
   "status_updated": "2026-10-21T16:51:32.834021+00:00",
   "streamers": {
