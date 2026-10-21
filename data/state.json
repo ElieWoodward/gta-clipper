@@ -1673,6 +1673,10 @@
             [
               "2026-10-21T21:06:50.589517+00:00",
               312
+            ],
+            [
+              "2026-10-21T22:52:21.042190+00:00",
+              313
             ]
           ],
           "hour": "22:00",
@@ -1683,7 +1687,7 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698621549863062798",
-          "views": 312
+          "views": 313
         },
         "youtube": {
           "comments": null,
@@ -4218,6 +4222,10 @@
             [
               "2026-10-21T22:22:34.799730+00:00",
               334
+            ],
+            [
+              "2026-10-21T22:52:21.042238+00:00",
+              335
             ]
           ],
           "hour": "20:00",
@@ -4228,7 +4236,7 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698951923587730719",
-          "views": 334
+          "views": 335
         },
         "youtube": {
           "comments": null,
@@ -4385,9 +4393,9 @@
   },
   "health": {
     "post": {
-      "fails": 25,
+      "fails": 26,
       "last_error": "SMTPServerDisconnected: Connection unexpectedly closed",
-      "last_fail": "2026-10-21T22:38:06.693611+00:00"
+      "last_fail": "2026-10-21T22:53:06.565238+00:00"
     },
     "process": {
       "fails": 2,
@@ -4395,7 +4403,7 @@
       "last_fail": "2026-10-21T22:11:54.746200+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-21T22:37:11.033971+00:00"
+      "ok": "2026-10-21T22:52:21.042244+00:00"
     }
   },
   "last_run": {
