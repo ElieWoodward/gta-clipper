@@ -1206,6 +1206,10 @@
             [
               "2026-10-21T18:21:38.857483+00:00",
               313
+            ],
+            [
+              "2026-10-21T18:36:31.824291+00:00",
+              314
             ]
           ],
           "hour": "08:00",
@@ -1216,7 +1220,7 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698779687778127118",
-          "views": 313
+          "views": 314
         },
         "youtube": {
           "comments": null,
@@ -3606,6 +3610,10 @@
             [
               "2026-10-21T10:20:16.312537+00:00",
               1036
+            ],
+            [
+              "2026-10-21T18:36:31.824342+00:00",
+              1037
             ]
           ],
           "hour": "11:00",
@@ -3616,7 +3624,7 @@
           "shares": 1,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7697338138603031821",
-          "views": 1036
+          "views": 1037
         },
         "youtube": {
           "comments": null,
@@ -4133,6 +4141,10 @@
             [
               "2026-10-21T18:21:38.857572+00:00",
               325
+            ],
+            [
+              "2026-10-21T18:36:31.824350+00:00",
+              326
             ]
           ],
           "hour": "20:00",
@@ -4143,7 +4155,7 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698951923587730719",
-          "views": 325
+          "views": 326
         },
         "youtube": {
           "comments": null,
@@ -4300,12 +4312,12 @@
   },
   "health": {
     "post": {
-      "fails": 6,
+      "fails": 7,
       "last_error": "SMTPServerDisconnected: Connection unexpectedly closed",
-      "last_fail": "2026-10-21T18:22:18.897616+00:00"
+      "last_fail": "2026-10-21T18:37:09.938712+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-21T18:21:38.857576+00:00"
+      "ok": "2026-10-21T18:36:31.824354+00:00"
     }
   },
   "last_run": {
