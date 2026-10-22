@@ -3557,6 +3557,7 @@
       "why": "A scammed customer slowly realizes the guy he paid isn't an employee while the streamer toys with him before the reveal."
     },
     "afd04b923d": {
+      "asset_deleted": true,
       "asset_id": 666884360,
       "caption": "the panic in his voice after that shootout \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-22T19:41:05.698327+00:00",
@@ -3579,10 +3580,50 @@
       "hook_score": 8,
       "id": "afd04b923d",
       "issue": 24,
+      "issue_closed": true,
       "layout": "cam+fill",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/3da089738e/afd04b923d.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/afd04b923d.mp4",
-      "posts": {},
+      "posts": {
+        "tiktok": {
+          "comments": 0,
+          "date": "2026-10-22",
+          "history": [
+            [
+              "2026-10-22T20:33:07.601302+00:00",
+              0
+            ]
+          ],
+          "hour": "13:00",
+          "likes": 0,
+          "match": 1.1,
+          "posted_at": "2026-10-22T20:27:23+00:00",
+          "seen_at": "2026-10-22T20:33:07.600966+00:00",
+          "shares": 0,
+          "status": "published",
+          "url": "https://www.tiktok.com/@wantedlevelclips8/video/7699591443773476127",
+          "views": 0
+        },
+        "youtube": {
+          "comments": null,
+          "date": "2026-10-22",
+          "history": [
+            [
+              "2026-10-22T20:33:07.734598+00:00",
+              4
+            ]
+          ],
+          "hour": "13:00",
+          "likes": 0,
+          "match": 1.0,
+          "posted_at": "2026-10-22T20:27:48+00:00",
+          "seen_at": "2026-10-22T20:33:07.734473+00:00",
+          "shares": null,
+          "status": "published",
+          "url": "https://www.youtube.com/shorts/5EcMsnfZ39I",
+          "views": 4
+        }
+      },
       "punch_at": 19.6,
       "punch_text": "I almost threw up",
       "said": "I got you. I think I got two or three. Oh, my God. Oh, my God. Brother. Brother. Brother. Brother. I. Oh, my God. You guys. Oh, my God. Oh, my God. Oh, my God. I almost threw up. Holy. Oh, my God. But this gun sends you to heaven. Okay. We need. We need a link. Guys. I think we're leaking oil. I think we're leaking. Get out of the seat. You've got to get out of the city, bro. You've got to get way out of the city. Oh, my God. Oh, my God. Oh, my God. My heart's racing. My heart's racing for the first time in forever.",
@@ -3590,7 +3631,7 @@
       "sent_caption": "the panic in his voice after that shootout \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
       "sent_title": "POV: the whole PD shows up and it goes crazy \ud83d\udc80 #shorts",
       "start": 15025.0,
-      "status": "approved",
+      "status": "posted",
       "streamer": "xQc",
       "tags": [
         "chaos",
@@ -4253,10 +4294,6 @@
           "date": "2026-10-21",
           "history": [
             [
-              "2026-10-21T03:19:26.683323+00:00",
-              14
-            ],
-            [
               "2026-10-21T03:34:24.861323+00:00",
               30
             ],
@@ -4491,6 +4528,10 @@
             [
               "2026-10-22T20:10:48.197795+00:00",
               436
+            ],
+            [
+              "2026-10-22T20:33:07.601326+00:00",
+              437
             ]
           ],
           "hour": "20:00",
@@ -4501,7 +4542,7 @@
           "shares": 0,
           "status": "published",
           "url": "https://www.tiktok.com/@wantedlevelclips8/video/7698951923587730719",
-          "views": 436
+          "views": 437
         },
         "youtube": {
           "comments": null,
@@ -4686,7 +4727,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-22T20:18:14.573020+00:00"
+      "ok": "2026-10-22T20:33:07.601333+00:00"
     }
   },
   "last_run": {
