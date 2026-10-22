@@ -4414,9 +4414,9 @@
       "last_fail": "2026-10-22T00:08:09.279170+00:00"
     },
     "process": {
-      "fails": 4,
+      "fails": 5,
       "last_error": "PreflightFailed: Gmail (sending + reading replies): SMTPServerDisconnected: Connection unexpectedly closed",
-      "last_fail": "2026-10-21T23:24:36.388758+00:00"
+      "last_fail": "2026-10-22T00:11:35.728568+00:00"
     },
     "tiktok_check": {
       "ok": "2026-10-22T00:07:30.361990+00:00"
@@ -4476,7 +4476,8 @@
     "2026-10-18": 0.0473,
     "2026-10-19": 0.132,
     "2026-10-20": 0.0997,
-    "2026-10-21": 0.1228
+    "2026-10-21": 0.1228,
+    "2026-10-22": 0.0149
   },
   "status_updated": "2026-10-21T16:51:32.834021+00:00",
   "streamers": {
