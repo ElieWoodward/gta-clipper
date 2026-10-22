@@ -15,6 +15,7 @@ import requests
 from .common import log, now_utc, run
 
 QUEUE_DEFAULTS = {"max_size": 5, "max_age_hours": 48}
+REPLY_CHECK_MINUTES = 55   # Gmail is read about once an hour: logging in every 15 minutes gets an account flagged
 MATCH_THRESHOLD = 0.6
 
 
@@ -443,7 +444,11 @@ def refresh_posted(cfg, state):
                     claim_email(cfg, state, c, "youtube")
         except Exception as e:
             log.info("YouTube check failed: %s", e)
-    if mail.configured():
+    em = state.setdefault("email", {})
+    last = em.get("replies_at")
+    due = not last or now_utc() - datetime.fromisoformat(last) >= timedelta(minutes=REPLY_CHECK_MINUTES)
+    if mail.configured() and due and not mail.down_until():
+        em["replies_at"] = now_utc().isoformat()
         try:
             from . import campaigns
             by_msg = {c.get("email_message_id"): c for c in state["clips"].values() if c.get("email_message_id")}

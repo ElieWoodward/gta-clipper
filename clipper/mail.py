@@ -12,7 +12,10 @@ import ssl
 from email.message import EmailMessage
 from email.utils import make_msgid, formatdate
 
-from .common import log, require_env
+import json
+from datetime import timedelta
+
+from .common import DATA, log, now_utc, require_env
 
 SMTP_HOST, SMTP_PORT = "smtp.gmail.com", 465
 IMAP_HOST = "imap.gmail.com"
@@ -23,22 +26,80 @@ def configured():
     return all(os.environ.get(k) for k in ("GMAIL_ADDRESS", "GMAIL_APP_PASSWORD", "NOTIFY_EMAIL"))
 
 
-def _login_smtp():
-    s = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=ssl.create_default_context(), timeout=60)
-    s.login(require_env("GMAIL_ADDRESS"), require_env("GMAIL_APP_PASSWORD").replace(" ", ""))
-    return s
+# If Gmail refuses a login (account locked, password revoked, Google blocking the sign-in), the bot stops trying for
+# a while instead of logging in again every few minutes, which is what gets an account flagged. The wait doubles
+# with each failure (1h, 2h, 4h ... 12h) and clears on the first login that works.
+BACKOFF = DATA / "mail_backoff.json"
 
 
-def _login_imap():
-    m = imaplib.IMAP4_SSL(IMAP_HOST, ssl_context=ssl.create_default_context(), timeout=60)
-    m.login(require_env("GMAIL_ADDRESS"), require_env("GMAIL_APP_PASSWORD").replace(" ", ""))
-    return m
+class MailDown(RuntimeError):
+    pass
+
+
+def down_until():
+    """When Gmail logins may be tried again (UTC ISO string), or None if they can be tried now."""
+    try:
+        rec = json.loads(BACKOFF.read_text())
+    except (OSError, ValueError):
+        return None
+    return rec.get("until") if rec.get("until", "") > now_utc().isoformat() else None
+
+
+def _guard(force=False):
+    until = down_until()
+    if until and not force:
+        raise MailDown(f"Gmail logins are paused until {until[:16]} UTC after a refused login")
+
+
+def _failed(e):
+    try:
+        n = int(json.loads(BACKOFF.read_text()).get("fails", 0)) + 1
+    except (OSError, ValueError):
+        n = 1
+    until = now_utc() + timedelta(hours=min(12, 2 ** (n - 1)))
+    BACKOFF.parent.mkdir(parents=True, exist_ok=True)
+    BACKOFF.write_text(json.dumps({"fails": n, "until": until.isoformat(), "error": str(e)[:200],
+                                   "since": now_utc().isoformat()}))
+    print(f"::warning::Gmail refused the login ({type(e).__name__}: {str(e)[:120]}); no more Gmail logins until "
+          f"{until:%H:%M} UTC", flush=True)
+
+
+def _ok():
+    if BACKOFF.exists():
+        BACKOFF.unlink()
+
+
+def _login(make, force=False):
+    _guard(force)
+    try:
+        conn = make()
+    except (smtplib.SMTPException, imaplib.IMAP4.error, OSError) as e:
+        _failed(e)
+        raise MailDown(str(e)) from e
+    _ok()
+    return conn
+
+
+def _login_smtp(force=False):
+    def make():
+        s = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, context=ssl.create_default_context(), timeout=60)
+        s.login(require_env("GMAIL_ADDRESS"), require_env("GMAIL_APP_PASSWORD").replace(" ", ""))
+        return s
+    return _login(make, force)
+
+
+def _login_imap(force=False):
+    def make():
+        m = imaplib.IMAP4_SSL(IMAP_HOST, ssl_context=ssl.create_default_context(), timeout=60)
+        m.login(require_env("GMAIL_ADDRESS"), require_env("GMAIL_APP_PASSWORD").replace(" ", ""))
+        return m
+    return _login(make, force)
 
 
 def check_login():
-    """Log in to SMTP and IMAP and log straight out (preflight)."""
-    _login_smtp().quit()
-    m = _login_imap()
+    """Log in to SMTP and IMAP and log straight out (preflight). Tries even during a pause."""
+    _login_smtp(force=True).quit()
+    m = _login_imap(force=True)
     m.logout()
 
 

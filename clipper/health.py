@@ -29,7 +29,7 @@ def alert(state, key, subject, text):
     if state.get("alerts", {}).get(key) == today or state.get("alerts_live", {}).get(key) == today:
         return False
     print(f"::warning::{subject}", flush=True)
-    if not mail.configured() or os.environ.get("DRY_RUN") == "1":
+    if not mail.configured() or os.environ.get("DRY_RUN") == "1" or mail.down_until():
         return False
     try:
         mail.send(f"Clip bot problem: {subject}", text + "\n\nYou'll get at most one email a day about this.")

@@ -623,7 +623,16 @@ def deliver(cfg, state, clip):
         except Exception as e:
             log.exception("automatic post failed: %s", e)
             print(f"::warning::automatic post failed ({str(e)[:150]}); emailing the clip instead", flush=True)
-    return send_package(cfg, state, clip)
+    try:
+        return send_package(cfg, state, clip)
+    except Exception as e:   # Gmail down: keep the clip in the queue and try again on a later run
+        from . import mail
+        log.warning("couldn't email the clip: %s", e)
+        if not isinstance(e, mail.MailDown):
+            print(f"::warning::couldn't email the clip ({type(e).__name__}: {str(e)[:150]}); it stays in the queue",
+                  flush=True)
+        clip.pop("extra", None)
+        return None
 
 
 def auto_post_clip(cfg, state, clip):
@@ -829,7 +838,10 @@ def _status_email_mode(cfg, state):
                + (f", next at {nxt})" if nxt else ")"))
     if (state.get("email") or {}).get("paused"):
         out.append("**Emails are paused.** Reply `resume` to any bot email to turn them back on.")
-    from . import launch
+    from . import launch, mail
+    if mail.down_until():
+        out.append(f"**Gmail refused the bot's login.** It tries again after {mail.down_until()[:16]} UTC; clips keep "
+                   "collecting. If this stays, check the channel Gmail and its app password.")
     L, lrec = cfg.get("_launch") or {}, state.get("launch") or {}
     if L.get("on"):
         out.append(f"**GTA 6 launch mode is on:** {L['multiplier']}x posts, "

@@ -208,7 +208,7 @@ services.blotato_published = lambda since: fake_items
 jobs.analytics()
 state = common.load_state()
 assert all(p["views"] == 12000 for c in state["clips"].values() for p in c["posts"].values())
-assert "status" in issues and "12,000" in issues["status"]
+assert "status" in issues and "| 12000 |" in issues["status"]   # (total depends on how many posts today allows)
 print("dashboard ok")
 
 # ---------- 4. learn ----------
@@ -324,6 +324,7 @@ def fake_send(subject, text, html=None, attachment=None, attachment_name=None):
     return f"<mid{len(sent)}@example.com>"
 
 
+_orig_mail_send = mail.send
 mail.send = fake_send
 replies = []
 mail.read_replies = lambda since_days=7: list(replies)
@@ -331,6 +332,7 @@ tt_uploads = []
 clipqueue.tiktok_uploads = lambda handle, n=15: list(tt_uploads)
 clipqueue.youtube_channel_id = lambda handle: "UC" + "x" * 22
 clipqueue.youtube_uploads = lambda cid: []
+clipqueue.REPLY_CHECK_MINUTES = 0   # read replies on every check in tests (live: about hourly)
 
 # one real clip through make_clip: stored on the release, enters the queue
 p8 = dict(picks[0], score=8)
@@ -494,6 +496,7 @@ from clipper import campaigns  # noqa: E402
 clipqueue.tiktok_uploads = lambda handle, n=15: list(tt_uploads)   # section 10 reloaded the module; fake again
 clipqueue.youtube_channel_id = lambda handle: "UC" + "x" * 22
 clipqueue.youtube_uploads = lambda cid: []
+clipqueue.REPLY_CHECK_MINUTES = 0   # read replies on every check in tests (live: about hourly)
 LIST_HTML = """<html><body>
 <article><a href="/campaigns/clippedin/big-rp">x</a>Board: Content RewardsFAIR50$2,000 Bigrp Streamer Clipping Campaign
 Platforms TikTok, Instagram, YouTubeCLIPPINGCPM$1.50$1.50 per 1K views$1.2K of $2K left</article>
@@ -923,3 +926,39 @@ common.save_state(st)
 assert "kai" in [x["channel"] for x in common.load_config()["streamers"]]
 _tw._gql = _g
 print("LAUNCH OK")
+
+# ---------- 22. Gmail refuses the login: the bot backs off instead of retrying every run ----------
+import smtplib as _smtplib  # noqa: E402
+mail.send = _orig_mail_send
+_SS = _smtplib.SMTP_SSL
+class _Refuse:
+    def __init__(self, *a, **k):
+        raise _smtplib.SMTPServerDisconnected("Connection unexpectedly closed")
+_smtplib.SMTP_SSL = _Refuse
+try:
+    mail.send("x", "y")
+    raise AssertionError("should have failed")
+except mail.MailDown:
+    pass
+assert mail.down_until()
+_tries = []
+class _Count(_Refuse):
+    def __init__(self, *a, **k):
+        _tries.append(1)
+        super().__init__()
+_smtplib.SMTP_SSL = _Count
+for _ in range(3):
+    try:
+        mail.send("x", "y")
+    except mail.MailDown:
+        pass
+assert not _tries, "no login attempts while backing off"
+st = common.load_state()
+_c3 = dict(_clip, id="mailclip", status="approved", posts={}, emailed_at=None)
+st["clips"]["mailclip"] = _c3
+os.environ.pop("BLOTATO_API_KEY", None)
+jobs.deliver(common.load_config(), st, _c3)   # doesn't raise; the clip waits in the queue
+assert _c3["status"] == "approved" and not _c3.get("emailed_at")
+_smtplib.SMTP_SSL = _SS
+mail.BACKOFF.unlink()
+print("GMAIL BACKOFF OK")

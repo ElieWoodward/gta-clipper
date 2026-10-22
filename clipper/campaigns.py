@@ -268,7 +268,11 @@ def scan(cfg, state):
         for rec in sorted((r for r in book.values() if emailable(r)), key=lambda r: -(r.get("rate") or 0)):
             if sent >= cap:
                 break
-            rec["email_message_id"] = notify(state, dict(rec, brief=rec.get("brief") or ""))
+            try:
+                rec["email_message_id"] = notify(state, dict(rec, brief=rec.get("brief") or ""))
+            except Exception as e:   # Gmail down: it stays "found" and goes out on a later scan
+                log.warning("couldn't email campaign %s: %s", rec.get("name"), e)
+                break
             rec["status"] = "notified"
             sent += 1
     for k in sorted(seen, key=seen.get)[:-3000]:   # keep the seen list bounded
