@@ -28,7 +28,7 @@ def configured():
 
 # If Gmail refuses a login (account locked, password revoked, Google blocking the sign-in), the bot stops trying for
 # a while instead of logging in again every few minutes, which is what gets an account flagged. The wait doubles
-# with each failure (1h, 2h, 4h ... 12h) and clears on the first login that works.
+# with each failure up to 3 hours (1h, 2h, 3h, 3h ...) and clears on the first login that works.
 BACKOFF = DATA / "mail_backoff.json"
 
 
@@ -56,7 +56,7 @@ def _failed(e):
         n = int(json.loads(BACKOFF.read_text()).get("fails", 0)) + 1
     except (OSError, ValueError):
         n = 1
-    until = now_utc() + timedelta(hours=min(12, 2 ** (n - 1)))
+    until = now_utc() + timedelta(hours=min(3, n))
     BACKOFF.parent.mkdir(parents=True, exist_ok=True)
     BACKOFF.write_text(json.dumps({"fails": n, "until": until.isoformat(), "error": str(e)[:200],
                                    "since": now_utc().isoformat()}))
