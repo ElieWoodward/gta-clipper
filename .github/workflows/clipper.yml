@@ -55,8 +55,10 @@ jobs:
           cache: pip
 
       - name: Install ffmpeg and fonts
-        if: steps.pick.outputs.job == 'process' || steps.pick.outputs.job == 'post' || steps.pick.outputs.job == 'probe' || steps.pick.outputs.job == 'preflight' || steps.pick.outputs.job == 'live'
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg fonts-dejavu-core fonts-noto-color-emoji
+        # the posting check doesn't render anything, so it skips this (Ubuntu's mirrors sometimes hang for 15+ minutes)
+        if: steps.pick.outputs.job == 'process' || (steps.pick.outputs.job == 'post' && inputs.test_source != '') || steps.pick.outputs.job == 'probe' || steps.pick.outputs.job == 'preflight' || steps.pick.outputs.job == 'live'
+        timeout-minutes: 20
+        run: for i in 1 2 3; do timeout 240 sudo apt-get update -qq && timeout 300 sudo apt-get install -y -qq --no-install-recommends ffmpeg fonts-dejavu-core fonts-noto-color-emoji && exit 0; echo "apt was slow or failed (try $i), retrying"; sleep 10; done; exit 1
 
       - run: pip install -q -r requirements.txt
 
