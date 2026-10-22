@@ -364,7 +364,11 @@ _orig_list = fetch.list_new_vods
 fetch.list_new_vods = lambda *a, **k: (_ for _ in ()).throw(AssertionError("process should not look for streams"))
 os.environ.pop("FORCE")
 jobs.FORCE = False
+_ep, _ep_calls = jobs.email_post, []
+jobs.email_post = lambda cfg: _ep_calls.append(1)
 jobs.process()
+jobs.email_post = _ep
+assert _ep_calls == [1], "the stream check also runs the posting check"
 fetch.list_new_vods = _orig_list
 # expiry frees a slot
 st = common.load_state()

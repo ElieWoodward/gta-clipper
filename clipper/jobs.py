@@ -83,6 +83,13 @@ def process():
     if clipqueue.email_mode(cfg):
         clipqueue.expire(cfg, state)
         finish_batches(cfg, state)   # clips from streams judged at half price on an earlier run
+        save_state(state)
+        if not DRY_RUN:
+            try:   # the posting check too, so a fresh clip goes out now and a bumped posting run costs nothing
+                email_post(cfg)
+            except Exception as e:
+                log.warning("posting check inside process failed: %s", e)
+            state = load_state()
         if not claude_allowed(cfg, state):
             return
     else:

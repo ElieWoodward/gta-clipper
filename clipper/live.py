@@ -317,13 +317,35 @@ class Heartbeat:
             log.warning("couldn't start %s %s: %s", workflow, job or "", e)
             return False
 
+    def waiting(self, workflow="clipper.yml"):
+        """True if a run of the workflow is already waiting its turn. GitHub keeps only one waiting run per
+        concurrency group and cancels it when another is started, so a posting check must never bump a waiting
+        stream check (which does the posting check too)."""
+        if os.environ.get("GITHUB_ACTIONS") != "true" or jobs.DRY_RUN:
+            return False
+        import requests
+        base = f"https://api.github.com/repos/{os.environ['GITHUB_REPOSITORY']}/actions/workflows/{workflow}/runs"
+        hdr = {"Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}", "Accept": "application/vnd.github+json"}
+        try:
+            for status in ("pending", "queued", "waiting"):
+                r = requests.get(base, params={"status": status, "per_page": 1}, headers=hdr, timeout=30)
+                if r.ok and r.json().get("total_count"):
+                    return True
+        except Exception as e:
+            log.info("couldn't check waiting runs: %s", e)
+        return False
+
     def tick(self, now):
-        if now >= self.next_post:
-            self.next_post = now + self.POST_EVERY
-            self.dispatch("clipper.yml", "post")
-        if now >= self.next_process:
+        if now >= self.next_process:   # the stream check also does the posting check, so it covers a due post
             self.next_process = now + self.PROCESS_EVERY
+            self.next_post = max(self.next_post, now + self.POST_EVERY)
             self.dispatch("clipper.yml", "process")
+        elif now >= self.next_post:
+            self.next_post = now + self.POST_EVERY
+            if self.waiting():
+                log.info("a clipper run is already waiting; it does the posting check, not starting another")
+            else:
+                self.dispatch("clipper.yml", "post")
         if now >= self.next_daily:
             self.next_daily = now + 3600
             self._catch_up()
