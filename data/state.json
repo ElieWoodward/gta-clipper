@@ -2261,6 +2261,47 @@
       "vod_url": "https://www.twitch.tv/videos/2901708053",
       "why": "A repair attempt backfires instantly, the chopper catches fire and the group scrambles to blame and haggle on fees."
     },
+    "3de446d2b2": {
+      "asset_id": 666879852,
+      "caption": "bro got caught lying and still doubled down \ud83d\udc80\ud83d\ude2d",
+      "created": "2026-10-22T19:39:22.160765+00:00",
+      "duration": 43.0,
+      "end": 4915.0,
+      "facecam": true,
+      "file": "3de446d2b2.mp4",
+      "framing": "The streamer's webcam is in the top-left, and the clip shows a customization menu on the left and the character in the middle, so a wider view is needed.",
+      "hook": "When you say you smacked three guys and he heard you screamed \ud83d\ude2d",
+      "hook_options": [
+        "POV: you brag about a fight and the guy you're bragging to heard the real story \ud83d\ude2d",
+        "He lied about winning the fight to the one guy who knew \ud83d\udc80",
+        "When you say you smacked three guys and he heard you screamed \ud83d\ude2d",
+        "Bro got exposed in the first minute of meeting him \ud83d\udc80",
+        "He kept the lie going anyway \ud83d\ude2d\ud83d\udc80",
+        "POV: you brag about a fight and the guy you're bragging to heard the real story \ud83d\ude2d"
+      ],
+      "hook_score": 8,
+      "id": "3de446d2b2",
+      "issue": 23,
+      "layout": "cam+wide",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/3da089738e/3de446d2b2.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/3de446d2b2.mp4",
+      "posts": {},
+      "punch_at": 16.34,
+      "punch_text": "I heard you got your ass beat",
+      "said": "nah uh we're actually um a little bit of a quail against them oh good i smacked the out of them yesterday all three of them on god on the guy you did it nah that's what we need yeah those three of them versus me i smacked all of them let me get your number though man nah i heard you got your ass beat like i heard yeah like screaming like a like a little girl and got your ass i heard that heavy wait you heard i got my ass what do you mean you need to know me Yeah, I heard you got your ass beat. I heard Carlito whoop somebody's ass yesterday. Shit, it wasn't me. Definitely wasn't me. Outside Bur",
+      "score": 7,
+      "start": 4872.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "rp_drama",
+        "funny_line"
+      ],
+      "title": "POV: you lie about a fight and he heard the real story \ud83d\ude2d",
+      "vod": "twitch:v2907037919",
+      "vod_url": "https://www.twitch.tv/videos/2907037919",
+      "why": "Character boasts about beating three guys, the stranger calmly says he heard he got beaten and screamed, and he scrambles to deny it."
+    },
     "5e059eaf31": {
       "asset_deleted": true,
       "asset_id": 649228301,
@@ -3511,6 +3552,48 @@
       "vod_url": "https://www.twitch.tv/videos/2904505458",
       "why": "A scammed customer slowly realizes the guy he paid isn't an employee while the streamer toys with him before the reveal."
     },
+    "afd04b923d": {
+      "asset_id": 666884360,
+      "caption": "the panic in his voice after that shootout \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-22T19:41:05.698327+00:00",
+      "duration": 38.0,
+      "end": 15063.0,
+      "facecam": true,
+      "file": "afd04b923d.mp4",
+      "framing": "The action is a single blue car near the center of the frame, and the facecam is in the top-left corner.",
+      "hook": "POV: 18 cops on you and your gun hurts your wrist \ud83d\udc80",
+      "hook_options": [
+        "POV: you get surrounded by cops and your gun is sending everyone to heaven \ud83d\udc80",
+        "We took on the whole PD and somehow lived \ud83d\ude2d",
+        "When the shootout gets so crazy you almost throw up \ud83d\ude2d",
+        "POV: the cops show up and your heart stops \ud83d\udc80",
+        "Chat went nuts when he lit up the whole PD \ud83d\udc80",
+        "POV: you get surrounded by cops and your gun is sending everyone to heaven \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "afd04b923d",
+      "issue": 24,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/3da089738e/afd04b923d.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/afd04b923d.mp4",
+      "posts": {},
+      "punch_at": 19.6,
+      "punch_text": "I almost threw up",
+      "said": "I got you. I think I got two or three. Oh, my God. Oh, my God. Brother. Brother. Brother. Brother. I. Oh, my God. You guys. Oh, my God. Oh, my God. Oh, my God. I almost threw up. Holy. Oh, my God. But this gun sends you to heaven. Okay. We need. We need a link. Guys. I think we're leaking oil. I think we're leaking. Get out of the seat. You've got to get out of the city, bro. You've got to get way out of the city. Oh, my God. Oh, my God. Oh, my God. My heart's racing. My heart's racing for the first time in forever.",
+      "score": 7,
+      "start": 15025.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "chaos",
+        "police",
+        "reaction"
+      ],
+      "title": "POV: the whole PD shows up and it goes crazy \ud83d\udc80",
+      "vod": "twitch:v2907037919",
+      "vod_url": "https://www.twitch.tv/videos/2907037919",
+      "why": "Frantic shootout with cops, streamer breathless and panicking afterwards; heavily clipped by viewers."
+    },
     "c01052b884": {
       "asset_deleted": true,
       "asset_id": 658784066,
@@ -4042,6 +4125,48 @@
       "vod": "twitch:v2901708053",
       "vod_url": "https://www.twitch.tv/videos/2901708053",
       "why": "A cop makes him put his wife on speaker mid-stop, his sweet-talk call is interrupted by the car coming back stolen; chat spammed LOL."
+    },
+    "de2b988cb0": {
+      "asset_id": 666876533,
+      "caption": "the way he committed to the bit after getting caught \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-22T19:37:57.727011+00:00",
+      "duration": 29.0,
+      "end": 27362.0,
+      "facecam": true,
+      "file": "de2b988cb0.mp4",
+      "framing": "A facecam sits at the left. The two characters are close together in the center, so a narrow slice around x=0.43 captures them.",
+      "hook": "POV: you trash talk the cop on the radio and he's standing right behind you \ud83d\udc80",
+      "hook_options": [
+        "POV: you call the cop 'Captain Dickhead' while he's standing right there \ud83d\udc80",
+        "Bro trash talked the cop on the radio with the cop right next to him \ud83d\ude2d",
+        "When you vent about the guy and he's the one escorting you out \ud83d\udc80",
+        "He still tried to play it off \ud83d\ude2d\ud83d\udc80",
+        "Who let the pest control guy talk like this \ud83d\ude2d",
+        "POV: you call the cop 'Captain Dickhead' while he's standing right there \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "de2b988cb0",
+      "issue": 22,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/3da089738e/de2b988cb0.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/de2b988cb0.mp4",
+      "posts": {},
+      "punch_at": 22.84,
+      "punch_text": "My father was Captain Dickhead",
+      "said": "I'm a contractor, pal. Pretty serious. Listen, I understand you got a job to do. So do we. All right? So let's work together. Yeah, boss. I got Captain Dickhead Fuck here. He's going to stall me out, brother. Okay. That's... That's okay. Okay. Captain Dickhead Fuck Moron, actually. I have the wrong person. Oh, is that me? Okay. My father was Captain Dickhead Fuck Moron. Thank you very much. I already took him to the ICU. Sir. You got it. We'll get out of here, all",
+      "score": 7,
+      "start": 27333.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "rp_drama",
+        "funny_line",
+        "police"
+      ],
+      "title": "POV: you insult the cop while he's escorting you out \ud83d\udc80",
+      "vod": "twitch:v2907037919",
+      "vod_url": "https://www.twitch.tv/videos/2907037919",
+      "why": "Pest control character vents about the cop on the radio, gets caught, and commits to a deadpan cover story; chat reacted heavily."
     },
     "e1eee15461": {
       "asset_deleted": true,
@@ -4605,7 +4730,7 @@
     "2026-10-19": 0.132,
     "2026-10-20": 0.0997,
     "2026-10-21": 0.1228,
-    "2026-10-22": 0.0301
+    "2026-10-22": 0.1004
   },
   "status_updated": "2026-10-22T19:07:07.135814+00:00",
   "streamers": {
