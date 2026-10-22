@@ -4,3 +4,4 @@ pyyaml>=6.0
 numpy>=1.26
 yt-dlp[default,curl-cffi]>=2025.1.1
 pillow>=10.0
+imageio-ffmpeg>=0.5

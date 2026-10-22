@@ -163,6 +163,26 @@ def render_email(pkg, download_url=None, attached=True):
     return text, "".join(html)
 
 
+def _ffmpeg():
+    """ffmpeg from the system, or the pip one (imageio-ffmpeg) on runs that skip the apt install."""
+    import shutil
+    exe = shutil.which("ffmpeg")
+    if exe:
+        return exe
+    import imageio_ffmpeg
+    return imageio_ffmpeg.get_ffmpeg_exe()
+
+
+def _duration(src, ff):
+    import shutil
+    if shutil.which("ffprobe"):
+        return float(run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", src]).strip())
+    import subprocess
+    err = subprocess.run([ff, "-i", str(src)], capture_output=True, text=True).stderr
+    h, m, sec = re.search(r"Duration: (\d+):(\d+):([\d.]+)", err).groups()
+    return int(h) * 3600 + int(m) * 60 + float(sec)
+
+
 def fit_for_email(src, dest, limit):
     """Copy of the clip under `limit` bytes (re-encoded at a lower bitrate if needed, still 1080x1920)."""
     import os
@@ -170,10 +190,11 @@ def fit_for_email(src, dest, limit):
     if os.path.getsize(src) <= limit:
         shutil.copy(src, dest)
         return dest
-    dur = float(run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", src]).strip())
+    ff = _ffmpeg()
+    dur = _duration(src, ff)
     for factor in (0.92, 0.8, 0.65):
         kbps = max(800, int(limit * 8 / dur / 1000 * factor) - 128)
-        run(["ffmpeg", "-y", "-loglevel", "error", "-i", src, "-c:v", "libx264", "-preset", "medium",
+        run([ff, "-y", "-loglevel", "error", "-i", src, "-c:v", "libx264", "-preset", "medium",
              "-b:v", f"{kbps}k", "-maxrate", f"{kbps}k", "-bufsize", f"{kbps * 2}k", "-c:a", "aac", "-b:a", "128k",
              "-movflags", "+faststart", dest])
         if os.path.getsize(dest) <= limit:
