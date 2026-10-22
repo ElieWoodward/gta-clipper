@@ -4417,9 +4417,9 @@
   },
   "health": {
     "post": {
-      "fails": 33,
+      "fails": 34,
       "last_error": "SMTPServerDisconnected: Connection unexpectedly closed",
-      "last_fail": "2026-10-22T00:37:59.741714+00:00"
+      "last_fail": "2026-10-22T00:43:10.174531+00:00"
     },
     "process": {
       "fails": 5,
@@ -4427,7 +4427,7 @@
       "last_fail": "2026-10-22T00:11:35.728568+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-22T00:37:20.755734+00:00"
+      "ok": "2026-10-22T00:42:24.612412+00:00"
     }
   },
   "last_run": {
