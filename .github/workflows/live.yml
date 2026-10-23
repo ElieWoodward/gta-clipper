@@ -30,9 +30,19 @@ jobs:
           python-version: "3.12"
           cache: pip
 
+      - name: Runner image version (cache key)
+        id: img
+        run: echo "v=${ImageOS}-${ImageVersion}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore ffmpeg and fonts packages
+        uses: actions/cache@v4
+        with:
+          path: ~/apt-debs
+          key: media-debs-${{ steps.img.outputs.v }}-v1
+
       - name: Install ffmpeg and fonts
-        timeout-minutes: 20
-        run: for i in 1 2 3; do timeout 240 sudo apt-get update -qq && timeout 300 sudo apt-get install -y -qq --no-install-recommends ffmpeg fonts-dejavu-core fonts-noto-color-emoji && exit 0; echo "apt was slow or failed (try $i), retrying"; sleep 10; done; exit 1
+        timeout-minutes: 25
+        run: bash .github/scripts/install-media.sh
 
       - run: pip install -q -r requirements.txt
 
