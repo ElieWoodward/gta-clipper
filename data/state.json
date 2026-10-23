@@ -3738,6 +3738,8 @@
       "caption": "the alibi building itself in real time \ud83d\udc80\ud83d\ude2d",
       "created": "2026-10-23T09:33:03.426831+00:00",
       "duration": 44.0,
+      "email_message_id": "<179277567799.2974.1002673345808230969@gmail.com>",
+      "emailed_at": "2026-10-23T17:14:46.739079+00:00",
       "end": 42758.0,
       "facecam": true,
       "file": "aa29b7685e.mp4",
@@ -3761,6 +3763,8 @@
       "punch_text": "Well, then it's stolen then",
       "said": "Yeah, it's a black Ignis. One mil to tell you, I haven't got it yet. Also, it comes in green. It comes in green, not black, so that it can't be me. Oh, is it green? Oh, I'm sorry, I'm sorry. Dark green and yellow. Dark green and yellow. It's really dark. Yeah, it's really dark and rainy. I might have gotten the color wrong. But we did see that license plate, sir, so your car might be a little dinged up. Just be aware of that, okay? No problem. Well, then it's stolen then. Can you guys flag the thing? Can you flag the plate? We're gonna flag it stolen for you and we'll let you know if we find i",
       "score": 7,
+      "sent_caption": "the alibi building itself in real time \ud83d\udc80\ud83d\ude2d\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
+      "sent_title": "he got the cops to flag his own getaway car as stolen \ud83d\ude2d #shorts",
       "start": 42714.0,
       "status": "approved",
       "streamer": "xQc",
@@ -5078,6 +5082,13 @@
         "date": "2026-10-22",
         "subject": "Post now: When you say you smacked three guys and he heard you screamed \ud83d\ude2d (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-10-23T17:14:46.739079+00:00",
+        "clip": "aa29b7685e",
+        "date": "2026-10-23",
+        "subject": "Post now: POV: you ask the cops to flag your own car as stolen \ud83d\udc80 (7/10)",
+        "test": false
       }
     ],
     "replies_at": "2026-10-23T16:41:07.281608+00:00"
@@ -5096,7 +5107,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-23T16:58:40.745690+00:00"
+      "ok": "2026-10-23T17:13:59.595193+00:00"
     }
   },
   "last_run": {
