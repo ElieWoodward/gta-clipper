@@ -1484,17 +1484,21 @@
             [
               "2026-10-23T01:37:43.559904+00:00",
               1200
+            ],
+            [
+              "2026-10-23T06:33:01.348528+00:00",
+              1243
             ]
           ],
           "hour": "09:00",
-          "likes": null,
+          "likes": 15,
           "match": 1.0,
           "posted_at": "2026-10-20T16:00:00+00:00",
           "seen_at": "2026-10-20T16:02:46.321624+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/2TkUQACBCi4",
-          "views": 1200
+          "views": 1243
         }
       },
       "punch_at": 0,
@@ -1776,10 +1780,6 @@
           "date": "2026-10-20",
           "history": [
             [
-              "2026-10-20T06:16:37.909657+00:00",
-              212
-            ],
-            [
               "2026-10-20T06:31:52.642926+00:00",
               217
             ],
@@ -2014,17 +2014,21 @@
             [
               "2026-10-23T01:37:43.559934+00:00",
               2300
+            ],
+            [
+              "2026-10-23T06:33:01.348539+00:00",
+              2366
             ]
           ],
           "hour": "22:00",
-          "likes": null,
+          "likes": 27,
           "match": 1.0,
           "posted_at": "2026-10-20T05:46:40.281711+00:00",
           "seen_at": "2026-10-20T05:46:40.281713+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/S11fiaBKIEw",
-          "views": 2300
+          "views": 2366
         }
       },
       "punch_at": 16.48,
@@ -2279,7 +2283,7 @@
             ]
           ],
           "hour": "14:00",
-          "likes": null,
+          "likes": 8,
           "match": 1.0,
           "posted_at": "2026-10-18T21:35:32+00:00",
           "seen_at": "2026-10-18T21:41:58.864012+00:00",
@@ -2352,6 +2356,7 @@
       "why": "A repair attempt backfires instantly, the chopper catches fire and the group scrambles to blame and haggle on fees."
     },
     "3de446d2b2": {
+      "asset_deleted": true,
       "asset_id": 666879852,
       "caption": "bro got caught lying and still doubled down \ud83d\udc80\ud83d\ude2d",
       "created": "2026-10-22T19:39:22.160765+00:00",
@@ -2374,10 +2379,50 @@
       "hook_score": 8,
       "id": "3de446d2b2",
       "issue": 23,
+      "issue_closed": true,
       "layout": "cam+wide",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/3da089738e/3de446d2b2.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/3de446d2b2.mp4",
-      "posts": {},
+      "posts": {
+        "tiktok": {
+          "comments": 0,
+          "date": "2026-10-23",
+          "history": [
+            [
+              "2026-10-23T06:33:00.945781+00:00",
+              0
+            ]
+          ],
+          "hour": "22:00",
+          "likes": 0,
+          "match": 1.1,
+          "posted_at": "2026-10-23T05:15:01+00:00",
+          "seen_at": "2026-10-23T06:33:00.945498+00:00",
+          "shares": 0,
+          "status": "published",
+          "url": "https://www.tiktok.com/@wantedlevelclips8/video/7699727318746533151",
+          "views": 0
+        },
+        "youtube": {
+          "comments": null,
+          "date": "2026-10-23",
+          "history": [
+            [
+              "2026-10-23T06:33:01.348576+00:00",
+              0
+            ]
+          ],
+          "hour": "22:00",
+          "likes": 0,
+          "match": 1.0,
+          "posted_at": "2026-10-23T05:28:57+00:00",
+          "seen_at": "2026-10-23T06:33:01.348447+00:00",
+          "shares": null,
+          "status": "published",
+          "url": "https://www.youtube.com/shorts/WdH-GrgdRfQ",
+          "views": 0
+        }
+      },
       "punch_at": 16.34,
       "punch_text": "I heard you got your ass beat",
       "said": "nah uh we're actually um a little bit of a quail against them oh good i smacked the out of them yesterday all three of them on god on the guy you did it nah that's what we need yeah those three of them versus me i smacked all of them let me get your number though man nah i heard you got your ass beat like i heard yeah like screaming like a like a little girl and got your ass i heard that heavy wait you heard i got my ass what do you mean you need to know me Yeah, I heard you got your ass beat. I heard Carlito whoop somebody's ass yesterday. Shit, it wasn't me. Definitely wasn't me. Outside Bur",
@@ -2385,7 +2430,7 @@
       "sent_caption": "bro got caught lying and still doubled down \ud83d\udc80\ud83d\ude2d\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
       "sent_title": "POV: you lie about a fight and he heard the real story \ud83d\ude2d #shorts",
       "start": 4872.0,
-      "status": "approved",
+      "status": "posted",
       "streamer": "xQc",
       "tags": [
         "rp_drama",
@@ -2644,10 +2689,6 @@
           "date": "2026-10-18",
           "history": [
             [
-              "2026-10-18T04:33:21.053656+00:00",
-              682
-            ],
-            [
               "2026-10-18T04:48:47.110266+00:00",
               815
             ],
@@ -2882,17 +2923,21 @@
             [
               "2026-10-23T01:37:43.559956+00:00",
               1300
+            ],
+            [
+              "2026-10-23T06:33:01.348584+00:00",
+              1382
             ]
           ],
           "hour": "17:00",
-          "likes": null,
+          "likes": 31,
           "match": 1.0,
           "posted_at": "2026-10-18T00:29:39+00:00",
           "seen_at": "2026-10-18T00:32:41.799268+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/appSZJXvGMc",
-          "views": 1300
+          "views": 1382
         }
       },
       "punch_at": 43.84,
@@ -3377,10 +3422,6 @@
           "date": "2026-10-19",
           "history": [
             [
-              "2026-10-20T10:01:57.757955+00:00",
-              1382
-            ],
-            [
               "2026-10-20T10:17:04.049506+00:00",
               1384
             ],
@@ -3615,17 +3656,21 @@
             [
               "2026-10-23T03:23:07.515544+00:00",
               4300
+            ],
+            [
+              "2026-10-23T06:33:01.348594+00:00",
+              4343
             ]
           ],
           "hour": "16:00",
-          "likes": null,
+          "likes": 51,
           "match": 1.0,
           "posted_at": "2026-10-19T23:17:49+00:00",
           "seen_at": "2026-10-19T23:30:22.469491+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/XNFTo8g_hrs",
-          "views": 4300
+          "views": 4343
         }
       },
       "punch_at": 0,
@@ -3781,17 +3826,21 @@
             [
               "2026-10-23T01:37:43.559978+00:00",
               1200
+            ],
+            [
+              "2026-10-23T06:33:01.348602+00:00",
+              1268
             ]
           ],
           "hour": "13:00",
-          "likes": null,
+          "likes": 34,
           "match": 1.0,
           "posted_at": "2026-10-22T20:27:48+00:00",
           "seen_at": "2026-10-22T20:33:07.734473+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/5EcMsnfZ39I",
-          "views": 1200
+          "views": 1268
         }
       },
       "punch_at": 19.6,
@@ -4074,10 +4123,6 @@
           "date": "2026-10-16",
           "history": [
             [
-              "2026-10-19T08:42:49.405292+00:00",
-              1485
-            ],
-            [
               "2026-10-19T08:58:01.215101+00:00",
               1475
             ],
@@ -4312,17 +4357,21 @@
             [
               "2026-10-23T01:37:43.559988+00:00",
               1700
+            ],
+            [
+              "2026-10-23T06:33:01.348609+00:00",
+              1729
             ]
           ],
           "hour": "11:00",
-          "likes": null,
+          "likes": 31,
           "match": 1.0,
           "posted_at": "2026-10-16T18:41:23+00:00",
           "seen_at": "2026-10-16T21:12:13.954365+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/h-i9oBUzpow",
-          "views": 1700
+          "views": 1729
         }
       },
       "punch_at": 44.32,
@@ -4736,7 +4785,7 @@
             ]
           ],
           "hour": "20:00",
-          "likes": null,
+          "likes": 0,
           "match": 1.0,
           "posted_at": "2026-10-21T03:07:40+00:00",
           "seen_at": "2026-10-21T03:19:37.609910+00:00",
@@ -4888,7 +4937,7 @@
         "test": false
       }
     ],
-    "replies_at": "2026-10-23T05:07:43.171246+00:00"
+    "replies_at": "2026-10-23T06:33:01.348740+00:00"
   },
   "health": {
     "post": {
@@ -4904,7 +4953,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-23T05:07:32.234252+00:00"
+      "ok": "2026-10-23T06:33:00.945817+00:00"
     }
   },
   "last_run": {
@@ -4970,7 +5019,7 @@
     "2026-10-22": 0.1004,
     "2026-10-23": 0.0151
   },
-  "status_updated": "2026-10-23T05:08:02.413957+00:00",
+  "status_updated": "2026-10-23T06:33:06.414340+00:00",
   "streamers": {
     "Cinna": {
       "facecam": true
