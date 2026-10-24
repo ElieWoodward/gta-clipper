@@ -5444,6 +5444,8 @@
       "caption": "the haggling over how much time off for snitching \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-24T09:36:33.824043+00:00",
       "duration": 48.0,
+      "email_message_id": "<179288303457.3171.6396573868921734753@gmail.com>",
+      "emailed_at": "2026-10-24T23:04:02.934997+00:00",
       "end": 16068.0,
       "facecam": true,
       "file": "e466c5883d.mp4",
@@ -5468,6 +5470,8 @@
       "punch_text": "It was TD",
       "said": "Ooh. Actually, I have a genuine question for you both. How the hell did you guys get propane tanks in here? If I tell you, am I going to get time reduced for good behavior? How's your pain level, Marty? You know what? Yeah, I'd do it. I'd give you time reduced. Oh, heck yeah. Did they just leave it on you? How about 50%? Like a four? Okay, 50% is crazy, man. 10.3. Okay, go ahead and sit tight for me. 10.3 what? 10.3%. I can tell you, officer. It was TD. TD gave it to us. Yep. TD. Yeah. Fucking classic. Yeah, it was TD. I'm so sorry. It was Dick. Ah! You got my side. You got my side. Press, pre",
       "score": 7,
+      "sent_caption": "the haggling over how much time off for snitching \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
+      "sent_title": "POV: snitching in prison for 10% off \ud83d\ude2d #shorts",
       "start": 16020.0,
       "status": "approved",
       "streamer": "xQc",
@@ -5985,6 +5989,13 @@
         "date": "2026-10-24",
         "subject": "Post now: POV: you jump off a roof then gaslight a stranger about the crack \ud83d\ude2d\ud83d\udc80 (8/10)",
         "test": false
+      },
+      {
+        "at": "2026-10-24T23:04:02.934997+00:00",
+        "clip": "e466c5883d",
+        "date": "2026-10-24",
+        "subject": "Post now: The whole cell snitched for 10% off \ud83d\ude2d\ud83d\udc80 (7/10)",
+        "test": false
       }
     ],
     "replies_at": "2026-10-24T22:48:47.190425+00:00"
@@ -6003,7 +6014,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-24T22:48:47.030860+00:00"
+      "ok": "2026-10-24T23:03:53.785007+00:00"
     }
   },
   "last_run": {
