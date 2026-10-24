@@ -1837,10 +1837,6 @@
           "date": "2026-10-20",
           "history": [
             [
-              "2026-10-20T12:17:06.651213+00:00",
-              1398
-            ],
-            [
               "2026-10-20T12:32:07.183277+00:00",
               1418
             ],
@@ -2075,6 +2071,10 @@
             [
               "2026-10-24T01:36:30.003601+00:00",
               2402
+            ],
+            [
+              "2026-10-24T01:44:36.236797+00:00",
+              2407
             ]
           ],
           "hour": "22:00",
@@ -2085,7 +2085,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/S11fiaBKIEw",
-          "views": 2402
+          "views": 2407
         }
       },
       "punch_at": 16.48,
@@ -2555,6 +2555,48 @@
       "vod": "twitch:v2907037919",
       "vod_url": "https://www.twitch.tv/videos/2907037919",
       "why": "Character boasts about beating three guys, the stranger calmly says he heard he got beaten and screamed, and he scrambles to deny it."
+    },
+    "49266d6904": {
+      "asset_id": 670965024,
+      "caption": "she really tried to gaslight EMS about the crack \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-24T01:44:33.180799+00:00",
+      "duration": 50.0,
+      "end": 2189.0,
+      "facecam": true,
+      "file": "49266d6904.mp4",
+      "framing": "Standing character and the incapacitated one are close together near x\u22480.42, with a facecam at left-middle.",
+      "hook": "POV: you jump off a roof then gaslight a stranger about the crack \ud83d\ude2d\ud83d\udc80",
+      "hook_options": [
+        "POV: you jump off a roof and spend the whole time denying it",
+        "When you cracked the ground and EMS is on the way \ud83d\ude2d",
+        "I'm begging a stranger to lie to EMS for me \ud83d\udc80",
+        "Bro made a crack in the ground and now he's building an alibi",
+        "Who made her the main suspect in a cracked sidewalk \ud83d\ude2d\ud83d\udc80",
+        "POV: you cracked the ground and now you're building an alibi \ud83d\ude2d"
+      ],
+      "hook_score": 8,
+      "id": "49266d6904",
+      "issue": 27,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/5ac3eb7ed1/49266d6904.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/49266d6904.mp4",
+      "posts": {},
+      "punch_at": 0,
+      "punch_text": "",
+      "said": "crack in the ground. That is not because of me. I think that was hard in there from before. Uh-huh. No, it was. It was. Don't worry, I won't say one, surely. Right, but I just want to make it very clear. It was there from before. It's not from me. I just want to make it clear. Uh-huh, uh-huh. There's a much bigger crack in your skull, it seems. Right, right, right. and in my heart. Yeah. And I just, again, just want to make it very clear, that crack on the ground is not from me, okay? So when EMS gets here, you can please clarify that you knew that crack was previously there. That would be ver",
+      "score": 8,
+      "start": 2139.0,
+      "status": "approved",
+      "streamer": "Cinna",
+      "tags": [
+        "rp_drama",
+        "funny_line",
+        "reaction"
+      ],
+      "title": "POV: you crack the pavement and beg a stranger to lie \ud83d\udc80",
+      "vod": "twitch:v2908743871",
+      "vod_url": "https://www.twitch.tv/videos/2908743871",
+      "why": "After jumping off a roof, she keeps insisting to a bystander that the huge crack wasn't from her, committing harder and harder to the bit."
     },
     "5e059eaf31": {
       "asset_deleted": true,
@@ -3537,10 +3579,6 @@
           "date": "2026-10-19",
           "history": [
             [
-              "2026-10-20T15:17:39.225071+00:00",
-              2013
-            ],
-            [
               "2026-10-20T15:32:36.317138+00:00",
               2021
             ],
@@ -3775,6 +3813,10 @@
             [
               "2026-10-24T01:36:30.003634+00:00",
               4459
+            ],
+            [
+              "2026-10-24T01:44:36.236838+00:00",
+              4463
             ]
           ],
           "hour": "16:00",
@@ -3785,7 +3827,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/XNFTo8g_hrs",
-          "views": 4459
+          "views": 4463
         }
       },
       "punch_at": 0,
@@ -3976,6 +4018,10 @@
             [
               "2026-10-24T01:36:30.003643+00:00",
               1363
+            ],
+            [
+              "2026-10-24T01:44:36.236850+00:00",
+              1388
             ]
           ],
           "hour": "11:00",
@@ -3986,7 +4032,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/2Ej780szBEE",
-          "views": 1363
+          "views": 1388
         }
       },
       "punch_at": 25.84,
@@ -4235,6 +4281,10 @@
             [
               "2026-10-24T01:36:30.003652+00:00",
               1356
+            ],
+            [
+              "2026-10-24T01:44:36.236861+00:00",
+              1354
             ]
           ],
           "hour": "13:00",
@@ -4245,7 +4295,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/5EcMsnfZ39I",
-          "views": 1356
+          "views": 1354
         }
       },
       "punch_at": 19.6,
@@ -5367,7 +5417,7 @@
         "test": false
       }
     ],
-    "replies_at": "2026-10-24T00:42:32.469226+00:00"
+    "replies_at": "2026-10-24T01:44:36.236983+00:00"
   },
   "health": {
     "post": {
@@ -5383,7 +5433,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-24T01:36:29.828093+00:00"
+      "ok": "2026-10-24T01:44:35.614470+00:00"
     }
   },
   "last_run": {
@@ -5454,9 +5504,10 @@
     "2026-10-20": 0.0997,
     "2026-10-21": 0.1228,
     "2026-10-22": 0.1004,
-    "2026-10-23": 0.0984
+    "2026-10-23": 0.0984,
+    "2026-10-24": 0.055
   },
-  "status_updated": "2026-10-24T00:42:35.277924+00:00",
+  "status_updated": "2026-10-24T01:44:38.199297+00:00",
   "streamers": {
     "Cinna": {
       "facecam": true
