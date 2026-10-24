@@ -3293,6 +3293,48 @@
       "vod_url": "https://www.twitch.tv/videos/2904505458",
       "why": "A recruit deadpans absurd military stats with a straight face while the bosses react in disbelief."
     },
+    "698004e8a7": {
+      "asset_id": 671852743,
+      "caption": "726 months and then a recruit tried to run the room \ud83d\ude2d",
+      "created": "2026-10-24T09:34:32.270250+00:00",
+      "duration": 50.0,
+      "end": 12876.0,
+      "facecam": true,
+      "file": "698004e8a7.mp4",
+      "framing": "A webcam sits at top-left, and the action is the guards and the hat player grouped in the center, so a narrow slice works.",
+      "hook": "Bro got 726 months and the cops started beefing \ud83d\udc80",
+      "hook_options": [
+        "POV: the cop gives you 726 months in prison",
+        "Bro got 726 months and the tablet won't let them fix it \ud83d\udc80",
+        "Who made this recruit the chief \ud83d\ude2d",
+        "POV: you try to cut a sentence and a recruit says warm my seat up",
+        "They gave him 726 months and a recruit snapped \ud83d\udc80",
+        "POV: the cop gives you 726 months in prison \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "698004e8a7",
+      "issue": 28,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/259dee8ae5/698004e8a7.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/698004e8a7.mp4",
+      "posts": {},
+      "punch_at": 0,
+      "punch_text": "",
+      "said": "clearly a problem with the system yo that surely is 726 months oh yeah it surely is you should have seen what went down in the sales 10 is maximum you can do that's 72 months let's get it wonderful 72 months come on bro let me just yo i gotta see this fine bro you already got it okay he got the fine already yeah yeah so by the way i was told that 300 months is the max i can like you can't do 726 months it's not legal this is what we're gonna do right we're gonna give him the 300 months release him and then give him 300 more buddy buddy you ain't the chief look at your fucking shoulder there's ",
+      "score": 7,
+      "start": 12826.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "rp_drama",
+        "police",
+        "funny_line"
+      ],
+      "title": "POV: the tablet says 726 months in prison \ud83d\udc80",
+      "vod": "twitch:v2908856317",
+      "vod_url": "https://www.twitch.tv/videos/2908856317",
+      "why": "Absurd 726-month sentence escalates into cops arguing over rank and a recruit getting dressed down; clear scenario with a payoff."
+    },
     "77070a6472": {
       "asset_deleted": true,
       "asset_id": 649231894,
@@ -5156,6 +5198,48 @@
       "vod_url": "https://www.twitch.tv/videos/2904440876",
       "why": "Streamer realizes the order is a whole duck, not a portion, and panics; chat reacted 31x."
     },
+    "e466c5883d": {
+      "asset_id": 671857043,
+      "caption": "the haggling over how much time off for snitching \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-24T09:36:33.824043+00:00",
+      "duration": 48.0,
+      "end": 16068.0,
+      "facecam": true,
+      "file": "e466c5883d.mp4",
+      "framing": "The facecam is in the top-left corner, and the action (two prisoners on the ground being treated by a paramedic) is clustered near the center, so a narrow slice works.",
+      "hook": "The whole cell snitched for 10% off \ud83d\ude2d\ud83d\udc80",
+      "hook_options": [
+        "POV: you snitch for 10% off your prison time",
+        "Bro sold out his own crew for 10% \ud83d\ude2d",
+        "He negotiated snitching down to the percentage \ud83d\udc80",
+        "When the guard asks how you got propane tanks in jail",
+        "Who let him haggle his own sentence \ud83d\ude2d\ud83d\udc80",
+        "POV: you snitch for 10% off your prison time \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "e466c5883d",
+      "issue": 29,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/259dee8ae5/e466c5883d.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/e466c5883d.mp4",
+      "posts": {},
+      "punch_at": 34.96,
+      "punch_text": "It was TD",
+      "said": "Ooh. Actually, I have a genuine question for you both. How the hell did you guys get propane tanks in here? If I tell you, am I going to get time reduced for good behavior? How's your pain level, Marty? You know what? Yeah, I'd do it. I'd give you time reduced. Oh, heck yeah. Did they just leave it on you? How about 50%? Like a four? Okay, 50% is crazy, man. 10.3. Okay, go ahead and sit tight for me. 10.3 what? 10.3%. I can tell you, officer. It was TD. TD gave it to us. Yep. TD. Yeah. Fucking classic. Yeah, it was TD. I'm so sorry. It was Dick. Ah! You got my side. You got my side. Press, pre",
+      "score": 7,
+      "start": 16020.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "rp_drama",
+        "funny_line",
+        "police"
+      ],
+      "title": "POV: snitching in prison for 10% off \ud83d\ude2d",
+      "vod": "twitch:v2908856317",
+      "vod_url": "https://www.twitch.tv/videos/2908856317",
+      "why": "Prisoners bargain a time reduction for snitching about the propane tanks then blame a guy together; escalating bit with chat reacting."
+    },
     "f4bcda9916": {
       "asset_deleted": true,
       "asset_id": 661082872,
@@ -5651,7 +5735,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-24T09:17:15.821292+00:00"
+      "ok": "2026-10-24T09:36:35.862587+00:00"
     }
   },
   "last_run": {
@@ -5729,7 +5813,7 @@
     "2026-10-21": 0.1228,
     "2026-10-22": 0.1004,
     "2026-10-23": 0.0984,
-    "2026-10-24": 0.0701
+    "2026-10-24": 0.1398
   },
   "status_updated": "2026-10-24T08:47:15.577810+00:00",
   "streamers": {
