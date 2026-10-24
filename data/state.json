@@ -2761,6 +2761,8 @@
       "caption": "she really tried to gaslight EMS about the crack \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-24T01:44:33.180799+00:00",
       "duration": 50.0,
+      "email_message_id": "<179286142348.2124.4183513948809866988@gmail.com>",
+      "emailed_at": "2026-10-24T17:03:55.061074+00:00",
       "end": 2189.0,
       "facecam": true,
       "file": "49266d6904.mp4",
@@ -2785,6 +2787,8 @@
       "punch_text": "",
       "said": "crack in the ground. That is not because of me. I think that was hard in there from before. Uh-huh. No, it was. It was. Don't worry, I won't say one, surely. Right, but I just want to make it very clear. It was there from before. It's not from me. I just want to make it clear. Uh-huh, uh-huh. There's a much bigger crack in your skull, it seems. Right, right, right. and in my heart. Yeah. And I just, again, just want to make it very clear, that crack on the ground is not from me, okay? So when EMS gets here, you can please clarify that you knew that crack was previously there. That would be ver",
       "score": 8,
+      "sent_caption": "she really tried to gaslight EMS about the crack \ud83d\ude2d\ud83d\udc80\n\nStreamer: Cinna\n#gta6 #gtarp #gta #funny #fyp #cinna",
+      "sent_title": "POV: you crack the pavement and beg a stranger to lie \ud83d\udc80 #shorts",
       "start": 2139.0,
       "status": "approved",
       "streamer": "Cinna",
@@ -5888,6 +5892,13 @@
         "date": "2026-10-23",
         "subject": "Post now: POV: you trash talk the cop on the radio and he's standing right behind you \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-10-24T17:03:55.061074+00:00",
+        "clip": "49266d6904",
+        "date": "2026-10-24",
+        "subject": "Post now: POV: you jump off a roof then gaslight a stranger about the crack \ud83d\ude2d\ud83d\udc80 (8/10)",
+        "test": false
       }
     ],
     "replies_at": "2026-10-24T16:47:56.547329+00:00"
@@ -5906,7 +5917,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-24T16:47:56.385914+00:00"
+      "ok": "2026-10-24T17:03:04.387607+00:00"
     }
   },
   "last_run": {
