@@ -2630,6 +2630,10 @@
             [
               "2026-10-24T18:18:29.397114+00:00",
               1930
+            ],
+            [
+              "2026-10-24T18:33:31.166236+00:00",
+              1934
             ]
           ],
           "hour": "19:00",
@@ -2640,7 +2644,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/pcS400uUl7c",
-          "views": 1930
+          "views": 1934
         }
       },
       "punch_at": 21.4,
@@ -2777,6 +2781,7 @@
       "why": "Character boasts about beating three guys, the stranger calmly says he heard he got beaten and screamed, and he scrambles to deny it."
     },
     "49266d6904": {
+      "asset_deleted": true,
       "asset_id": 670965024,
       "caption": "she really tried to gaslight EMS about the crack \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-24T01:44:33.180799+00:00",
@@ -2799,10 +2804,31 @@
       "hook_score": 8,
       "id": "49266d6904",
       "issue": 27,
+      "issue_closed": true,
       "layout": "cam+fill",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/5ac3eb7ed1/49266d6904.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/49266d6904.mp4",
-      "posts": {},
+      "posts": {
+        "tiktok": {
+          "comments": 0,
+          "date": "2026-10-24",
+          "history": [
+            [
+              "2026-10-24T18:33:31.054063+00:00",
+              0
+            ]
+          ],
+          "hour": "11:00",
+          "likes": 0,
+          "match": 1.1,
+          "posted_at": "2026-10-24T18:25:10+00:00",
+          "seen_at": "2026-10-24T18:33:31.053787+00:00",
+          "shares": 0,
+          "status": "published",
+          "url": "https://www.tiktok.com/@wantedlevelclips8/video/7700302100269468959",
+          "views": 0
+        }
+      },
       "punch_at": 0,
       "punch_text": "",
       "said": "crack in the ground. That is not because of me. I think that was hard in there from before. Uh-huh. No, it was. It was. Don't worry, I won't say one, surely. Right, but I just want to make it very clear. It was there from before. It's not from me. I just want to make it clear. Uh-huh, uh-huh. There's a much bigger crack in your skull, it seems. Right, right, right. and in my heart. Yeah. And I just, again, just want to make it very clear, that crack on the ground is not from me, okay? So when EMS gets here, you can please clarify that you knew that crack was previously there. That would be ver",
@@ -2810,7 +2836,7 @@
       "sent_caption": "she really tried to gaslight EMS about the crack \ud83d\ude2d\ud83d\udc80\n\nStreamer: Cinna\n#gta6 #gtarp #gta #funny #fyp #cinna",
       "sent_title": "POV: you crack the pavement and beg a stranger to lie \ud83d\udc80 #shorts",
       "start": 2139.0,
-      "status": "approved",
+      "status": "posted",
       "streamer": "Cinna",
       "tags": [
         "rp_drama",
@@ -5945,7 +5971,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-24T18:18:29.224467+00:00"
+      "ok": "2026-10-24T18:33:31.054108+00:00"
     }
   },
   "last_run": {
