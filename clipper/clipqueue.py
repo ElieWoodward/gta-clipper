@@ -31,15 +31,40 @@ def _created(c):
     return datetime.fromisoformat(c["created"])
 
 
+def dead_on_tiktok(state, last=3, min_views=10, min_hours=6):
+    """Streamers whose last few TikTok posts all stalled (under min_views after min_hours). TikTok quietly stops
+    showing clips of moments many other accounts already posted, which happens most with the biggest streamers."""
+    by = {}
+    now = now_utc()
+    for c in state["clips"].values():
+        p = (c.get("posts") or {}).get("tiktok")
+        if not p or not p.get("posted_at") or p.get("views") is None:
+            continue
+        if now - datetime.fromisoformat(p["posted_at"]) < timedelta(hours=min_hours):
+            continue
+        by.setdefault((c.get("streamer") or "").lower(), []).append((p["posted_at"], int(p["views"])))
+    out = set()
+    for name, posts in by.items():
+        recent = [v for _, v in sorted(posts)[-last:]]
+        if len(recent) >= last and max(recent) < min_views:
+            out.add(name)
+    return out
+
+
 def queue(state):
-    """Clips waiting to be posted, best first. A clip from a paid campaign you joined counts one point higher."""
+    """Clips waiting to be posted, best first. A clip from a paid campaign you joined counts one point higher; one
+    from a streamer whose recent TikTok posts all stalled counts two points lower (it still goes out if it's all
+    there is)."""
     paid = {(r.get("twitch_login") or "").lower() for r in (state.get("campaigns") or {}).values()
             if r.get("status") == "joined"}
+    dead = dead_on_tiktok(state)
     q = [c for c in state["clips"].values() if c.get("status") == "approved"]
     def is_paid(c):
         return (c.get("streamer") or "").lower() in paid
-    return sorted(q, key=lambda c: (c["score"] + (1 if is_paid(c) else 0), is_paid(c), bool(c.get("facecam")),
-                                    c["created"]), reverse=True)
+    def rank(c):
+        name = (c.get("streamer") or "").lower()
+        return c["score"] + (1 if is_paid(c) else 0) - (2 if name in dead else 0)
+    return sorted(q, key=lambda c: (rank(c), is_paid(c), bool(c.get("facecam")), c["created"]), reverse=True)
 
 
 def room(cfg, state):

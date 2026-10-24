@@ -446,11 +446,11 @@ common.save_state(st)
 # daily Claude budget
 st = common.load_state()
 assert highlights.budget_left(cfg, st) > 0
-common.add_spend(1.25)
+common.add_spend(float(cfg["limits"]["claude_usd_per_day"]) + 0.25)   # the cap is $1 or $2 depending on the day
 assert highlights.budget_left(cfg, st) <= 0 and not jobs.claude_allowed(cfg, st)
 common.save_state(st)
 st = common.load_state()
-assert abs(common.spend_today(st) - 1.25) < 0.01 and not jobs.claude_allowed(cfg, st)
+assert abs(common.spend_today(st) - float(cfg["limits"]["claude_usd_per_day"]) - 0.25) < 0.01 and not jobs.claude_allowed(cfg, st)
 st["spend"] = {}
 common.save_state(st)
 highlights.record_usage(SimpleNamespace(usage=SimpleNamespace(input_tokens=1_000_000, output_tokens=100_000,
@@ -966,3 +966,17 @@ assert _c3["status"] == "approved" and not _c3.get("emailed_at")
 _smtplib.SMTP_SSL = _SS
 mail.BACKOFF.unlink()
 print("GMAIL BACKOFF OK")
+
+# ---------- 23. a streamer whose last 3 TikTok posts stalled is ranked lower ----------
+_now = common.now_utc()
+_q = {"clips": {}}
+for i in range(3):
+    _q["clips"][f"x{i}"] = {"streamer": "xQc", "status": "posted", "score": 7, "created": _now.isoformat(),
+                            "posts": {"tiktok": {"posted_at": (_now - timedelta(hours=10 + i)).isoformat(), "views": i}}}
+_q["clips"]["new_x"] = {"streamer": "xQc", "status": "approved", "score": 8, "created": _now.isoformat(), "posts": {}}
+_q["clips"]["new_c"] = {"streamer": "Cinna", "status": "approved", "score": 7, "created": _now.isoformat(), "posts": {}}
+assert clipqueue.dead_on_tiktok(_q) == {"xqc"}
+assert [c["streamer"] for c in clipqueue.queue(_q)] == ["Cinna", "xQc"]
+_q["clips"]["x2"]["posts"]["tiktok"]["views"] = 400   # one did well again: back to normal
+assert not clipqueue.dead_on_tiktok(_q) and clipqueue.queue(_q)[0]["streamer"] == "xQc"
+print("TIKTOK STALL OK")

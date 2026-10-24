@@ -857,6 +857,10 @@ def _status_email_mode(cfg, state):
         out.append(f"GTA 6 launch mode starts in {launch.days_left(cfg, state)} day(s) "
                    f"({launch.launch_date(cfg, state):%b %d}). Automatic posting: "
                    + ("ready." if lrec.get("blotato_ok") else "not set up yet (reminder email a week before)."))
+    stalled = clipqueue.dead_on_tiktok(state)
+    if stalled:
+        out.append(f"TikTok stopped showing recent clips of {', '.join(sorted(stalled))} (last 3 under 10 views), "
+                   "so their clips are ranked lower until one does well again.")
     out.append(f"\n### Queue ({len(q)}/{clipqueue.settings(cfg)['max_size']})")
     out += [f"- {c['score']}/10 · {c['streamer']} · {int((now_utc() - datetime.fromisoformat(c['created'])).total_seconds() // 3600)}h old"
             f"{' · emailed' if c.get('emailed_at') else ''} · {c['hook']}" for c in q] or ["- empty: it's looking for clips"]
