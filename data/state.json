@@ -4768,6 +4768,8 @@
       "caption": "the way he committed to the bit after getting caught \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-22T19:37:57.727011+00:00",
       "duration": 29.0,
+      "email_message_id": "<179280369528.2133.1714735732659815018@gmail.com>",
+      "emailed_at": "2026-10-24T01:01:44.749952+00:00",
       "end": 27362.0,
       "facecam": true,
       "file": "de2b988cb0.mp4",
@@ -4792,6 +4794,8 @@
       "punch_text": "My father was Captain Dickhead",
       "said": "I'm a contractor, pal. Pretty serious. Listen, I understand you got a job to do. So do we. All right? So let's work together. Yeah, boss. I got Captain Dickhead Fuck here. He's going to stall me out, brother. Okay. That's... That's okay. Okay. Captain Dickhead Fuck Moron, actually. I have the wrong person. Oh, is that me? Okay. My father was Captain Dickhead Fuck Moron. Thank you very much. I already took him to the ICU. Sir. You got it. We'll get out of here, all",
       "score": 7,
+      "sent_caption": "the way he committed to the bit after getting caught \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
+      "sent_title": "POV: you insult the cop while he's escorting you out \ud83d\udc80 #shorts",
       "start": 27333.0,
       "status": "approved",
       "streamer": "xQc",
@@ -5318,6 +5322,13 @@
         "date": "2026-10-23",
         "subject": "Post now: POV: cops call about the car you used in a robbery \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-10-24T01:01:44.749952+00:00",
+        "clip": "de2b988cb0",
+        "date": "2026-10-23",
+        "subject": "Post now: POV: you trash talk the cop on the radio and he's standing right behind you \ud83d\udc80 (7/10)",
+        "test": false
       }
     ],
     "replies_at": "2026-10-24T00:42:32.469226+00:00"
@@ -5336,7 +5347,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-24T00:46:46.209605+00:00"
+      "ok": "2026-10-24T01:01:23.345592+00:00"
     }
   },
   "last_run": {
