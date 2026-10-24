@@ -2417,6 +2417,7 @@
       "why": "A repair attempt backfires instantly, the chopper catches fire and the group scrambles to blame and haggle on fees."
     },
     "3bae37770e": {
+      "asset_deleted": true,
       "asset_id": 668634387,
       "caption": "bro lying to the cops with a straight face \ud83d\ude2d",
       "created": "2026-10-23T09:30:19.929271+00:00",
@@ -2439,10 +2440,41 @@
       "hook_score": 8,
       "id": "3bae37770e",
       "issue": 25,
+      "issue_closed": true,
       "layout": "cam+fill",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/c461a756b0/3bae37770e.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/3bae37770e.mp4",
-      "posts": {},
+      "posts": {
+        "tiktok": {
+          "comments": 0,
+          "date": "2026-10-24",
+          "history": [
+            [
+              "2026-10-24T02:31:36.035277+00:00",
+              0
+            ]
+          ],
+          "hour": "19:00",
+          "likes": 0,
+          "match": 1.1,
+          "posted_at": "2026-10-24T02:26:20+00:00",
+          "seen_at": "2026-10-24T02:31:36.034491+00:00",
+          "shares": 0,
+          "status": "published",
+          "url": "https://www.tiktok.com/@wantedlevelclips8/video/7700054998150827277",
+          "views": 0
+        },
+        "youtube": {
+          "date": "2026-10-24",
+          "history": [],
+          "match": 1.0,
+          "posted_at": "2026-10-24T02:31:46.893341+00:00",
+          "seen_at": "2026-10-24T02:31:46.893342+00:00",
+          "status": "published",
+          "url": "https://www.youtube.com/shorts/pcS400uUl7c",
+          "views": null
+        }
+      },
       "punch_at": 21.4,
       "punch_text": "It hasn't been delivered yet",
       "said": "Yes? Hello, this is Officer Banks with the LSPD. Just calling to give you a heads up and ask you if you know where the location of your vehicle is. Uh, it's the garage, as far as I know. Oh, I see, sir. We just actually saw it at the scene of an ATM robbery. Not possible! It hasn't been delivered yet. It hasn't been delivered. It gets delivered in two days, yo. No, so, um, let me double check this license plate I wrote down. Last 4, come back to 7.",
@@ -2450,7 +2482,7 @@
       "sent_caption": "bro lying to the cops with a straight face \ud83d\ude2d\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
       "sent_title": "cops call him about the getaway car and he plays dumb \ud83d\udc80 #shorts",
       "start": 42648.0,
-      "status": "approved",
+      "status": "posted",
       "streamer": "xQc",
       "tags": [
         "rp_drama",
@@ -4866,6 +4898,7 @@
       "why": "A cop makes him put his wife on speaker mid-stop, his sweet-talk call is interrupted by the car coming back stolen; chat spammed LOL."
     },
     "de2b988cb0": {
+      "asset_deleted": true,
       "asset_id": 666876533,
       "caption": "the way he committed to the bit after getting caught \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-22T19:37:57.727011+00:00",
@@ -4888,10 +4921,41 @@
       "hook_score": 8,
       "id": "de2b988cb0",
       "issue": 22,
+      "issue_closed": true,
       "layout": "cam+fill",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/3da089738e/de2b988cb0.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/de2b988cb0.mp4",
-      "posts": {},
+      "posts": {
+        "tiktok": {
+          "comments": 0,
+          "date": "2026-10-24",
+          "history": [
+            [
+              "2026-10-24T02:31:36.035322+00:00",
+              0
+            ]
+          ],
+          "hour": "19:00",
+          "likes": 0,
+          "match": 1.1,
+          "posted_at": "2026-10-24T02:28:57+00:00",
+          "seen_at": "2026-10-24T02:31:36.035032+00:00",
+          "shares": 0,
+          "status": "published",
+          "url": "https://www.tiktok.com/@wantedlevelclips8/video/7700055690995305759",
+          "views": 0
+        },
+        "youtube": {
+          "date": "2026-10-24",
+          "history": [],
+          "match": 1.0,
+          "posted_at": "2026-10-24T02:31:46.896218+00:00",
+          "seen_at": "2026-10-24T02:31:46.896218+00:00",
+          "status": "published",
+          "url": "https://www.youtube.com/shorts/kuiXalVPVVs",
+          "views": null
+        }
+      },
       "punch_at": 22.84,
       "punch_text": "My father was Captain Dickhead",
       "said": "I'm a contractor, pal. Pretty serious. Listen, I understand you got a job to do. So do we. All right? So let's work together. Yeah, boss. I got Captain Dickhead Fuck here. He's going to stall me out, brother. Okay. That's... That's okay. Okay. Captain Dickhead Fuck Moron, actually. I have the wrong person. Oh, is that me? Okay. My father was Captain Dickhead Fuck Moron. Thank you very much. I already took him to the ICU. Sir. You got it. We'll get out of here, all",
@@ -4899,7 +4963,7 @@
       "sent_caption": "the way he committed to the bit after getting caught \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
       "sent_title": "POV: you insult the cop while he's escorting you out \ud83d\udc80 #shorts",
       "start": 27333.0,
-      "status": "approved",
+      "status": "posted",
       "streamer": "xQc",
       "tags": [
         "rp_drama",
@@ -5449,7 +5513,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-24T02:16:34.363242+00:00"
+      "ok": "2026-10-24T02:31:36.035331+00:00"
     }
   },
   "last_run": {
