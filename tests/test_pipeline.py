@@ -980,3 +980,38 @@ assert [c["streamer"] for c in clipqueue.queue(_q)] == ["Cinna", "xQc"]
 _q["clips"]["x2"]["posts"]["tiktok"]["views"] = 400   # one did well again: back to normal
 assert not clipqueue.dead_on_tiktok(_q) and clipqueue.queue(_q)[0]["streamer"] == "xQc"
 print("TIKTOK STALL OK")
+
+# ---------- 24. clips play 1.3x faster with the voice at the same pitch; old clips are sped up before sending ----------
+from clipper import render as _render  # noqa: E402
+_cfgs = common.load_config()
+assert jobs.clip_speed(_cfgs) == 1.3
+_made = [c for c in common.load_state()["clips"].values() if c.get("speed") == 1.3 and c.get("local_file")
+         and os.path.exists(c["local_file"])]
+assert _made, "new clips are made at 1.3x"
+_c = _made[0]
+_dur = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0",
+                             _c["local_file"]], capture_output=True, text=True).stdout)
+assert abs(_dur - (_c["end"] - _c["start"]) / 1.3) < 0.6, (_dur, _c["end"] - _c["start"])
+_tone = TMP / "tone.mp4"
+subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=size=320x568:rate=30:duration=4",
+                "-f", "lavfi", "-i", "sine=frequency=440:duration=4", "-c:v", "libx264", "-c:a", "aac", "-shortest",
+                str(_tone)], check=True)
+_fast = _render.speed_up(_tone, TMP / "tone_fast.mp4", 1.3)
+_pcm = subprocess.run(["ffmpeg", "-loglevel", "error", "-i", str(_fast), "-f", "s16le", "-ac", "1", "-ar", "16000", "-"],
+                      capture_output=True).stdout
+_x = np.frombuffer(_pcm, dtype=np.int16).astype(float)
+_peak = np.argmax(np.abs(np.fft.rfft(_x))) * 16000 / len(_x)
+assert abs(_peak - 440) < 15, _peak   # same pitch
+assert abs(len(_x) / 16000 - 4 / 1.3) < 0.2
+# an older 1.0x clip in the queue is sped up (and its stored copy replaced) before it's emailed
+st = common.load_state()
+_old = dict(_c, id="slowclip", speed=None, status="approved", emailed_at=None, posts={}, local_file=str(_tone),
+            duration=4.0, asset_id=555, created=common.now_utc().isoformat())
+st["clips"]["slowclip"] = _old
+_sentn = len(sent)
+mail.send = fake_send
+deleted.clear()
+jobs.send_package(_cfgs, st, _old)
+assert _old["speed"] == 1.3 and abs(_old["duration"] - 3.1) < 0.1 and 555 in deleted and "_x1.3" in _old["media_url"]
+assert len(sent) == _sentn + 1
+print("SPEED OK")

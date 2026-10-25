@@ -40,6 +40,7 @@ fetch:
 clip:
   # Short and complete for now: starts right before the action, ends right after the reaction.
   # Once the TikTok account qualifies for Creator Rewards (1k followers + 100k weekly views), switch to 61 / 90.
+  speed: 1.3                      # clips play this much faster (the streamer's voice keeps its pitch)
   min_seconds: 8
   max_seconds: 50                 # hard cap; the picker aims for 15-35s
   layout: auto                    # auto = Claude looks at each clip's frames: finds the webcam (cam on top, gameplay below)

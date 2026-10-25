@@ -342,6 +342,33 @@ def _test_run(cfg, state):
               + (f"  | punchline: {c['punch_text']}" if c.get("punch_text") else "") + f"  | {c['why']}", flush=True)
 
 
+def clip_speed(cfg):
+    return float((cfg.get("clip") or {}).get("speed", 1.0) or 1.0)
+
+
+def ensure_speed(cfg, state, clip, src, d):
+    """Clips made before clip.speed was set (or at another speed) are sped up before they go out, and the stored
+    copy behind the download link is replaced too. Returns the file to send."""
+    want = clip_speed(cfg)
+    have = float(clip.get("speed") or 1.0)
+    if abs(want - have) < 0.01:
+        return src
+    out = Path(d) / f"{clip['id']}_x{want:g}.mp4"
+    render.speed_up(src, out, want / have, ffmpeg=clipqueue._ffmpeg())
+    clip["duration"] = round(float(clip.get("duration") or 0) * have / want, 1)
+    clip["speed"] = want
+    if not DRY_RUN and clip.get("asset_id"):
+        try:
+            old = clip["asset_id"]
+            clip["asset_id"], clip["media_url"] = services.release_upload(out, f"{clip['id']}_x{want:g}.mp4")
+            services.release_delete(old)
+        except Exception as e:
+            log.warning("couldn't replace the stored copy of %s: %s", clip["id"], e)
+    clip["local_file"] = None
+    save_state(state)
+    return out
+
+
 def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
     cid = _clip_id(vod["id"], p["start"])
     if cid in state["clips"]:
@@ -359,8 +386,9 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
     layout = cfg["clip"].get("layout", "auto")
     if layout == "auto":
         layout = look["layout"]
+    speed = clip_speed(cfg)
     render.render(src, src_offset, p, words, out, facecam=facecam, focus_x=look["focus_x"],
-                  commentary=cfg["clip"].get("commentary", False), layout=layout)
+                  commentary=cfg["clip"].get("commentary", False), layout=layout, speed=speed)
     if facecam:  # remember which streamers show their face; their clips get priority
         state.setdefault("streamers", {}).setdefault(vod["streamer"]["name"], {})["facecam"] = True
     asset_id = None
@@ -372,7 +400,7 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         media_url = services.blotato_upload(out)
     clip = {
         "id": cid, "vod": vod["id"], "vod_url": vod["url"], "streamer": vod["streamer"]["name"],
-        "start": p["start"], "end": p["end"], "duration": round(p["end"] - p["start"], 1),
+        "start": p["start"], "end": p["end"], "duration": round((p["end"] - p["start"]) / speed, 1), "speed": speed,
         "score": int(p["score"]), "hook": p["hook"], "title": p["title"], "caption": p["caption"],
         "tags": p.get("tags", []), "why": p.get("why", ""), "hook_options": p.get("hook_options", []), "hook_score": p.get("hook_score"),
         "punch_text": p.get("punch_text", ""), "punch_at": p.get("punch_at", 0), "media_url": media_url,
@@ -590,14 +618,16 @@ def emails_due(cfg, state, now):
 def send_package(cfg, state, clip, test=False):
     """Email one clip with everything needed to post it. Returns the Message-ID."""
     from . import mail
-    pkg = clipqueue.package(cfg, clip, clipqueue.queue(state), state)
     d = WORK / f"email_{clip['id']}"
     d.mkdir(parents=True, exist_ok=True)
     attach = None
+    src = clip.get("local_file")
+    if not (src and os.path.exists(src)):
+        src = services.download(clip["media_url"], d / "clip.mp4") if clip.get("media_url") else None
+    if src:
+        src = ensure_speed(cfg, state, clip, src, d)   # raises rather than send a clip at the old speed
+    pkg = clipqueue.package(cfg, clip, clipqueue.queue(state), state)
     try:
-        src = clip.get("local_file")
-        if not (src and os.path.exists(src)):
-            src = services.download(clip["media_url"], d / "clip.mp4") if clip.get("media_url") else None
         if src:
             attach = clipqueue.fit_for_email(src, d / f"{clip['id']}.mp4", mail.ATTACH_LIMIT)
     except Exception as e:
@@ -650,6 +680,7 @@ def auto_post_clip(cfg, state, clip):
         src = clip.get("local_file")
         if not (src and os.path.exists(src)):
             src = services.download(clip["media_url"], d / "clip.mp4")
+        src = ensure_speed(cfg, state, clip, src, d)
         url = services.blotato_upload(src)
     except Exception:
         shutil.rmtree(d, ignore_errors=True)

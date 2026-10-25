@@ -220,10 +220,20 @@ def _game(label, h, mode, fx, src="[0:v]"):
     return f"{src}{crop(W / h)},scale={W}:{h}[{label}]"
 
 
-def render(src, src_offset, pick, words, out, facecam=None, commentary=False, layout="fill", focus_x=0.5):
+def speed_up(src, dest, speed, ffmpeg="ffmpeg"):
+    """Play a finished clip `speed` times faster. atempo keeps the streamer's voice at its normal pitch."""
+    run([ffmpeg, "-y", "-loglevel", "error", "-i", src,
+         "-filter_complex", f"[0:v]setpts=PTS/{speed},fps=30,format=yuv420p[v];[0:a]atempo={speed}[a]",
+         "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "veryfast", "-crf", "19", "-pix_fmt", "yuv420p",
+         "-c:a", "aac", "-b:a", "128k", "-ar", "44100", "-movflags", "+faststart", dest])
+    return dest
+
+
+def render(src, src_offset, pick, words, out, facecam=None, commentary=False, layout="fill", focus_x=0.5, speed=1.0):
     """src: downloaded section; src_offset: seconds into src where the clip starts.
     layout: fill (gameplay fills the screen, cropped around focus_x), wide (more of the frame visible),
-    blur (whole frame over a blurred copy). With a facecam box the cam goes on top and gameplay below."""
+    blur (whole frame over a blurred copy). With a facecam box the cam goes on top and gameplay below.
+    speed: play the clip this many times faster (pitch stays the same); captions are timed before speeding up."""
     out = Path(out)
     ass = build_ass(pick, words, out.with_suffix(".ass"), commentary)
     hook_png = hook_image(pick["hook"], out.with_suffix(".hook.png"))
@@ -248,12 +258,15 @@ def render(src, src_offset, pick, words, out, facecam=None, commentary=False, la
     else:
         base = _game("base", H, mode, focus_x)
         top = HOOK_TOP
+    speed = float(speed or 1.0)
+    fast = f"setpts=PTS/{speed}," if speed != 1.0 else ""
     vf = (f"{base};[base][1:v]overlay=(W-w)/2:{top}[hk];"
-          f"[hk]ass='{ass_arg}',fps=30,format=yuv420p[v]")
-    dur = pick["end"] - pick["start"]
+          f"[hk]ass='{ass_arg}',{fast}fps=30,format=yuv420p[v]")
+    dur = (pick["end"] - pick["start"]) / speed
+    af = (f"atempo={speed}," if speed != 1.0 else "") + "loudnorm=I=-14:TP=-1.5:LRA=11"
     run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{src_offset:.2f}", "-i", src, "-i", hook_png,
          "-t", f"{dur:.2f}", "-filter_complex", vf, "-map", "[v]", "-map", "0:a?",
-         "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
+         "-af", af,
          "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
          "-c:a", "aac", "-b:a", "128k", "-ar", "44100", "-movflags", "+faststart", out])
     return out
