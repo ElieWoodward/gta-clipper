@@ -31,6 +31,14 @@ def _created(c):
     return datetime.fromisoformat(c["created"])
 
 
+def tiktok_paused(cfg):
+    """The local date TikTok posting resumes (posting.tiktok_paused_until), while it's still ahead; else None."""
+    from zoneinfo import ZoneInfo
+    until = str((cfg.get("posting") or {}).get("tiktok_paused_until") or "")
+    today = now_utc().astimezone(ZoneInfo(cfg.get("timezone", "UTC"))).date().isoformat()
+    return until if until and today < until else None
+
+
 def dead_on_tiktok(state, last=3, min_views=10, min_hours=6):
     """Streamers whose last few TikTok posts all stalled (under min_views after min_hours). TikTok quietly stops
     showing clips of moments many other accounts already posted, which happens most with the biggest streamers."""
@@ -57,7 +65,7 @@ def queue(state):
     there is)."""
     paid = {(r.get("twitch_login") or "").lower() for r in (state.get("campaigns") or {}).values()
             if r.get("status") == "joined"}
-    dead = dead_on_tiktok(state)
+    dead = set() if state.get("tiktok_paused") else dead_on_tiktok(state)   # YouTube-only days: no TikTok penalty
     q = [c for c in state["clips"].values() if c.get("status") == "approved"]
     def is_paid(c):
         return (c.get("streamer") or "").lower() in paid
@@ -151,6 +159,12 @@ def package(cfg, clip, queue_now, state=None):
         ("Source", source or "(manual upload)"),
         ("Still in the queue", waiting),
     ]
+    paused = tiktok_paused(cfg)
+    if paused:
+        blocks = [b for b in blocks if b[0] != "TikTok caption"]
+        back = datetime.fromisoformat(paused).strftime("%A %b %-d")
+        blocks.insert(0, ("YouTube only", f"TikTok is taking a few days off, so post this one on YouTube only. "
+                          f"TikTok comes back {back}, and the emails will have the TikTok caption again."))
     if rec and rec.get("status") == "joined":
         blocks.insert(0, ("Paid campaign", f"{rec['name']} ({rec.get('rate') or '?'} per 1K views).\nFollow the brief's "
                           f"caption/hashtag rules (on the board), post, then submit your link at "
@@ -160,7 +174,7 @@ def package(cfg, clip, queue_now, state=None):
         blocks.insert(0, ("Paid campaign (not joined yet)", f"{rec['name']} pays {rec.get('rate') or '?'} per 1K views "
                           f"for clips of this streamer. Join at {rec.get('join_url') or rec['url']} BEFORE posting, then "
                           "follow the brief's caption rules and submit your link to get paid for this one."))
-    return {"subject": f"Post now: {clip['hook']} ({clip['score']}/10)", "blocks": blocks,
+    return {"subject": f"Post now{' (YouTube)' if paused else ''}: {clip['hook']} ({clip['score']}/10)", "blocks": blocks,
             "tiktok_caption": tiktok_caption, "yt_title": yt_title}
 
 
@@ -483,6 +497,8 @@ def refresh_posted(cfg, state):
                 ids["youtube_channel_id"] = youtube_channel_id(yt)
             yups = youtube_uploads(ids["youtube_channel_id"], yt)
             for c in match_uploads(state, yups, "youtube"):
+                if c["status"] == "approved":   # posted on either platform: out of the queue
+                    c["status"] = "posted"
                 notes.append(f"seen on YouTube: {c['hook']}")
             update_stats(state, yups, "youtube", cfg.get("timezone", "UTC"))
             for c in state["clips"].values():

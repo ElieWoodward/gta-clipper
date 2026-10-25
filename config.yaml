@@ -66,6 +66,7 @@ posting:
   mode: email                     # email = you get an email with the clip + captions at each slot and post it yourself
                                   # blotato = the bot posts for you through Blotato (needs BLOTATO_API_KEY)
   platforms: [tiktok, youtube]
+  tiktok_paused_until: "2026-10-28"   # emails are YouTube only until this date (TikTok's few days off); "" = off
   # Posts per day per platform, ramping up as accounts age.
   ramp:
     - {from_day: 0, per_day: 1}

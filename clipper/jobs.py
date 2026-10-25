@@ -745,6 +745,7 @@ def email_post(cfg):
     if days_since_start(cfg) < 0 and not FORCE:
         log.info("before start_date %s; not emailing", cfg["start_date"])
         return
+    state["tiktok_paused"] = bool(clipqueue.tiktok_paused(cfg))
     for note in clipqueue.refresh_posted(cfg, state):
         print(f"::notice::{note}", flush=True)
     for c in clipqueue.expire(cfg, state):
@@ -888,6 +889,8 @@ def _status_email_mode(cfg, state):
         out.append(f"GTA 6 launch mode starts in {launch.days_left(cfg, state)} day(s) "
                    f"({launch.launch_date(cfg, state):%b %d}). Automatic posting: "
                    + ("ready." if lrec.get("blotato_ok") else "not set up yet (reminder email a week before)."))
+    if clipqueue.tiktok_paused(cfg):
+        out.append(f"**TikTok is paused until {clipqueue.tiktok_paused(cfg)}.** Emails are YouTube only until then.")
     stalled = clipqueue.dead_on_tiktok(state)
     if stalled:
         out.append(f"TikTok stopped showing recent clips of {', '.join(sorted(stalled))} (last 3 under 10 views), "

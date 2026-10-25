@@ -10,6 +10,8 @@ from pathlib import Path
 from types import SimpleNamespace
 
 TMP = Path(tempfile.mkdtemp(prefix="cliptest_"))
+import atexit  # noqa: E402
+atexit.register(shutil.rmtree, TMP, True)   # each run leaves ~1 GB otherwise
 REPO = Path(__file__).resolve().parent.parent
 shutil.copy(REPO / "config.yaml", TMP / "config.yaml")
 # Sections 1-8 test the Blotato auto-posting path; section 9 switches to email mode.
@@ -18,6 +20,8 @@ assert "mode: blotato" in _cfg_text
 _cfg_text = _cfg_text.replace("launch:                           # GTA 6", "launch:  # GTA 6", 1).replace(
     "  enabled: true\n  date: \"2026-11-19\"", "  enabled: false\n  date: \"2026-11-19\"", 1)
 assert "enabled: false\n  date:" in _cfg_text   # launch mode is tested on its own in section 21
+import re as _re  # noqa: E402
+_cfg_text = _re.sub(r'tiktok_paused_until: "[^"]*"', 'tiktok_paused_until: ""', _cfg_text)   # tested in section 25
 (TMP / "config.yaml").write_text(_cfg_text)
 os.environ.update(CLIPPER_ROOT=str(TMP), CLIPPER_WORK=str(TMP / "work"), FORCE="1", BLOTATO_API_KEY="test-key")
 sys.path.insert(0, str(REPO))
@@ -1015,3 +1019,14 @@ jobs.send_package(_cfgs, st, _old)
 assert _old["speed"] == 1.3 and abs(_old["duration"] - 3.1) < 0.1 and 555 in deleted and "_x1.3" in _old["media_url"]
 assert len(sent) == _sentn + 1
 print("SPEED OK")
+
+# ---------- 25. TikTok's days off: YouTube-only emails, back on by itself ----------
+_cp = dict(_cfgs, posting=dict(_cfgs["posting"], tiktok_paused_until=(common.now_local(_cfgs).date() + timedelta(days=2)).isoformat()))
+assert clipqueue.tiktok_paused(_cp)
+_pkg = clipqueue.package(_cp, dict(_c, duration=30.0), [], {})
+assert _pkg["subject"].startswith("Post now (YouTube):") and not any(b[0] == "TikTok caption" for b in _pkg["blocks"])
+assert _pkg["blocks"][0][0] == "YouTube only"
+_cp["posting"]["tiktok_paused_until"] = common.now_local(_cfgs).date().isoformat()   # the day it ends
+assert not clipqueue.tiktok_paused(_cp)
+assert any(b[0] == "TikTok caption" for b in clipqueue.package(_cp, dict(_c, duration=30.0), [], {})["blocks"])
+print("TIKTOK PAUSE OK")
