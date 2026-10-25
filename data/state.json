@@ -1648,6 +1648,8 @@
       "caption": "the investigation over one word is sending me \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-25T10:40:07.968863+00:00",
       "duration": 50.0,
+      "email_message_id": "<179294777802.2260.16344000774601686929@gmail.com>",
+      "emailed_at": "2026-10-25T17:03:04.819930+00:00",
       "end": 39800.0,
       "facecam": true,
       "file": "11175c6ea4.mp4",
@@ -1672,6 +1674,8 @@
       "punch_text": "",
       "said": "Have you or anyone around you ever heard of Marty Banks being called a twink? I need your honest truth. Tell me now. Don't listen to anything Jean-Paul says. I have. Has anyone said that word? Except him. I have not heard that. Good. I don't think I'd be able to comprehend it. Good. Okay. Would it make sense? Do you hear these words? No, it doesn't make sense. Keep saying the truth, Bonsuan. Keep saying the truth. Do you hear these words? I need you to report this information to me. There's a bounty for the next person that calls me a twink. It's not Jean Paul Yeah, did you hear me if anyone s",
       "score": 7,
+      "sent_caption": "the investigation over one word is sending me \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
+      "sent_title": "POV: my boss put a bounty on one word \ud83d\udc80 #shorts",
       "start": 39750.0,
       "status": "approved",
       "streamer": "xQc",
@@ -2580,10 +2584,6 @@
           "date": "2026-10-24",
           "history": [
             [
-              "2026-10-24T08:02:09.035590+00:00",
-              1202
-            ],
-            [
               "2026-10-24T08:17:09.122602+00:00",
               1272
             ],
@@ -2818,6 +2818,10 @@
             [
               "2026-10-25T16:50:37.634196+00:00",
               3092
+            ],
+            [
+              "2026-10-25T17:02:01.107014+00:00",
+              3104
             ]
           ],
           "hour": "19:00",
@@ -2828,7 +2832,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/pcS400uUl7c",
-          "views": 3092
+          "views": 3104
         }
       },
       "punch_at": 21.4,
@@ -6283,6 +6287,13 @@
         "date": "2026-10-24",
         "subject": "Post now: Bro got 726 months and the cops started beefing \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-10-25T17:03:04.819930+00:00",
+        "clip": "11175c6ea4",
+        "date": "2026-10-25",
+        "subject": "Post now: Bro put a bounty on anyone who calls him a twink \ud83d\ude2d\ud83d\udc80 (7/10)",
+        "test": false
       }
     ],
     "replies_at": "2026-10-25T16:50:37.634376+00:00"
@@ -6301,7 +6312,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-25T16:50:37.525102+00:00"
+      "ok": "2026-10-25T17:02:00.753096+00:00"
     }
   },
   "last_run": {
