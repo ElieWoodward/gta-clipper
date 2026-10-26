@@ -2587,10 +2587,6 @@
           "date": "2026-10-24",
           "history": [
             [
-              "2026-10-25T02:49:21.922127+00:00",
-              2000
-            ],
-            [
               "2026-10-25T05:04:28.229007+00:00",
               2212
             ],
@@ -2825,6 +2821,10 @@
             [
               "2026-10-25T23:21:49.217652+00:00",
               3600
+            ],
+            [
+              "2026-10-26T00:06:52.388737+00:00",
+              3700
             ]
           ],
           "hour": "19:00",
@@ -2835,7 +2835,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/pcS400uUl7c",
-          "views": 3600
+          "views": 3700
         }
       },
       "punch_at": 21.4,
@@ -3700,14 +3700,23 @@
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/725f8099b5_x1.3.mp4",
       "posts": {
         "youtube": {
+          "comments": null,
           "date": "2026-10-25",
-          "history": [],
+          "history": [
+            [
+              "2026-10-26T00:06:52.388797+00:00",
+              131
+            ]
+          ],
+          "hour": "16:00",
+          "likes": null,
           "match": 1.0,
           "posted_at": "2026-10-25T23:52:01.961816+00:00",
           "seen_at": "2026-10-25T23:52:01.961819+00:00",
+          "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/JJUrnPfgWfU",
-          "views": null
+          "views": 131
         }
       },
       "punch_at": 18.86,
@@ -6348,7 +6357,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-25T23:51:50.461735+00:00"
+      "ok": "2026-10-26T00:06:41.386865+00:00"
     }
   },
   "last_run": {
