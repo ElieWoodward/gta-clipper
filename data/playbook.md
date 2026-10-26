@@ -1,20 +1,14 @@
-**Data caveat: the data has only 3 distinct clips (each posted on TikTok and YouTube), so 6 rows. Every rule below is a tentative lead to test, not a proven finding. Webcam, tags, hook style and streamer all change together across these clips, so I can't separate their effects.**
+**Confidence note:** there are only 13 unique clips (26 posts), and many posts have 0–9 views. Those look like distribution failures, not audience taste. Treat every rule below as a lean, not a proven fact.
 
-What the numbers show (views per hour of age, since clips are 23–74h old):
-- "POV: you beg a stranger to drive you to the bathroom" (Cinna, 48s, webcam, rp_drama/funny_line/chaos): about 23/h on TikTok and 31/h on YouTube. Best clip.
-- "POV: cop makes you put your wife on speaker mid-stop" (xQc, 48s, webcam, rp_drama/police/funny_line): about 14/h on TikTok and 21/h on YouTube.
-- "He really thought rolling his R's was rizz" (Cinna, 41s, no webcam, funny_line/reaction): about 4/h on TikTok and 10/h on YouTube. Worst clip, at roughly 1/4 to 1/6 of the best one.
-
-Rules for next week:
-1. **Pick more RP-drama clips with a clear, relatable scenario.** The two rp_drama clips beat the reaction-only clip by 3–5x on views per hour.
-2. **Prefer clips with the webcam on screen.** Both webcam clips clearly beat the one without. This is confounded, so treat it as a hypothesis and test it directly.
-3. **Use "POV:" hooks that state an absurd situation.** Both "POV: ..." hooks did well. Example: "POV: cop makes you put your wife on speaker mid-stop 💀".
-4. **Be wary of hooks that only describe a reaction.** "He really thought rolling his R's was rizz 💀" was the weakest hook. It tells viewers about a reaction and gives them no scenario to picture.
-5. **Don't rely on a single funny line.** The weak clip's value rested on one line. Choose clips with a setup and a payoff, ideally with chaos.
-6. **Keep clips around 45–50s for now.** The winners were both 48s and the loser was 41s. That is too few clips to call a length effect, so don't read it as a rule. Test a spread of lengths, from under 30s to over 60s.
-7. **Post on both platforms.** YouTube got more views than TikTok on every clip (1.3–2.3x), but this is a small sample. Likes per view were mixed: TikTok was higher on the two winners, and YouTube was higher on the weak clip.
-8. **Fix tracking.** YouTube shares are not recorded and TikTok shows 0 shares on every clip. Until that is fixed, judge humor by likes per view. That ranges from about 1% to 6% here and is too noisy to rank.
-9. **Test more streamers.** There are only 2 streamers (Cinna, xQc), so no streamer ranking is possible. Cinna had both the best and worst clip, so the clip mattered more than the streamer.
-10. **Don't pick posting times yet.** The clips went out at 11:00, 14:00, 17:00 and 18:00, one clip each, and each is confounded with the clip itself. Run a deliberate time test next week.
-11. **Compare clips by views per hour of age, not raw views.** Raw views mix clips of different ages, and an account median needs many more clips.
-12. **Run a controlled test.** Post 10–15 clips that vary one thing at a time: webcam on/off, POV hook vs. plain hook, and length bucket. Then redo this analysis.
+1. **Judge clips on YouTube first.** YouTube views were far higher than TikTok for the same clip (xQc "cops call about robbery car": 10,893 YT vs 0 TT; "scammed customer": 4,500 vs 344). Don't judge a clip's humor by its TikTok numbers.
+2. **Investigate TikTok before blaming content.** 6 of the 13 TikTok posts got 0–1 views, and 4 of those were xQc police clips. Check for muted audio, copyright flags, a shadow-limit, or a failed upload. If it recurs, re-upload with a fresh caption and audio check, or test a different TikTok hour.
+3. **Pick more xQc rp_drama/police clips built on one clear, absurd situation with a second person reacting.** Examples: cops, a customer, a stranger, a wife on speaker. These produced most of the top YouTube views: 10.9k, 4.5k, 2.9k, 2.5k, 2.4k.
+4. **Pick more Cinna "relatable awkward scenario" clips.** The bathroom-ride clip had the best like rate (5.7% on TikTok, 59 likes on 1,036 views) and was the only clip with solid views on both platforms. The downed-and-abandoned clip also worked.
+5. **Humor that worked is a deadpan, specific scenario with a punchline you understand in one listen.** Examples: "ask the cops to flag your own car as stolen", "cop makes you put your wife on speaker". Likes per view were highest on these.
+6. **Stop picking clips where the joke needs setup or has a muddled hook.** Both posts of "When you say you smacked three guys and he heard you screamed" died (0 and 8 views). "Jump off a roof then gaslight a stranger" also died (0 and 9). The radio-trash-talk clip got 0 and 7 views. Skip hooks you can't explain in one clean sentence.
+7. **Hook style:** the "POV: [specific, relatable situation]" and "He [did a specific dumb thing]" formats both appear in winners and duds. So the format isn't the deciding factor; clarity and specificity are. Winning examples: "POV: cops call about the car you used in a robbery 💀", "He told a customer he got scammed out of 20k 💀", "POV: you beg a stranger to drive you to the bathroom 😭💀". Keep to one emoji ending and a concrete scenario.
+8. **Weak clips so far:** the Cinna "rolling his R's was rizz" clip (108 TT / 231 YT views, the weakest clip with real distribution) and the vanillamace vending-machine clip (438 TT but 9 YT). Pick fewer clips where the funny part is only a spoken line with no visible chaos or situation. Test vanillamace once more before dropping her, because one clip is too little data.
+9. **Length:** winners ran 33–49s, but dead clips ran 29–50s, so there is no reliable length signal. Don't enforce a length window. Just keep clips at or under about 50s with the punchline inside the first ~25s.
+10. **Webcam:** 12 of 13 clips had it on, and the one without was the weakest. Prefer webcam-on clips as a mild default, but this isn't proven.
+11. **Posting hour:** no pattern is visible. 19:00 had both the best clip (10.9k) and a dead clip (7 views), and 11:00 was mixed. Don't change slots based on this data. Instead, log the hour for each post next week and re-check.
+12. **Test cleanly next week:** post each clip to both platforms at the same hour with the same caption. Add a few short clips under 30s, since the only one measured (23s, xQc boss buffering) had 1,132 YouTube views in 16 hours. Then compare using views against the account median.
