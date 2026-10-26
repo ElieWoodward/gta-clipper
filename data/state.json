@@ -2964,6 +2964,10 @@
             [
               "2026-10-26T05:07:37.820187+00:00",
               5
+            ],
+            [
+              "2026-10-26T05:22:12.485740+00:00",
+              8
             ]
           ],
           "hour": "22:00",
@@ -2974,7 +2978,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/WdH-GrgdRfQ",
-          "views": 5
+          "views": 8
         }
       },
       "punch_at": 16.34,
@@ -3054,6 +3058,10 @@
             [
               "2026-10-26T05:07:37.820196+00:00",
               8
+            ],
+            [
+              "2026-10-26T05:22:12.485762+00:00",
+              6
             ]
           ],
           "hour": "20:00",
@@ -3064,7 +3072,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/ogRQvVPGjT4",
-          "views": 8
+          "views": 6
         }
       },
       "punch_at": 0,
@@ -5782,6 +5790,10 @@
             [
               "2026-10-25T17:40:18.420181+00:00",
               6
+            ],
+            [
+              "2026-10-26T05:22:12.485802+00:00",
+              7
             ]
           ],
           "hour": "19:00",
@@ -5792,7 +5804,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/kuiXalVPVVs",
-          "views": 6
+          "views": 7
         }
       },
       "punch_at": 22.84,
@@ -6230,6 +6242,10 @@
             [
               "2026-10-26T05:07:37.820242+00:00",
               8
+            ],
+            [
+              "2026-10-26T05:22:12.485810+00:00",
+              6
             ]
           ],
           "hour": "20:00",
@@ -6240,7 +6256,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/ogRQvVPGjT4",
-          "views": 8
+          "views": 6
         }
       },
       "punch_at": 19.34,
@@ -6457,7 +6473,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-26T05:07:26.742051+00:00"
+      "ok": "2026-10-26T05:22:01.567108+00:00"
     }
   },
   "last_run": {
