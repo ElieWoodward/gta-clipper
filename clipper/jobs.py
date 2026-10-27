@@ -1024,8 +1024,16 @@ def learn(client=None):
         _weekly_email(cfg, rows, None)
         return
     client = client or anthropic.Anthropic()
-    out = highlights.ask_tool(client, cfg["models"]["learn"], LEARN_PROMPT.format(data=json.dumps(rows)), LEARN_SCHEMA,
-                              max_tokens=3000)
+    out = {}
+    for _ in range(2):   # a long playbook can cut the answer short; ask again once if a field is missing
+        out = highlights.ask_tool(client, cfg["models"]["learn"], LEARN_PROMPT.format(data=json.dumps(rows)),
+                                  LEARN_SCHEMA, max_tokens=6000) or {}
+        if out.get("playbook") and out.get("summary"):
+            break
+    if not out.get("playbook"):   # keep last week's rules rather than wiping them
+        out["playbook"] = PLAYBOOK_FILE.read_text() if PLAYBOOK_FILE.exists() else ""
+    out.setdefault("summary", "")
+    out["summary"] = out["summary"] or "(Claude didn't write a summary this week; the numbers above are complete.)"
     PLAYBOOK_FILE.write_text(out["playbook"])
     ts = out.get("target_seconds")
     lo_hi = cfg["clip"]["min_seconds"], cfg["clip"]["max_seconds"]
@@ -1034,8 +1042,11 @@ def learn(client=None):
     else:  # keep it inside the configured limits
         ts = [int(max(lo_hi[0], ts[0])), int(min(lo_hi[1], ts[1]))]
         ts = ts if ts[0] < ts[1] else None
-    INSIGHTS_FILE.write_text(json.dumps({"best_slots": out.get("best_slots") or [], "target_seconds": ts,
-                                         "updated": now_utc().isoformat()}))
+    prev = load_json(INSIGHTS_FILE, {})
+    if ts is None and "target_seconds" not in out:   # answer cut short: keep last week's values
+        ts = prev.get("target_seconds")
+    INSIGHTS_FILE.write_text(json.dumps({"best_slots": out.get("best_slots") or prev.get("best_slots") or [],
+                                         "target_seconds": ts, "updated": now_utc().isoformat()}))
     _weekly_email(cfg, rows, dict(out, target_seconds=ts))
     if not DRY_RUN:
         services.gh_upsert_pinned("weekly-report", f"Weekly report {now_local(cfg):%b %d}",

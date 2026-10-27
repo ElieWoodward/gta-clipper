@@ -62,9 +62,13 @@ def job_failed(state, job, error):
 
 def check_quiet(cfg, state, queue_len):
     """Alert if clips are waiting but nothing has been emailed for 36 hours."""
-    from .clipqueue import last_emailed
+    from .clipqueue import last_emailed, queue
     last = last_emailed(state)
     if not queue_len or not last:
+        return
+    # Only when a clip has been waiting a while: an empty queue (no good clips yet) isn't a failure.
+    oldest = min((datetime.fromisoformat(c["created"]) for c in queue(state) if not c.get("emailed_at")), default=None)
+    if oldest is None or now_utc() - oldest < timedelta(hours=8):
         return
     if now_utc() - datetime.fromisoformat(last) > timedelta(hours=36):
         alert(state, "quiet", "no posting email for 36 hours",

@@ -229,6 +229,9 @@ jobs.DRY_RUN = True
 jobs.learn(client=learn_claude)
 assert (TMP / "data" / "playbook.md").read_text().startswith("- Police")
 assert jobs._slots(cfg, 2) == ["12:00", "19:00"]
+# an answer cut short (no summary, no playbook) keeps last week's rules instead of crashing the report
+jobs.learn(client=FakeClaude(lambda kw: json.dumps({"best_slots": ["12:00"]})))
+assert (TMP / "data" / "playbook.md").read_text().startswith("- Police")
 # Playbook now feeds the judge prompt
 highlights.judge(cfg, vod, [{"id": 0, "start": 0, "end": 120, "spike": 5, "text": "x"}], client=claude)
 assert "Police chases win" in claude.prompts[-1]
@@ -1030,3 +1033,18 @@ _cp["posting"]["tiktok_paused_until"] = common.now_local(_cfgs).date().isoformat
 assert not clipqueue.tiktok_paused(_cp)
 assert any(b[0] == "TikTok caption" for b in clipqueue.package(_cp, dict(_c, duration=30.0), [], {})["blocks"])
 print("TIKTOK PAUSE OK")
+
+# ---------- 26. the "no email for 36h" alert ignores clips that only just arrived ----------
+_alerts = []
+_ha = health.alert
+health.alert = lambda st, key, subj, text: _alerts.append(key)
+_h = {"clips": {"q": {"status": "approved", "score": 7, "created": common.now_utc().isoformat(), "streamer": "x"},
+                "e": {"status": "posted", "score": 7, "created": "2026-01-01T00:00:00+00:00", "streamer": "x",
+                      "emailed_at": (common.now_utc() - timedelta(hours=50)).isoformat()}}}
+health.check_quiet(cfg, _h, 1)
+assert not _alerts, "a clip made an hour ago isn't a stuck queue"
+_h["clips"]["q"]["created"] = (common.now_utc() - timedelta(hours=10)).isoformat()
+health.check_quiet(cfg, _h, 1)
+assert _alerts == ["quiet"]
+health.alert = _ha
+print("QUIET ALERT OK")
