@@ -2670,6 +2670,7 @@
       "why": "Streamer panics as paid TTS donations keep roasting her, refusing the money; relatable and chat laughed 41x."
     },
     "30da0f87f3": {
+      "asset_deleted": true,
       "asset_id": 681390405,
       "caption": "sativa and THC man \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-27T11:27:26.323261+00:00",
@@ -2692,10 +2693,31 @@
       "hook_score": 8,
       "id": "30da0f87f3",
       "issue": 34,
+      "issue_closed": true,
       "layout": "cam+fill",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/46b9b598c1/30da0f87f3.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/30da0f87f3.mp4",
-      "posts": {},
+      "posts": {
+        "youtube": {
+          "comments": null,
+          "date": "2026-10-27",
+          "history": [
+            [
+              "2026-10-27T17:26:14.318049+00:00",
+              143
+            ]
+          ],
+          "hour": "10:00",
+          "likes": 3,
+          "match": 1.0,
+          "posted_at": "2026-10-27T17:14:25+00:00",
+          "seen_at": "2026-10-27T17:26:14.317906+00:00",
+          "shares": null,
+          "status": "published",
+          "url": "https://www.youtube.com/shorts/02jrBLU2R8I",
+          "views": 143
+        }
+      },
       "punch_at": 37.82,
       "punch_text": "I am not a cop, man!",
       "said": "phone man yeah we have one communal phone we pass it between us we pass it around a communal phone we're anti-institution man we're anti-institution man we're the least cops you're ever gonna find man we live in the trees yeah yeah you guys believe these fools man i know he reeks of weed brother i've been smoking weed since i was 18. i'm 48 now man He's been smoking weed since you were 18. What two strains of weed are there, sir? Sativa THC, man. Who is this, man? Okay, shoot this guy. This guy's a cop. I'm not a cop, man. I'm not a cop. Oh, shit. I got it.",
@@ -2704,7 +2726,7 @@
       "sent_title": "Quizzing two suspected undercover cops on weed \ud83d\udc80 #shorts",
       "speed": 1.3,
       "start": 15398.0,
-      "status": "approved",
+      "status": "posted",
       "streamer": "xQc",
       "tags": [
         "rp_drama",
@@ -2767,10 +2789,6 @@
           "comments": null,
           "date": "2026-10-24",
           "history": [
-            [
-              "2026-10-26T04:07:01.172846+00:00",
-              5000
-            ],
             [
               "2026-10-26T04:22:08.367180+00:00",
               5100
@@ -3006,6 +3024,10 @@
             [
               "2026-10-27T15:56:03.174535+00:00",
               11367
+            ],
+            [
+              "2026-10-27T17:26:14.318065+00:00",
+              11364
             ]
           ],
           "hour": "19:00",
@@ -3016,7 +3038,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/pcS400uUl7c",
-          "views": 11367
+          "views": 11364
         }
       },
       "punch_at": 21.4,
@@ -4971,10 +4993,6 @@
           "date": "2026-10-23",
           "history": [
             [
-              "2026-10-25T21:51:22.173695+00:00",
-              2213
-            ],
-            [
               "2026-10-25T22:06:26.006812+00:00",
               2226
             ],
@@ -5209,6 +5227,10 @@
             [
               "2026-10-27T16:26:02.622791+00:00",
               3473
+            ],
+            [
+              "2026-10-27T17:26:14.318112+00:00",
+              3474
             ]
           ],
           "hour": "11:00",
@@ -5219,7 +5241,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/2Ej780szBEE",
-          "views": 3473
+          "views": 3474
         }
       },
       "punch_at": 25.84,
@@ -6915,7 +6937,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-27T17:11:19.622474+00:00"
+      "ok": "2026-10-27T17:26:14.037685+00:00"
     }
   },
   "last_run": {
