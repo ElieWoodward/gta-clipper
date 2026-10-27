@@ -2646,6 +2646,48 @@
       "vod_url": "https://www.twitch.tv/videos/2911501294",
       "why": "Streamer panics as paid TTS donations keep roasting her, refusing the money; relatable and chat laughed 41x."
     },
+    "30da0f87f3": {
+      "asset_id": 681390405,
+      "caption": "sativa and THC man \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-27T11:27:26.323261+00:00",
+      "duration": 31.5,
+      "end": 15439.0,
+      "facecam": true,
+      "file": "30da0f87f3.mp4",
+      "framing": "The action is the green-hooded player searching the hands-up group in the center-left. The streamer's webcam is in the top-left corner.",
+      "hook": "POV: you ask two undercover cops for the two types of weed \ud83d\udc80",
+      "hook_options": [
+        "POV: you ask two suspected cops to name two types of weed",
+        "They said they live in the trees and share one phone \ud83d\udc80",
+        "Who let these guys try to pass as stoners \ud83d\ude2d",
+        "I quizzed two guys on weed to see if they're cops \ud83d\udc80",
+        "When the undercover cops forget what weed even is \ud83d\ude2d",
+        "POV: you quiz two suspected cops on weed strains \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "30da0f87f3",
+      "issue": 34,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/46b9b598c1/30da0f87f3.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/30da0f87f3.mp4",
+      "posts": {},
+      "punch_at": 37.82,
+      "punch_text": "I am not a cop, man!",
+      "said": "phone man yeah we have one communal phone we pass it between us we pass it around a communal phone we're anti-institution man we're anti-institution man we're the least cops you're ever gonna find man we live in the trees yeah yeah you guys believe these fools man i know he reeks of weed brother i've been smoking weed since i was 18. i'm 48 now man He's been smoking weed since you were 18. What two strains of weed are there, sir? Sativa THC, man. Who is this, man? Okay, shoot this guy. This guy's a cop. I'm not a cop, man. I'm not a cop. Oh, shit. I got it.",
+      "score": 7,
+      "speed": 1.3,
+      "start": 15398.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "rp_drama",
+        "funny_line"
+      ],
+      "title": "Quizzing two suspected undercover cops on weed \ud83d\udc80",
+      "vod": "twitch:v2911620180",
+      "vod_url": "https://www.twitch.tv/videos/2911620180",
+      "why": "Suspected undercover cops fumble a weed quiz with 'one communal phone' and 'sativa THC', then get accused, an escalating bit that chat loved."
+    },
     "3bae37770e": {
       "asset_deleted": true,
       "asset_id": 668634387,
@@ -6827,7 +6869,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-27T11:10:31.708947+00:00"
+      "ok": "2026-10-27T11:27:28.154388+00:00"
     }
   },
   "last_run": {
@@ -6926,7 +6968,7 @@
     "2026-10-24": 0.1549,
     "2026-10-25": 0.0651,
     "2026-10-26": 0.0151,
-    "2026-10-27": 0.0845
+    "2026-10-27": 0.129
   },
   "status_updated": "2026-10-27T10:55:34.987276+00:00",
   "streamers": {
