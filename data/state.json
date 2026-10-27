@@ -2,6 +2,9 @@
   "accounts": {
     "youtube_channel_id": "UCF3_ZOGfs4GeUNCuA6n1wsA"
   },
+  "alerts": {
+    "quiet": "2026-10-27"
+  },
   "campaigns": {
     "flower-in-a-hurricane__music": {
       "auto_clip": false,
@@ -4069,6 +4072,10 @@
             [
               "2026-10-27T07:45:01.225558+00:00",
               1346
+            ],
+            [
+              "2026-10-27T11:10:31.915037+00:00",
+              1348
             ]
           ],
           "hour": "16:00",
@@ -4079,7 +4086,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/JJUrnPfgWfU",
-          "views": 1346
+          "views": 1348
         }
       },
       "punch_at": 18.86,
@@ -6820,7 +6827,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-27T10:55:31.645766+00:00"
+      "ok": "2026-10-27T11:10:31.708947+00:00"
     }
   },
   "last_run": {
