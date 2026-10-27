@@ -1680,6 +1680,7 @@
       "why": "Cinna is stuck incapacitated yelling for help while everyone she could call on gets in cars and leaves, with frantic escalating panic and chat roasting the 'RP'."
     },
     "11175c6ea4": {
+      "asset_deleted": true,
       "asset_id": 674768958,
       "caption": "the investigation over one word is sending me \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-25T10:40:07.968863+00:00",
@@ -1702,6 +1703,7 @@
       "hook_score": 8,
       "id": "11175c6ea4",
       "issue": 31,
+      "issue_closed": true,
       "layout": "cam+fill",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/38dea30e0b/11175c6ea4.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/11175c6ea4.mp4",
@@ -1713,7 +1715,7 @@
       "sent_caption": "the investigation over one word is sending me \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
       "sent_title": "POV: my boss put a bounty on one word \ud83d\udc80 #shorts",
       "start": 39750.0,
-      "status": "approved",
+      "status": "expired",
       "streamer": "xQc",
       "tags": [
         "rp_drama",
@@ -6818,7 +6820,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-27T10:25:36.828660+00:00"
+      "ok": "2026-10-27T10:40:34.997324+00:00"
     }
   },
   "last_run": {
