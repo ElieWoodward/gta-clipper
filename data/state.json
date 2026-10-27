@@ -2599,6 +2599,48 @@
       "vod_url": "https://www.twitch.tv/videos/2901708053",
       "why": "A repair attempt backfires instantly, the chopper catches fire and the group scrambles to blame and haggle on fees."
     },
+    "2d7881b894": {
+      "asset_id": 680848190,
+      "caption": "paid TTS roast and she's begging them to stop \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-27T07:44:58.694810+00:00",
+      "duration": 37.7,
+      "end": 35262.0,
+      "facecam": true,
+      "file": "2d7881b894.mp4",
+      "framing": "Two characters stand close together near center-left, and the webcam sits at the left edge.",
+      "hook": "Chat keeps paying to roast me and I'm begging them to stop \ud83d\ude2d",
+      "hook_options": [
+        "When chat roasts you through TTS and you beg them to stop \ud83d\ude2d",
+        "POV: you tell chat to stop donating because they're roasting you \ud83d\udc80",
+        "Chat paid money to bully me and I'm begging them to stop \ud83d\ude2d",
+        "I told them keep the money \ud83d\udc80",
+        "He's paying $100 just to roast her \ud83d\ude2d",
+        "POV: you beg chat to stop donating because they're roasting you \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "2d7881b894",
+      "issue": 33,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/bb973c602a/2d7881b894.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/2d7881b894.mp4",
+      "posts": {},
+      "punch_at": 24.88,
+      "punch_text": "A better forehead",
+      "said": "That's enough donations. That's enough. No, no, no. You keep it. I don't need the donations. I'm rich. I'm a millionaire. I don't, you dare. Listen here. Listen here. Don't do it. I'm giving you a warning. If you start talking. Someone donated $100 and said, maybe this money can get you a better forehead. I just. For a future. No, no, there's just nobody donating that. There's nobody donating that, is the thing. It's just, there's nobody. It's you. You can keep the goddamn money. You can keep it. I don't want it anymore. I don't want it. My paychatter donated $100 and said, if you were rich, y",
+      "score": 7,
+      "speed": 1.3,
+      "start": 35213.0,
+      "status": "approved",
+      "streamer": "Cinna",
+      "tags": [
+        "reaction",
+        "funny_line"
+      ],
+      "title": "Begging chat to take their money back \ud83d\ude2d",
+      "vod": "twitch:v2911501294",
+      "vod_url": "https://www.twitch.tv/videos/2911501294",
+      "why": "Streamer panics as paid TTS donations keep roasting her, refusing the money; relatable and chat laughed 41x."
+    },
     "3bae37770e": {
       "asset_deleted": true,
       "asset_id": 668634387,
@@ -4021,17 +4063,21 @@
             [
               "2026-10-27T07:10:04.113833+00:00",
               1127
+            ],
+            [
+              "2026-10-27T07:45:01.225558+00:00",
+              1346
             ]
           ],
           "hour": "16:00",
-          "likes": 8,
+          "likes": 9,
           "match": 1.0,
           "posted_at": "2026-10-25T23:52:01.961816+00:00",
           "seen_at": "2026-10-25T23:52:01.961819+00:00",
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/JJUrnPfgWfU",
-          "views": 1127
+          "views": 1346
         }
       },
       "punch_at": 18.86,
@@ -4095,6 +4141,48 @@
       "vod": "twitch:v2900719118",
       "vod_url": "https://www.twitch.tv/videos/2900719118",
       "why": "A friendly smile test gets roasted, then a stranger interrupts and gets snapped at, proving the roast right."
+    },
+    "838d4951bc": {
+      "asset_id": 680842957,
+      "caption": "the fruitygram roast then she's being NICE about it \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-27T07:42:21.963528+00:00",
+      "duration": 36.2,
+      "end": 34065.0,
+      "facecam": true,
+      "file": "838d4951bc.mp4",
+      "framing": "Two characters stand close together near the center-left, and the facecam sits at the left.",
+      "hook": "POV: you get a fruit basket with a joint and an insult \ud83d\udc80",
+      "hook_options": [
+        "POV: your delivery job is a fruit basket with a rude message \ud83d\udc80",
+        "He sent a fruit basket just to say this \ud83d\ude2d",
+        "When the fruit basket comes with a message from your enemy \ud83d\ude2d\ud83d\udc80",
+        "I got a fruit basket with a joint and an insult \ud83d\udc80",
+        "Who sends a fruit basket to roast somebody \ud83d\ude2d",
+        "He sent a fruit basket just to say this \ud83d\ude2d"
+      ],
+      "hook_score": 8,
+      "id": "838d4951bc",
+      "issue": 32,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/bb973c602a/838d4951bc.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/838d4951bc.mp4",
+      "posts": {},
+      "punch_at": 28.92,
+      "punch_text": "Lose some weight, fatty",
+      "said": "am yes okay it's a fruit yeah with a recycled basket wait and it comes with a joint oh my oh my god wait this is sick thank you it's my service I do called fruit of grants I love their fruit a gram is from Zahn his message is lose some weight fatty wow that's his message that that was okay thank you but I I",
+      "score": 7,
+      "speed": 1.3,
+      "start": 34018.0,
+      "status": "approved",
+      "streamer": "Cinna",
+      "tags": [
+        "rp_drama",
+        "funny_line"
+      ],
+      "title": "He paid for a fruit basket just to insult her \ud83d\udc80",
+      "vod": "twitch:v2911501294",
+      "vod_url": "https://www.twitch.tv/videos/2911501294",
+      "why": "A stranger delivers a gift basket with a brutal message and the recipient awkwardly reassures the messenger; chat exploded 59x."
     },
     "87c90d10bd": {
       "asset_deleted": true,
@@ -6730,7 +6818,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-27T07:25:05.116089+00:00"
+      "ok": "2026-10-27T07:45:01.060156+00:00"
     }
   },
   "last_run": {
@@ -6827,7 +6915,8 @@
     "2026-10-23": 0.0984,
     "2026-10-24": 0.1549,
     "2026-10-25": 0.0651,
-    "2026-10-26": 0.0151
+    "2026-10-26": 0.0151,
+    "2026-10-27": 0.0695
   },
   "status_updated": "2026-10-27T06:55:14.807084+00:00",
   "streamers": {
