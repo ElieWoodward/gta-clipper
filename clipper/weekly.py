@@ -87,7 +87,7 @@ def due(cfg, st=None, now=None):
 CRITERIA = ["{period: LAST_WEEK, sort: VIEWS_DESC}", "{filter: LAST_WEEK}"]
 
 
-def top_clips(games, n=60):
+def top_clips(games, n=100):
     """The most-viewed Twitch clips of the past week in these categories, best first."""
     from . import twitch
     out = []
@@ -108,8 +108,8 @@ def top_clips(games, n=60):
                             "created": c.get("createdAt"), "login": (b.get("login") or "").lower(),
                             "name": b.get("displayName") or b.get("login") or "?",
                             "lang": ((b.get("broadcastSettings") or {}).get("language") or "").upper(),
-                            "vid": (c.get("video") or {}).get("id"), "offset": c.get("videoOffsetSeconds")})
-            break
+                            "vid": (c.get("video") or {}).get("id"), "offset": c.get("videoOffsetSeconds"),
+                            "shape": crit})
     out = [c for c in out if c["slug"]]
     return sorted({c["slug"]: c for c in out}.values(), key=lambda c: -c["views"])
 
@@ -189,7 +189,7 @@ def stats(msgs, clip_start, dur, before=90):
     for t, _, _, frags in msgs:
         if clip_start <= t - CHAT_DELAY < clip_start + dur:
             text = " ".join(f[0] for f in frags).strip()
-            toks = re.findall(r"[A-Za-z0-9']{2,20}", text)
+            toks = re.findall(r"[A-Za-z0-9']{3,20}", text)
             if 0 < len(toks) <= 3:
                 words[" ".join(toks).upper()] += 1
             else:
@@ -512,6 +512,9 @@ def build(cfg, out_dir, test=False, ff=None):
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     clips = top_clips(games)
+    if test:   # what Twitch returned, for checking the ranking source
+        (out_dir / "top.json").write_text(json.dumps([{k: c[k] for k in ("name", "views", "lang", "created", "title", "shape") if k in c}
+                                                     for c in clips[:25]], indent=1))
     picked = pick(clips, dict(s, target_minutes=1.2, max_clips=3) if test else s)
     if len(picked) < (2 if test else 5):
         raise RuntimeError(f"only {len(picked)} usable clips this week in {', '.join(games)}")
@@ -625,8 +628,10 @@ def job():
         for i, frac in enumerate((0.02, 0.3, 0.6, 0.9)):
             frame_at(ep["video"], ep["seconds"] * frac, prev / "previews" / f"weekly_{i}.jpg", ff)
         shutil.copy(ep["thumb"], prev / "previews" / "weekly_thumb.jpg")
-        (prev / "summary.json").write_text(json.dumps({k: v for k, v in ep.items() if k not in ("video", "thumb")},
-                                                      indent=1, default=str))
+        summ = {k: v for k, v in ep.items() if k not in ("video", "thumb")}
+        top = out / "top.json"
+        summ["twitch_top"] = json.loads(top.read_text()) if top.exists() else None
+        (prev / "summary.json").write_text(json.dumps(summ, indent=1, default=str))
         return ep
     _, url = services.release_upload(ep["video"], ep["video"].name)
     mail.send(f"Weekly video ready: {ep['title']}", email_text(ep, url), attachment=ep["thumb"],
