@@ -92,4 +92,4 @@ Example: the weekly video copies the independent "MOST VIEWED Twitch Clips of Th
   `preflight` job prints every check.
 - Twitch GQL sometimes answers "service error" for `user.videos`; the code falls back to yt-dlp.
 - Big streamers start in Just Chatting and switch to GTA later; `twitch.chapters()` handles that. Streams run 12 to
-  14 hours; `max_vod_hours` is 16.
+  14 hours, sometimes 16+; `max_vod_hours` is 30.
