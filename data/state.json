@@ -4498,6 +4498,53 @@
       "vod_url": "https://www.twitch.tv/videos/2900719118",
       "why": "A friendly smile test gets roasted, then a stranger interrupts and gets snapped at, proving the roast right."
     },
+    "7aa0c7ad7c": {
+      "asset_id": 686635838,
+      "caption": "the officer's story fell apart so fast \ud83d\ude2d",
+      "created": "2026-10-28T23:03:56.599663+00:00",
+      "duration": 36.2,
+      "email_message_id": "<179322865243.3225.18378415004922794109@gmail.com>",
+      "emailed_at": "2026-10-28T23:04:18.873215+00:00",
+      "end": 20660.0,
+      "facecam": true,
+      "file": "7aa0c7ad7c.mp4",
+      "framing": "The purple-haired lawyer and the police officer on the stand are close together left of center, and the webcam sits in the left-middle area.",
+      "hook": "Cop testifies about a call he was knocked out for \ud83d\udc80",
+      "hook_options": [
+        "POV: the cop witness can't remember being shot \ud83d\udc80",
+        "Cop swears he was shot but also unconscious \ud83d\ude2d",
+        "He caught the officer lying on the stand \ud83d\udc80",
+        "POV: you cross-examine a cop who passed out mid-story \ud83d\ude2d",
+        "Bro's testimony falls apart in 10 seconds \ud83d\udc80",
+        "POV: the cop witness can't remember being shot \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "7aa0c7ad7c",
+      "issue": 36,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/85f231e9c6/7aa0c7ad7c.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/7aa0c7ad7c.mp4",
+      "posts": {},
+      "punch_at": 0,
+      "punch_text": "",
+      "said": "about the shoot at the black car that shots rang out? I was not conscious, I believe, for that. I don't recall. You were not conscious at the time of the thing you just testified for? No. The thing is, I think the timeline you concluded, I was shot multiple times way, way before this black car was called on the radio. My other car. He's still here? And we shot one of the suspects. I believe that was the female. And how can you testify about what Denzel said if you said you can't testify because you went down? How does that make sense?",
+      "score": 7,
+      "sent_caption": "the officer's story fell apart so fast \ud83d\ude2d\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
+      "sent_title": "Cop testifies about something he was unconscious for \ud83d\udc80 #shorts",
+      "speed": 1.3,
+      "start": 20613.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "rp_drama",
+        "police",
+        "funny_line"
+      ],
+      "title": "Cop testifies about something he was unconscious for \ud83d\udc80",
+      "vod": "twitch:v2912487657",
+      "vod_url": "https://www.twitch.tv/videos/2912487657",
+      "why": "A cop witness walks into a contradiction (testifying about a callout he says he was out cold for) and the cross-examiner shuts it down."
+    },
     "838d4951bc": {
       "asset_deleted": true,
       "asset_id": 680842957,
@@ -5992,6 +6039,48 @@
       "vod_url": "https://www.twitch.tv/videos/2907037919",
       "why": "Frantic shootout with cops, streamer breathless and panicking afterwards; heavily clipped by viewers."
     },
+    "bc5b727dc4": {
+      "asset_id": 686631158,
+      "caption": "the cop on the stand got cooked so bad \ud83d\udc80",
+      "created": "2026-10-28T23:02:02.324935+00:00",
+      "duration": 33.8,
+      "end": 21612.0,
+      "facecam": true,
+      "file": "bc5b727dc4.mp4",
+      "framing": "The purple-haired character and the map board or officer are spread apart, so more of the frame needs to show.",
+      "hook": "He objected to himself in court \ud83d\ude2d",
+      "hook_options": [
+        "POV: you cross-examine the cop who shot at you \ud83d\udc80",
+        "He objected to himself in court \ud83d\ude2d",
+        "Bro got a cop to question himself on the stand \ud83d\udc80",
+        "POV: the witness gets declared hostile mid-question \ud83d\ude2d",
+        "I made a cop contradict himself in court \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "bc5b727dc4",
+      "issue": 35,
+      "layout": "cam+wide",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/85f231e9c6/bc5b727dc4.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/bc5b727dc4.mp4",
+      "posts": {},
+      "punch_at": 34.92,
+      "punch_text": "Witness is hostile",
+      "said": "Yeah, answer it. Brother, we're talking about you. Would it take more time than immediately or three seconds to make a U-turn from the edge of the bridge to the opposite side? Yeah, but you were... Your car already got open fire. No more strikes. Motionless strike. Motionless strike. After a yes, strike everything. Get impressed, Dan. brother you I wish you were here earlier to watch him literally question himself witness is hostile witness is hostile he may be excused witness is hostile he even objected to himself he objected his",
+      "score": 7,
+      "speed": 1.3,
+      "start": 21568.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "rp_drama",
+        "funny_line",
+        "police"
+      ],
+      "title": "He objected to himself in court \ud83d\ude2d",
+      "vod": "twitch:v2912487657",
+      "vod_url": "https://www.twitch.tv/videos/2912487657",
+      "why": "Courtroom RP where the questioning gets so tangled the lawyer ends up objecting to himself and calling the witness hostile."
+    },
     "c01052b884": {
       "asset_deleted": true,
       "asset_id": 658784066,
@@ -7395,9 +7484,16 @@
         "date": "2026-10-27",
         "subject": "Post now (YouTube): POV: you get a fruit basket with a joint and an insult \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-10-28T23:04:18.873215+00:00",
+        "clip": "7aa0c7ad7c",
+        "date": "2026-10-28",
+        "subject": "Post now: Cop testifies about a call he was knocked out for \ud83d\udc80 (7/10)",
+        "test": false
       }
     ],
-    "replies_at": "2026-10-28T21:59:19.501763+00:00"
+    "replies_at": "2026-10-28T23:04:09.907452+00:00"
   },
   "health": {
     "post": {
@@ -7413,7 +7509,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-28T22:44:20.073843+00:00"
+      "ok": "2026-10-28T23:03:58.833174+00:00"
     }
   },
   "last_run": {
@@ -7519,9 +7615,9 @@
     "2026-10-25": 0.0651,
     "2026-10-26": 0.0151,
     "2026-10-27": 0.1446,
-    "2026-10-28": 0.0155
+    "2026-10-28": 0.0762
   },
-  "status_updated": "2026-10-28T21:59:21.126388+00:00",
+  "status_updated": "2026-10-28T23:04:19.958333+00:00",
   "streamers": {
     "Cinna": {
       "facecam": true
