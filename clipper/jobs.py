@@ -98,6 +98,7 @@ def process():
             log.info("queue already has %d clips; skipping", len(_queued(state)))
             return
     vods = fetch.list_new_vods(cfg, state)
+    live_now = []
     if vods:
         _preflight_if_due(cfg, state, vods[0])   # stop before downloading if anything is broken
     for vod in vods:
@@ -107,6 +108,7 @@ def process():
             _process_vod(cfg, state, vod)
         except fetch.StillLive:
             log.info("%s is still live; will pick it up after the stream ends", vod["id"])
+            live_now.append(vod["streamer"]["name"])
             continue
         except Exception as e:  # one bad VOD shouldn't stop the rest
             log.exception("failed on %s: %s", vod["id"], e)
@@ -120,6 +122,10 @@ def process():
         state["processed_vods"].append(vod["id"])
         state["processed_vods"] = state["processed_vods"][-500:]
         save_state(state)
+    # one line on the run page: what the stream check saw (why there may be no new clips)
+    print(f"::notice::stream check: {len(vods)} new GTA stream(s) found"
+          + (f"; still live, waiting for the end: {', '.join(live_now)}" if live_now else "")
+          + (f"; listing: {fetch.LISTING_NOTES[-1]}" if getattr(fetch, "LISTING_NOTES", None) else ""), flush=True)
 
 
 def _preflight_if_due(cfg, state, vod, hours=12):

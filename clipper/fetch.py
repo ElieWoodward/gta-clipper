@@ -13,9 +13,13 @@ LISTING_URLS = {
 }
 
 
+LISTING_NOTES = []   # why streams were skipped, for the run page
+
+
 def list_new_vods(cfg, state):
     """Return [{id, url, title, streamer}] not yet processed."""
     f = cfg["fetch"]
+    skipped = []
     seen = set(state["processed_vods"])
     out = []
     # Streamers who show their face go first: when the queue fills up, their clips are the ones that get made.
@@ -47,9 +51,11 @@ def list_new_vods(cfg, state):
                 continue
             dur = e.get("duration") or 0
             if dur and dur > f["max_vod_hours"] * 3600:
+                skipped.append(f"{s['name']} {e.get('id')} too long")
                 continue
             ts = e.get("timestamp")
             if ts and datetime.fromtimestamp(ts, timezone.utc) < datetime.now(timezone.utc) - timedelta(days=f["max_vod_age_days"]):
+                skipped.append(f"{s['name']} {e.get('id')} too old")
                 continue
             pat = f.get("title_match") or ""
             game, ranges = (twitch_game(vid, f.get("game_match") or "grand theft auto|gta")
@@ -57,11 +63,14 @@ def list_new_vods(cfg, state):
             if pat and game:
                 if not ranges:
                     log.info("skipping %s: category is %s", vid, game)
+                    skipped.append(f"{s['name']} {e.get('id')} not GTA ({game})")
                     continue  # Twitch says it's another game for the whole stream
             elif pat and not re.search(pat, e.get("title") or "", re.I):
+                skipped.append(f"{s['name']} {e.get('id')} title not GTA")
                 continue  # title doesn't look like GTA
             out.append({"id": vid, "url": e.get("url") or e.get("webpage_url"), "title": e.get("title", ""),
                         "game": game, "gta_ranges": ranges, "streamer": s})
+    LISTING_NOTES.append("; ".join(skipped[:8]) or "nothing skipped")
     for u in cfg.get("manual_urls") or []:
         vid = f"manual:{u}"
         if vid not in seen:
