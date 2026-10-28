@@ -30,6 +30,15 @@ emails you a ready-to-post clip at each posting time. Everything runs on GitHub 
 7. **It watches its own health.** Claude spend is capped at $1 a day. If a job fails twice in a row, or clips are
    waiting but nothing has been emailed for 36 hours, you get one alert email saying what broke.
 
+## Weekly long video (YouTube)
+
+Every Sunday morning you get an email with a download link for "GTA RP MOST VIEWED Twitch Clips of The Week! #N":
+the week's most-watched GTA clips on Twitch, counted down to #1 by their Twitch views, each with the live chat
+replay beside it and a hype meter showing how hard chat went. About 10 minutes, 16:9, with a thumbnail, title,
+description, chapters and streamer credits ready to paste, plus upload steps. From GTA 6's launch it becomes
+"GTA 6 MOST VIEWED Twitch Clips of The Week!" starting at #1. It copies the numbered weekly series independent
+channels run for other games (Rivals Guides started theirs the week Marvel Rivals came out).
+
 ## GTA 6 launch day
 
 Nothing to edit on the day. A week before (Nov 12) you get an email with the steps to set up automatic posting

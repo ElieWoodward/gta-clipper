@@ -107,6 +107,15 @@ live:
   post_now_score: 8               # live clips scoring this or more post right away instead of waiting for a slot
   extra_posts_per_day: 1          # live posts allowed on top of the daily ramp
 
+weekly:                           # long YouTube video every Sunday: "GTA RP MOST VIEWED Twitch Clips of The Week! #N"
+  enabled: true                   # (becomes "GTA 6 ..." from launch day, starting again at #1)
+  weekday: 6                      # 0 = Monday ... 6 = Sunday
+  hour: 9                         # local time it starts building (takes about 20 minutes)
+  target_minutes: 10              # clips are added, most viewed first, until the video is about this long
+  max_clips: 18
+  min_clip_seconds: 10
+  languages: [EN]                 # only streams in these languages
+
 launch:                           # GTA 6 launch day: switches on by itself, nothing to edit on the day
   enabled: true
   date: "2026-11-19"              # if it moves, reply "launch YYYY-MM-DD" to any bot email (or edit this)

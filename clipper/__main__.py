@@ -105,7 +105,7 @@ def _live():
 
 CMDS = {"process": jobs.process, "post": jobs.post, "analytics": jobs.analytics, "learn": jobs.learn,
         "accounts": lambda: print(services.blotato_accounts()), "probe": probe, "preflight": jobs.preflight_only, "live": _live, "campaigns": _campaigns, "check_streamers": check_streamers,
-        "launch_check": _launch_check}
+        "launch_check": _launch_check, "weekly": lambda: __import__("clipper.weekly", fromlist=["job"]).job()}
 
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in CMDS:

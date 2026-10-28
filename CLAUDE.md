@@ -33,6 +33,11 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
     Launch days use `timing.best_times` (exploit only). `refresh_streamers` (analytics job) re-picks extra
     streamers daily into `state["launch"]["streamers"]`. Claude cap: `launch.daily_cap` ($1, $2 from 3 posts/day,
     `launch.claude_usd_per_day` from launch).
+  - `weekly.py`: Sunday's long YouTube video, "GTA RP MOST VIEWED Twitch Clips of The Week! #N" (GTA 6 from launch,
+    restarting at #1). Top clips of the week from Twitch's game clip list, ranked by Twitch views, counted down,
+    each 16:9 with the real chat replay (PIL frames) and a hype meter, rank cards, chapters, thumbnail. No Claude
+    calls. Runs in `.github/workflows/weekly.yml` (own concurrency, writes only `data/weekly.json`), started by the
+    heartbeat. `preview` input makes a 3-clip test whose stills go to `test-previews`.
   - `common.py`: config, state. `data/state.json` is the main state; `data/live.json` is written only by the live
     watcher and merged in on load.
 - `.github/workflows/clipper.yml`: post every 15 min, process hourly, analytics daily, learn Mondays, plus manual
@@ -42,6 +47,13 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
   GitHub skips many scheduled runs, so the watcher is also the heartbeat: it dispatches clipper.yml `post` every
   15 min and `process` hourly, and catches up `analytics`/`learn` from `state["last_run"]`.
 - `config.yaml`: every setting Elie can change. `tests/test_pipeline.py`: offline end-to-end test, no keys needed.
+
+## How we decide what to build (Elie's rule)
+
+Figure out what we want, then find someone already doing it successfully, and use what they do as the template.
+Research competitors with real numbers (Social Blade, vidIQ, the actual videos) before building a new feature or
+format, check they're comparable (independent, not the game's own company), and say which template a feature copies.
+Example: the weekly video copies the independent "MOST VIEWED Twitch Clips of The Week" series (Rivals Guides).
 
 ## Rules
 

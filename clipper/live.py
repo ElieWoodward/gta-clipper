@@ -367,6 +367,10 @@ class Heartbeat:
         if local.hour >= 7 and stale("analytics", timedelta(hours=20)):
             self.started["analytics"] = now.isoformat()
             self.dispatch("clipper.yml", "analytics")
+        from . import weekly
+        if weekly.due(self.cfg) and stale("weekly", timedelta(hours=20)):   # Sunday's long video
+            self.started["weekly"] = now.isoformat()
+            self.dispatch("weekly.yml")
         if local.weekday() == 0 and local.hour >= 8 and stale("learn", timedelta(days=6)):
             self.started["learn"] = now.isoformat()
             self.dispatch("clipper.yml", "learn")

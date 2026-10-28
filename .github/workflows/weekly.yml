@@ -1,0 +1,85 @@
+name: weekly
+
+# Sunday's long YouTube video ("GTA RP MOST VIEWED Twitch Clips of The Week! #N"). Started by the live watcher's
+# heartbeat on Sunday morning; the cron below is a backup. Own concurrency group: it takes ~20 minutes and only
+# writes data/weekly.json, so it never holds up the posting checks.
+on:
+  schedule:
+    - cron: "13 17,19 * * 0"     # Sunday ~10am/12pm Pacific (backup)
+  workflow_dispatch:
+    inputs:
+      preview:
+        description: "Make a 3-clip preview (stills go to the test-previews branch), no email"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: clipper-weekly
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Runner image version (cache key)
+        id: img
+        run: echo "v=${ImageOS}-${ImageVersion}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore ffmpeg and fonts packages
+        uses: actions/cache@v4
+        with:
+          path: ~/apt-debs
+          key: media-debs-${{ steps.img.outputs.v }}-v1
+
+      - name: Install ffmpeg and fonts
+        timeout-minutes: 25
+        run: bash .github/scripts/install-media.sh
+
+      - run: pip install -q -r requirements.txt
+
+      - name: Build the weekly video
+        env:
+          GMAIL_ADDRESS: ${{ secrets.GMAIL_ADDRESS }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_SOURCE: ${{ inputs.preview && 'weekly-preview' || '' }}
+          DRY_RUN: ${{ inputs.preview && '1' || '' }}
+        run: |
+          set -o pipefail
+          python -m clipper weekly 2>&1 | tee run.log || {
+            tail -n 8 run.log | sed 's/%/%25/g' | while IFS= read -r l; do echo "::error::$l"; done
+            exit 1
+          }
+
+      - name: Publish previews
+        if: inputs.preview
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p /tmp/pv && cp -r test-output/summary.json test-output/previews /tmp/pv/ 2>/dev/null || true
+          cd /tmp/pv && git init -q && git checkout -q -b test-previews && git add -A
+          git -c user.name=clipper-bot -c user.email=clipper-bot@users.noreply.github.com commit -qm "weekly preview ${{ github.run_id }}"
+          git push -qf "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git" test-previews
+
+      - name: Save state
+        if: always() && !inputs.preview
+        run: |
+          git config user.name "clipper-bot"
+          git config user.email "clipper-bot@users.noreply.github.com"
+          git add data/weekly.json data/mail_backoff.json 2>/dev/null || true
+          git diff --cached --quiet && exit 0
+          git commit -m "state: weekly $(date -u +%FT%TZ)"
+          for i in 1 2 3; do git pull --rebase -X theirs -q && git push -q && exit 0; sleep 5; done
+          exit 1

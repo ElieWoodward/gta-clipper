@@ -187,7 +187,8 @@ def release_upload(path, name=None):
     with open(path, "rb") as f:
         r = requests.post(f"https://uploads.github.com/repos/{_repo()}/releases/{rel['id']}/assets",
                           params={"name": name}, data=f, timeout=600,
-                          headers=dict(_gh(), **{"Content-Type": "video/mp4"}))
+                          headers=dict(_gh(), **{"Content-Type": "image/jpeg" if str(name).endswith(".jpg")
+                                                 else "video/mp4"}))
     r.raise_for_status()
     a = r.json()
     return a["id"], a["browser_download_url"]

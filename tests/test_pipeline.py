@@ -1048,3 +1048,77 @@ health.check_quiet(cfg, _h, 1)
 assert _alerts == ["quiet"]
 health.alert = _ha
 print("QUIET ALERT OK")
+
+# ---------- 27. weekly long video: most-viewed clips of the week, chat replay, hype meter, chapters, email ----------
+from clipper import weekly  # noqa: E402
+import random as _rnd  # noqa: E402
+_wclips = [{"slug": f"s{i}", "title": t, "views": v, "duration": d, "created": "", "login": l, "name": n, "lang": g,
+            "vid": "123", "offset": 1000 + i * 500} for i, (t, v, d, l, n, g) in enumerate([
+    ("bro got pulled over for the 5th time 💀", 412000, 12, "xqc", "xQc", "EN"),
+    ("CINNA HEIST GONE WRONG", 233000, 11, "cinna", "Cinna", "EN"),
+    ("same moment again", 150000, 11, "cinna", "Cinna", "EN"),          # same moment as #2: skipped
+    ("clip en español", 120000, 15, "auronplay", "auronplay", "ES"),     # not English: skipped
+    ("he really said that to a cop", 98000, 10, "vanillamace", "vanillamace", "EN"),
+    ("too short", 90000, 5, "kai", "Kai", "EN")])]
+_wclips[2]["offset"] = _wclips[1]["offset"] + 20
+_picked = weekly.pick(list(_wclips), dict(weekly.DEFAULTS, target_minutes=10))
+assert [c["login"] for c in sorted(_picked, key=lambda c: c["rank"])] == ["xqc", "cinna", "vanillamace"], _picked
+assert [c["rank"] for c in _picked] == [3, 2, 1]   # counted down to #1
+weekly.top_clips = lambda games, n=60: [dict(c) for c in _wclips]
+_wrun = weekly.run
+def _fake_ytdlp(cmd, **kw):
+    if cmd[0] == "yt-dlp":
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=size=1920x1080:rate=30:duration=13",
+                        "-f", "lavfi", "-i", "sine=frequency=330:duration=13", "-c:v", "libx264", "-preset", "ultrafast",
+                        "-c:a", "aac", cmd[cmd.index("-o") + 1]], check=True)
+        return ""
+    return _wrun(cmd, **kw)
+weekly.run = _fake_ytdlp
+def _fake_chat(vid, start, stop, max_pages=300):
+    out, t = [], start
+    while t < stop:
+        t += _rnd.uniform(0.05, 0.2) if t > start + 92 else _rnd.uniform(0.8, 1.6)
+        out.append((t, "viewer", "#1E90FF", [(_rnd.choice(["KEKW", "NO WAY", "he really did that"]), None)]))
+    return out
+weekly.chat_window = _fake_chat
+_wc = _yaml.safe_load((TMP / "config.yaml").read_text())
+_wc["launch"]["enabled"] = False   # section 21 turned launch day on; the GTA 6 series is checked at the end
+(TMP / "config.yaml").write_text(_yaml.safe_dump(_wc, sort_keys=False))
+_wcfg = common.load_config()
+if weekly.STATE.exists():
+    weekly.STATE.unlink()
+_ep = weekly.build(_wcfg, TMP / "weekly_out", ff="ffmpeg", test=True)
+_info = json.loads(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration:stream=width,height",
+                                   "-of", "json", str(_ep["video"])], capture_output=True, text=True).stdout)
+assert _info["streams"][0]["width"] == 1920 and _info["streams"][0]["height"] == 1080
+assert abs(float(_info["format"]["duration"]) - _ep["seconds"]) < 1.0, (_info, _ep["seconds"])
+assert _ep["title"] == "GTA RP MOST VIEWED Twitch Clips of The Week! #1"
+_lines = _ep["description"].splitlines()
+assert "0:00 #3 vanillamace: he really said that to a cop" in _lines and any(l.startswith("0:") and "#1 xQc" in l for l in _lines)
+assert "xQc: https://twitch.tv/xqc" in _lines
+_st = weekly.stats(_fake_chat("1", 900, 1030), 1000, 12)
+assert _st["peak"] > 3 and _st["top_word"] and _st["have_chat"]
+# the real job (not a preview): uploads, emails the link with the thumbnail, counts the episode
+weekly.build = (lambda _b: (lambda cfg, out, test=False, ff=None: _b(cfg, out, test=True, ff="ffmpeg")))(weekly.build)
+os.environ.pop("TEST_SOURCE", None)
+os.environ["FORCE"] = "1"
+sent.clear()
+mail.send = lambda subject, text, html=None, attachment=None, attachment_name=None, maintype="video", subtype="mp4": \
+    sent.append({"subject": subject, "text": text, "attach": attachment, "type": maintype}) or "<w@x>"
+weekly.job()
+assert sent[-1]["subject"].startswith("Weekly video ready: GTA RP MOST VIEWED") and sent[-1]["type"] == "image"
+assert "studio.youtube.com" in sent[-1]["text"] and "=== DESCRIPTION ===" in sent[-1]["text"]
+assert weekly.load()["series"]["GTA RP"]["episode"] == 1
+weekly.job()
+assert weekly.load()["series"]["GTA RP"]["episode"] == 2   # numbered series
+# due on Sunday morning, once a week
+from datetime import datetime as _d2  # noqa: E402
+_sun = _d2(2026, 11, 1, 18, 0, tzinfo=_tz.utc)   # Sunday 10am Pacific
+assert weekly.due(_wcfg, {}, _sun) and not weekly.due(_wcfg, {"last_made": "2026-11-01T17:30:00+00:00"}, _sun)
+assert not weekly.due(_wcfg, {}, _sun - timedelta(days=1))
+assert not weekly.due(_wcfg, {"fail": {"date": "2026-11-01", "n": 3}}, _sun)
+_wc["launch"].update(enabled=True, date=common.now_local(_wcfg).date().isoformat())
+(TMP / "config.yaml").write_text(_yaml.safe_dump(_wc, sort_keys=False))
+assert weekly.series(common.load_config())[0] == "GTA 6"   # from launch day the series is GTA 6, from #1
+weekly.run = _wrun
+print("WEEKLY OK")

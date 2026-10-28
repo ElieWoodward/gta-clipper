@@ -103,7 +103,7 @@ def check_login():
     m.logout()
 
 
-def send(subject, text, html=None, attachment=None, attachment_name=None):
+def send(subject, text, html=None, attachment=None, attachment_name=None, maintype="video", subtype="mp4"):
     """Send to NOTIFY_EMAIL. Returns the Message-ID (replies point back to it)."""
     sender = require_env("GMAIL_ADDRESS")
     msg = EmailMessage()
@@ -117,7 +117,7 @@ def send(subject, text, html=None, attachment=None, attachment_name=None):
         msg.add_alternative(html, subtype="html")
     if attachment:
         with open(attachment, "rb") as f:
-            msg.add_attachment(f.read(), maintype="video", subtype="mp4",
+            msg.add_attachment(f.read(), maintype=maintype, subtype=subtype,
                                filename=attachment_name or os.path.basename(str(attachment)))
     s = _login_smtp()
     try:
