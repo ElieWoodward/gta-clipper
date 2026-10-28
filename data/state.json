@@ -4359,6 +4359,8 @@
       "caption": "the fruitygram roast then she's being NICE about it \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-27T07:42:21.963528+00:00",
       "duration": 36.2,
+      "email_message_id": "<179315716708.2360.10368196261860717060@gmail.com>",
+      "emailed_at": "2026-10-28T03:12:57.733372+00:00",
       "end": 34065.0,
       "facecam": true,
       "file": "838d4951bc.mp4",
@@ -4383,6 +4385,8 @@
       "punch_text": "Lose some weight, fatty",
       "said": "am yes okay it's a fruit yeah with a recycled basket wait and it comes with a joint oh my oh my god wait this is sick thank you it's my service I do called fruit of grants I love their fruit a gram is from Zahn his message is lose some weight fatty wow that's his message that that was okay thank you but I I",
       "score": 7,
+      "sent_caption": "the fruitygram roast then she's being NICE about it \ud83d\ude2d\ud83d\udc80\n\nStreamer: Cinna\n#gta6 #gtarp #gta #funny #fyp #cinna",
+      "sent_title": "He paid for a fruit basket just to insult her \ud83d\udc80 #shorts",
       "speed": 1.3,
       "start": 34018.0,
       "status": "approved",
@@ -7026,6 +7030,13 @@
         "date": "2026-10-27",
         "subject": "Post now (YouTube): Chat keeps paying to roast me and I'm begging them to stop \ud83d\ude2d (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-10-28T03:12:57.733372+00:00",
+        "clip": "838d4951bc",
+        "date": "2026-10-27",
+        "subject": "Post now (YouTube): POV: you get a fruit basket with a joint and an insult \ud83d\udc80 (7/10)",
+        "test": false
       }
     ],
     "replies_at": "2026-10-28T02:57:32.735806+00:00"
@@ -7044,7 +7055,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-28T02:57:21.805272+00:00"
+      "ok": "2026-10-28T03:12:34.935480+00:00"
     }
   },
   "last_run": {
