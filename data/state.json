@@ -3319,6 +3319,10 @@
             [
               "2026-10-28T06:42:57.591033+00:00",
               8
+            ],
+            [
+              "2026-10-28T06:47:33.690514+00:00",
+              7
             ]
           ],
           "hour": "22:00",
@@ -3329,7 +3333,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/WdH-GrgdRfQ",
-          "views": 8
+          "views": 7
         }
       },
       "punch_at": 16.34,
@@ -3437,6 +3441,10 @@
             [
               "2026-10-28T06:42:57.591061+00:00",
               10
+            ],
+            [
+              "2026-10-28T06:47:33.690537+00:00",
+              9
             ]
           ],
           "hour": "20:00",
@@ -3447,7 +3455,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/ogRQvVPGjT4",
-          "views": 10
+          "views": 9
         }
       },
       "punch_at": 0,
@@ -4470,6 +4478,10 @@
             [
               "2026-10-28T06:42:57.591081+00:00",
               897
+            ],
+            [
+              "2026-10-28T06:47:33.690559+00:00",
+              899
             ]
           ],
           "hour": "20:00",
@@ -4480,7 +4492,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/CDAUFVDBg-I",
-          "views": 897
+          "views": 899
         }
       },
       "punch_at": 28.92,
@@ -6459,6 +6471,10 @@
             [
               "2026-10-28T06:27:49.138800+00:00",
               9
+            ],
+            [
+              "2026-10-28T06:47:33.690622+00:00",
+              8
             ]
           ],
           "hour": "19:00",
@@ -6469,7 +6485,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/kuiXalVPVVs",
-          "views": 9
+          "views": 8
         }
       },
       "punch_at": 22.84,
@@ -6937,6 +6953,10 @@
             [
               "2026-10-28T06:42:57.591117+00:00",
               10
+            ],
+            [
+              "2026-10-28T06:47:33.690634+00:00",
+              9
             ]
           ],
           "hour": "20:00",
@@ -6947,7 +6967,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/ogRQvVPGjT4",
-          "views": 10
+          "views": 9
         }
       },
       "punch_at": 19.34,
@@ -7185,7 +7205,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-28T06:42:46.413276+00:00"
+      "ok": "2026-10-28T06:47:22.801142+00:00"
     }
   },
   "last_run": {
