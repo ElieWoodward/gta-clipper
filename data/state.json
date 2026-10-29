@@ -1839,6 +1839,49 @@
       "vod_url": "https://www.twitch.tv/videos/2902461688",
       "why": "She frantically hops into a stranger's car, gets kicked out, then deadpans the explanation; chat erupted."
     },
+    "12c6bac2bb": {
+      "asset_id": 687884532,
+      "caption": "the cop just wanted him out of the car and the game said no \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-29T08:32:19.742292+00:00",
+      "duration": 32.3,
+      "end": 6261.0,
+      "facecam": true,
+      "file": "12c6bac2bb.mp4",
+      "framing": "The car and cop span a wide area and a centered Windows feedback popup appears, so more of the frame should be shown.",
+      "hook": "POV: you lag mid police stop and start claiming seizures \ud83d\udc80",
+      "hook_options": [
+        "POV: your PC freezes mid traffic stop and the cop won't stop yelling \ud83d\udc80",
+        "He told the cops he's having a seizure to get out of a ticket \ud83d\ude2d",
+        "Chat, his game bugged right in front of a cop \ud83d\udc80",
+        "Who let the cop tase me for lagging \ud83d\ude2d\ud83d\udc80",
+        "I got pulled over and my computer died \ud83d\ude2d",
+        "POV: your PC freezes mid traffic stop and the cop won't stop yelling \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "12c6bac2bb",
+      "issue": 37,
+      "layout": "cam+wide",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/efe06ec976/12c6bac2bb.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/12c6bac2bb.mp4",
+      "posts": {},
+      "punch_at": 4.74,
+      "punch_text": "I'm having a headache!",
+      "said": "I am complying I'm having a seizure I can't do anything bro why does this keep happening anybody press ma'am ma'am I'm having a seizure Oh, there's not really a door for me to remove with the Dolls of Life here. No, just get out of the car! So I think I'm just gonna tase him out of the vehicle. Put that gun away.",
+      "score": 7,
+      "speed": 1.3,
+      "start": 6219,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "police",
+        "funny_line",
+        "chaos"
+      ],
+      "title": "POV: your game freezes while a cop is arresting you \ud83d\udc80",
+      "vod": "twitch:v2913405592",
+      "vod_url": "https://www.twitch.tv/videos/2913405592",
+      "why": "xQc's game glitches during a police stop, so he can't comply. He escalates through 'seizure' to 'headache' while the cop threatens to tase him, and chat explodes."
+    },
     "14fc643cda": {
       "asset_deleted": true,
       "asset_id": 655738034,
@@ -3000,10 +3043,6 @@
           "date": "2026-10-24",
           "history": [
             [
-              "2026-10-26T11:08:03.322629+00:00",
-              10058
-            ],
-            [
               "2026-10-26T11:23:12.531126+00:00",
               10401
             ],
@@ -3238,6 +3277,10 @@
             [
               "2026-10-29T07:00:07.441244+00:00",
               11755
+            ],
+            [
+              "2026-10-29T08:32:21.650881+00:00",
+              11757
             ]
           ],
           "hour": "19:00",
@@ -3248,7 +3291,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/pcS400uUl7c",
-          "views": 11755
+          "views": 11757
         }
       },
       "punch_at": 21.4,
@@ -7711,7 +7754,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-29T08:15:34.087017+00:00"
+      "ok": "2026-10-29T08:32:21.474658+00:00"
     }
   },
   "last_run": {
@@ -7823,7 +7866,8 @@
     "2026-10-25": 0.0651,
     "2026-10-26": 0.0151,
     "2026-10-27": 0.1446,
-    "2026-10-28": 0.0919
+    "2026-10-28": 0.0919,
+    "2026-10-29": 0.0522
   },
   "status_updated": "2026-10-29T08:00:34.623795+00:00",
   "streamers": {
