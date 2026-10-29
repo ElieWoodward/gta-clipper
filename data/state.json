@@ -4519,6 +4519,7 @@
       "why": "A friendly smile test gets roasted, then a stranger interrupts and gets snapped at, proving the roast right."
     },
     "7aa0c7ad7c": {
+      "asset_deleted": true,
       "asset_id": 686635838,
       "caption": "the officer's story fell apart so fast \ud83d\ude2d",
       "created": "2026-10-28T23:03:56.599663+00:00",
@@ -4541,10 +4542,31 @@
       "hook_score": 8,
       "id": "7aa0c7ad7c",
       "issue": 36,
+      "issue_closed": true,
       "layout": "cam+fill",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/85f231e9c6/7aa0c7ad7c.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/7aa0c7ad7c.mp4",
-      "posts": {},
+      "posts": {
+        "tiktok": {
+          "comments": 0,
+          "date": "2026-10-29",
+          "history": [
+            [
+              "2026-10-29T00:14:14.049822+00:00",
+              0
+            ]
+          ],
+          "hour": "17:00",
+          "likes": 0,
+          "match": 1.1,
+          "posted_at": "2026-10-29T00:06:33+00:00",
+          "seen_at": "2026-10-29T00:14:14.049091+00:00",
+          "shares": 0,
+          "status": "published",
+          "url": "https://www.tiktok.com/@wantedlevelclips8/video/7701874444033199390",
+          "views": 0
+        }
+      },
       "punch_at": 0,
       "punch_text": "",
       "said": "about the shoot at the black car that shots rang out? I was not conscious, I believe, for that. I don't recall. You were not conscious at the time of the thing you just testified for? No. The thing is, I think the timeline you concluded, I was shot multiple times way, way before this black car was called on the radio. My other car. He's still here? And we shot one of the suspects. I believe that was the female. And how can you testify about what Denzel said if you said you can't testify because you went down? How does that make sense?",
@@ -4553,7 +4575,7 @@
       "sent_title": "Cop testifies about something he was unconscious for \ud83d\udc80 #shorts",
       "speed": 1.3,
       "start": 20613.0,
-      "status": "approved",
+      "status": "posted",
       "streamer": "xQc",
       "tags": [
         "rp_drama",
@@ -7537,7 +7559,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-28T23:59:22.496425+00:00"
+      "ok": "2026-10-29T00:14:14.049872+00:00"
     }
   },
   "last_run": {
