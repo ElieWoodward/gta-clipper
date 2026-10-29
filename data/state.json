@@ -6106,6 +6106,8 @@
       "caption": "the cop on the stand got cooked so bad \ud83d\udc80",
       "created": "2026-10-28T23:02:02.324935+00:00",
       "duration": 33.8,
+      "email_message_id": "<179323649098.2370.5304845584853784535@gmail.com>",
+      "emailed_at": "2026-10-29T01:14:57.542053+00:00",
       "end": 21612.0,
       "facecam": true,
       "file": "bc5b727dc4.mp4",
@@ -6129,6 +6131,8 @@
       "punch_text": "Witness is hostile",
       "said": "Yeah, answer it. Brother, we're talking about you. Would it take more time than immediately or three seconds to make a U-turn from the edge of the bridge to the opposite side? Yeah, but you were... Your car already got open fire. No more strikes. Motionless strike. Motionless strike. After a yes, strike everything. Get impressed, Dan. brother you I wish you were here earlier to watch him literally question himself witness is hostile witness is hostile he may be excused witness is hostile he even objected to himself he objected his",
       "score": 7,
+      "sent_caption": "the cop on the stand got cooked so bad \ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
+      "sent_title": "He objected to himself in court \ud83d\ude2d #shorts",
       "speed": 1.3,
       "start": 21568.0,
       "status": "approved",
@@ -7553,6 +7557,13 @@
         "date": "2026-10-28",
         "subject": "Post now: Cop testifies about a call he was knocked out for \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-10-29T01:14:57.542053+00:00",
+        "clip": "bc5b727dc4",
+        "date": "2026-10-28",
+        "subject": "Post now: He objected to himself in court \ud83d\ude2d (7/10)",
+        "test": false
       }
     ],
     "replies_at": "2026-10-29T00:59:34.872966+00:00"
@@ -7571,7 +7582,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-29T00:59:23.938512+00:00"
+      "ok": "2026-10-29T01:14:38.443283+00:00"
     }
   },
   "last_run": {
