@@ -1868,6 +1868,7 @@
       "why": "She frantically hops into a stranger's car, gets kicked out, then deadpans the explanation; chat erupted."
     },
     "12c6bac2bb": {
+      "asset_deleted": true,
       "asset_id": 687884532,
       "caption": "the cop just wanted him out of the car and the game said no \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-29T08:32:19.742292+00:00",
@@ -1890,10 +1891,31 @@
       "hook_score": 8,
       "id": "12c6bac2bb",
       "issue": 37,
+      "issue_closed": true,
       "layout": "cam+wide",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/efe06ec976/12c6bac2bb.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/12c6bac2bb.mp4",
-      "posts": {},
+      "posts": {
+        "youtube": {
+          "comments": null,
+          "date": "2026-10-29",
+          "history": [
+            [
+              "2026-10-29T17:16:31.674777+00:00",
+              10
+            ]
+          ],
+          "hour": "10:00",
+          "likes": 4,
+          "match": 1.0,
+          "posted_at": "2026-10-29T17:10:52+00:00",
+          "seen_at": "2026-10-29T17:16:31.674119+00:00",
+          "shares": null,
+          "status": "published",
+          "url": "https://www.youtube.com/shorts/YkTwjOBhzJM",
+          "views": 10
+        }
+      },
       "punch_at": 4.74,
       "punch_text": "I'm having a headache!",
       "said": "I am complying I'm having a seizure I can't do anything bro why does this keep happening anybody press ma'am ma'am I'm having a seizure Oh, there's not really a door for me to remove with the Dolls of Life here. No, just get out of the car! So I think I'm just gonna tase him out of the vehicle. Put that gun away.",
@@ -1902,7 +1924,7 @@
       "sent_title": "POV: your game freezes while a cop is arresting you \ud83d\udc80 #shorts",
       "speed": 1.3,
       "start": 6219,
-      "status": "approved",
+      "status": "posted",
       "streamer": "xQc",
       "tags": [
         "police",
@@ -7893,7 +7915,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-29T17:01:27.528735+00:00"
+      "ok": "2026-10-29T17:16:31.406667+00:00"
     }
   },
   "last_run": {
