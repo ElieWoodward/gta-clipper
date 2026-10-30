@@ -4490,6 +4490,49 @@
       "vod_url": "https://www.twitch.tv/videos/2904505458",
       "why": "A recruit deadpans absurd military stats with a straight face while the bosses react in disbelief."
     },
+    "5e1178b433": {
+      "asset_id": 691923114,
+      "caption": "the notebook made it worth it \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-30T11:35:18.008151+00:00",
+      "duration": 22.3,
+      "end": 30668.0,
+      "facecam": true,
+      "file": "5e1178b433.mp4",
+      "framing": "A webcam sits at the top-left; the action is the incapacitated character and the car near the center of the frame, which fits in a narrow center slice.",
+      "hook": "POV: you tell your crew a priest ruined the heist \ud83d\udc80",
+      "hook_options": [
+        "POV: you tap a guy in the head and he keeps shooting from the floor",
+        "Bro got blasted by a priest hiding behind the counter \ud83d\udc80",
+        "He explains what went wrong in the heist \ud83d\ude2d",
+        "Who gave the priest a gun \ud83d\ude2d\ud83d\udc80",
+        "I got mugged by a guy behind the counter \ud83d\udc80",
+        "Bro got blasted by a priest hiding behind the counter \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "5e1178b433",
+      "issue": 38,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/88fe9b53f7/5e1178b433.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/5e1178b433.mp4",
+      "posts": {},
+      "punch_at": 25.1,
+      "punch_text": "He had a notebook on him",
+      "said": "Did he just bug out? Man, that guy hit every bullet on you, bro. Fuck. I mean, I fucking tapped in his fucking head and he just started blasting from the ground, I don't know. I am here. Let's go. Shit got crazy in there. It's some fucking priest was hidden behind the counter and he got mad at me, I don't know what to tell you. He had a notebook on him. Oh, okay.",
+      "score": 7,
+      "speed": 1.3,
+      "start": 30639.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "funny_line",
+        "chaos",
+        "rp_drama"
+      ],
+      "title": "He got shot up by a priest behind the counter \ud83d\udc80",
+      "vod": "twitch:v2914211670",
+      "vod_url": "https://www.twitch.tv/videos/2914211670",
+      "why": "Crew returns from a robbery gone wrong and xQc deadpans an absurd excuse about a hidden priest; viewers clipped it."
+    },
     "698004e8a7": {
       "asset_deleted": true,
       "asset_id": 671852743,
@@ -6877,6 +6920,48 @@
       "vod_url": "https://www.twitch.tv/videos/2900719118",
       "why": "A plan to dance for the cops backfires instantly when the cop mag dumps him, and he complains about a tough crowd."
     },
+    "c26d4a2630": {
+      "asset_id": 691928414,
+      "caption": "bro really said fuck it and kept going \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-30T11:37:06.223009+00:00",
+      "duration": 23.8,
+      "end": 9288.0,
+      "facecam": true,
+      "file": "c26d4a2630.mp4",
+      "framing": "A group of four characters stands in a circle across the center, and the clip also shows a full-width emote menu, so more of the frame is needed.",
+      "hook": "He freestyled himself into a corner and there's no way out \ud83d\udc80",
+      "hook_options": [
+        "POV: you freestyle and run out of rhymes mid-verse \ud83d\ude2d",
+        "He raps about going to Mars and it falls apart \ud83d\udc80",
+        "Chat, rate this freestyle \ud83d\ude2d",
+        "When the freestyle goes off the rails \ud83d\udc80",
+        "Who let him cook a freestyle \ud83d\ude2d\ud83d\udc80",
+        "POV: you freestyle and run out of rhymes mid-verse \ud83d\ude2d"
+      ],
+      "hook_score": 8,
+      "id": "c26d4a2630",
+      "issue": 39,
+      "layout": "cam+wide",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/88fe9b53f7/c26d4a2630.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/c26d4a2630.mp4",
+      "posts": {},
+      "punch_at": 17.86,
+      "punch_text": "Man's got asthma",
+      "said": "you don't know shit, I just said, that was, jet, I'm taking a jet, I'm flying a jet, I'm taking a jet, I'm flying a jet, and I'm going to Mars, shit man, look at my bars, holy shit, I'm driving a car, holy shit, I'm going so fast, I can't breathe, man's got asthma, holy shit, I don't know what rhymes with asthma, so fuck it, I don't even know what to say, holy shit, I don't know what to say, This jet is so good Hip hip hip hip hip hip hooray Happy birthday Shit You got a song",
+      "score": 7,
+      "speed": 1.3,
+      "start": 9257.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "funny_line",
+        "reaction"
+      ],
+      "title": "POV: you freestyle and can't rhyme asthma \ud83d\ude2d",
+      "vod": "twitch:v2914211670",
+      "vod_url": "https://www.twitch.tv/videos/2914211670",
+      "why": "A committed, terrible freestyle that visibly collapses on the word 'asthma'; chat spammed reactions."
+    },
     "d564c855ac": {
       "asset_deleted": true,
       "asset_id": 647832827,
@@ -8231,7 +8316,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-30T11:18:07.954735+00:00"
+      "ok": "2026-10-30T11:37:08.354711+00:00"
     }
   },
   "last_run": {
@@ -8349,7 +8434,7 @@
     "2026-10-27": 0.1446,
     "2026-10-28": 0.0919,
     "2026-10-29": 0.0677,
-    "2026-10-30": 0.0313
+    "2026-10-30": 0.0957
   },
   "status_updated": "2026-10-30T11:03:06.935955+00:00",
   "streamers": {
