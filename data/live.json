@@ -2,6 +2,7 @@
   "alerts": {},
   "clips": {
     "87c90d10bd": {
+      "asset_deleted": true,
       "asset_id": 654871700,
       "caption": "bro really started doubting his own memory \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-19T00:52:12.171748+00:00",
@@ -22,6 +23,7 @@
       "hook_score": 8,
       "id": "87c90d10bd",
       "issue": 12,
+      "issue_closed": true,
       "layout": "cam+fill",
       "live": true,
       "live_signal": "chat exploded live (3.3x normal)",
@@ -33,7 +35,7 @@
       "said": "I found him he's at the bar you know you never got in a car what car there was never a car Wait Are you okay? I'm No I'm You got in the red car What red car? The red car I walked I walked",
       "score": 7,
       "start": 21109.0,
-      "status": "approved",
+      "status": "expired",
       "streamer": "Cinna",
       "tags": [
         "funny_line",
@@ -45,6 +47,7 @@
       "why": "One player commits hard to denying the car existed while the other spirals in confusion, and chat called it gaslighting."
     },
     "8f14c79536": {
+      "asset_deleted": true,
       "asset_id": 658351967,
       "caption": "the way she just kept naming new days \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-20T05:19:28.852211+00:00",
@@ -65,6 +68,7 @@
       "hook_score": 8,
       "id": "8f14c79536",
       "issue": 18,
+      "issue_closed": true,
       "layout": "fill",
       "live": true,
       "live_signal": "chat exploded live (3.1x normal)",
@@ -76,7 +80,7 @@
       "said": "person that I've ever met. Now, here's the thing, Larry. I let them know. I told them I'm actually great. I can't really hire him because tomorrow is, think about it, Tuesday, so I've got to think about it. And then Wednesday is, will we hire you? Probably not Wednesday. Thursday is, I mean, there's just a lot of different days. I just get so jumbled. Thought about it, probably not Thursday. And then there's Friday. That's right. Friday is, if you hired, you fired Friday. And Saturday is, sorry about it, you're not getting severance Saturday. You know what I mean? So there's just like a viciou",
       "score": 7,
       "start": 37055.0,
-      "status": "approved",
+      "status": "expired",
       "streamer": "Cinna",
       "tags": [
         "rp_drama",
@@ -131,12 +135,58 @@
       "vod": "twitch:v2903457060",
       "vod_url": "https://www.twitch.tv/videos/2903457060",
       "why": "Deadpan retelling of a gun-point wallet robbery with a number request, ending with the guy still running; chat exploded laughing."
+    },
+    "9e397cad98": {
+      "asset_id": 693798697,
+      "caption": "the way he went silent then threatened to get everyone fired \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-30T23:53:24.647051+00:00",
+      "duration": 37.7,
+      "end": 16059.0,
+      "facecam": true,
+      "file": "9e397cad98.mp4",
+      "framing": "The facecam is in the top-left corner, and the two characters talking through the cell bars are close together around x=0.4, so a narrow crop works.",
+      "hook": "POV: the cops read your charges and one makes no sense \ud83d\udc80",
+      "hook_options": [
+        "POV: the cops add a robbery charge out of nowhere \ud83d\udc80",
+        "He got booked for a robbery nobody can explain \ud83d\ude2d",
+        "POV: the cops read your charges and one makes no sense \ud83d\udc80",
+        "Bro threatened to get the whole police station fired \ud83d\ude2d",
+        "Cops hit me with 57 months and I just froze \ud83d\udc80",
+        "POV: the cops add a robbery charge out of nowhere \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "9e397cad98",
+      "issue": 40,
+      "layout": "cam+fill",
+      "live": true,
+      "live_signal": "chat exploded live (3.1x normal)",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/live_v2915062847_15964/9e397cad98.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/9e397cad98.mp4",
+      "posts": {},
+      "punch_at": 17.04,
+      "punch_text": "Robbery of what?",
+      "said": "and your charge is looking like this criminal position firearm plus one resisting arrest evading first-degree robbery and in total it's gonna be 57 months robbery what robbery of what listen to me guys listen to me huh you guys should talk to someone above you guys listen to me okay okay and you know it's a robbery why you're caught you you guys did no due diligence at all across the board is so hard. What, what, what? Still what? Still what? I will wipe the",
+      "score": 7,
+      "speed": 1.3,
+      "start": 16010.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "rp_drama",
+        "funny_line",
+        "police"
+      ],
+      "title": "POV: cops add a robbery charge out of nowhere \ud83d\udc80",
+      "vod": "twitch:v2915062847",
+      "vod_url": "https://www.twitch.tv/videos/2915062847",
+      "why": "The cop reads off charges including a surprise robbery, xQc goes dead silent, then spirals into demanding to talk to a superior and threatening to get everyone fired; chat blew up."
     }
   },
   "health": {},
   "spend": {
     "2026-10-17": 0.0319,
     "2026-10-19": 0.1062,
-    "2026-10-20": 0.0958
+    "2026-10-20": 0.0958,
+    "2026-10-30": 0.0306
   }
 }
