@@ -1958,10 +1958,6 @@
           "date": "2026-10-29",
           "history": [
             [
-              "2026-10-29T17:31:25.214516+00:00",
-              148
-            ],
-            [
               "2026-10-29T17:46:31.604352+00:00",
               263
             ],
@@ -2196,6 +2192,10 @@
             [
               "2026-10-31T11:05:43.935404+00:00",
               2261
+            ],
+            [
+              "2026-10-31T12:25:47.597995+00:00",
+              2195
             ]
           ],
           "hour": "10:00",
@@ -2206,7 +2206,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/YkTwjOBhzJM",
-          "views": 2261
+          "views": 2195
         }
       },
       "punch_at": 4.74,
@@ -3962,6 +3962,49 @@
       "vod_url": "https://www.twitch.tv/videos/2907037919",
       "why": "Character boasts about beating three guys, the stranger calmly says he heard he got beaten and screamed, and he scrambles to deny it."
     },
+    "48dbf60f64": {
+      "asset_id": 695323312,
+      "caption": "the cops really said he's trick-or-treating with guns \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-31T12:25:45.255880+00:00",
+      "duration": 29.2,
+      "end": 12646.0,
+      "facecam": true,
+      "file": "48dbf60f64.mp4",
+      "framing": "The webcam is in the top-left corner, and the ambulance and character action stays near the center of the frame.",
+      "hook": "POV: you get shot at and the cops think you're trick-or-treating \ud83d\udc80",
+      "hook_options": [
+        "POV: the cops don't believe you got shot at \ud83d\udc80",
+        "Cops told me I'm just trick-or-treating \ud83d\ude2d",
+        "He warned the cops ten times and they ignored him \ud83d\udc80",
+        "When the cops still won't listen after you got shot \ud83d\ude2d",
+        "Who made these guys cops \ud83d\ude2d\ud83d\udc80",
+        "POV: the cops don't believe you got shot at \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "48dbf60f64",
+      "issue": 42,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/d59f6e18cf/48dbf60f64.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/48dbf60f64.mp4",
+      "posts": {},
+      "punch_at": 0,
+      "punch_text": "",
+      "said": "okay you guys are so full of shit oh i'm trick or treating you guys are so full of shit okay how do you not believe us when you guys literally just got shot at by a bunch of fucking armed men i don't believe you i don't believe this guy this mega man guy right here i warned you guys 10 times that we were attacked by some agents and we go to the bottom and you guys get shot at like i don't know what else to tell you man you're not listening Wow. Wow. Wow. Wow. What an absolute wow.",
+      "score": 7,
+      "speed": 1.3,
+      "start": 12608.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "police",
+        "rp_drama",
+        "funny_line"
+      ],
+      "title": "POV: the cops think you're just trick-or-treating \ud83d\udc80",
+      "vod": "twitch:v2915062847",
+      "vod_url": "https://www.twitch.tv/videos/2915062847",
+      "why": "Streamer's frustration at incompetent cops who dismiss an armed attack, ending in stunned 'are we dead ass'."
+    },
     "49266d6904": {
       "asset_deleted": true,
       "asset_id": 670965024,
@@ -4120,6 +4163,49 @@
       "vod": "twitch:v2908743871",
       "vod_url": "https://www.twitch.tv/videos/2908743871",
       "why": "After jumping off a roof, she keeps insisting to a bystander that the huge crack wasn't from her, committing harder and harder to the bit."
+    },
+    "5246834e2b": {
+      "asset_id": 695317821,
+      "caption": "the hostage negotiation got way too wholesome \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-10-31T12:23:34.098105+00:00",
+      "duration": 35.4,
+      "end": 44393.0,
+      "facecam": true,
+      "file": "5246834e2b.mp4",
+      "framing": "The facecam sits at top-left. The action is the masked robber and the guard in the small security room, which fits in a central slice.",
+      "hook": "POV: the hostage has to take a call from his grandma mid-negotiation \ud83d\udc80",
+      "hook_options": [
+        "POV: you tell a hostage his grandma is calling \ud83d\udc80",
+        "He made a hostage take a call from his grandma \ud83d\ude2d",
+        "Who let the hostage talk to his grandma \ud83d\ude2d\ud83d\udc80",
+        "The hostage negotiation took a turn \ud83d\udc80",
+        "Chat controls a hostage situation with a grandma \ud83e\udd23",
+        "POV: you tell a hostage his grandma is calling \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "5246834e2b",
+      "issue": 41,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/d59f6e18cf/5246834e2b.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/5246834e2b.mp4",
+      "posts": {},
+      "punch_at": 0,
+      "punch_text": "",
+      "said": "to speak with him and she's calling and she says she's gonna call about 30 seconds right now the phone's gonna ring and he's gonna pick up and evan needs to shut up gotcha okay here it comes she never fails to call oh oh hey your grandma's calling i'm gonna pick up the phone hello grandma how you doing today Oh yeah, okay. I see you need some help. Yep. All right. What do you need help with? Come on, grandma. Just tell me what you need help with. I think she's falling. She can't get up. Okay. Groceries. Bring them inside. Okay. No problem.",
+      "score": 7,
+      "speed": 1.3,
+      "start": 44347.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "rp_drama",
+        "funny_line",
+        "police"
+      ],
+      "title": "He made a hostage take a call from grandma \ud83d\udc80",
+      "vod": "twitch:v2915062847",
+      "vod_url": "https://www.twitch.tv/videos/2915062847",
+      "why": "Absurd straight-faced hostage negotiation where everyone has to shut up so the hostage can take grandma's call; chat exploded."
     },
     "5e059eaf31": {
       "asset_deleted": true,
@@ -4859,6 +4945,10 @@
             [
               "2026-10-31T11:05:43.935454+00:00",
               1312
+            ],
+            [
+              "2026-10-31T12:25:47.598056+00:00",
+              1314
             ]
           ],
           "hour": "10:00",
@@ -4869,7 +4959,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/zL32s57me8Y",
-          "views": 1312
+          "views": 1314
         }
       },
       "punch_at": 25.1,
@@ -7428,10 +7518,6 @@
           "date": "2026-10-30",
           "history": [
             [
-              "2026-10-30T16:48:57.887763+00:00",
-              168
-            ],
-            [
               "2026-10-30T17:03:57.061157+00:00",
               303
             ],
@@ -7666,6 +7752,10 @@
             [
               "2026-10-31T12:06:17.468780+00:00",
               9400
+            ],
+            [
+              "2026-10-31T12:25:47.598105+00:00",
+              9464
             ]
           ],
           "hour": "09:00",
@@ -7676,7 +7766,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/riWHNuaX9Oo",
-          "views": 9400
+          "views": 9464
         }
       },
       "punch_at": 17.86,
@@ -9113,7 +9203,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-31T12:06:17.002194+00:00"
+      "ok": "2026-10-31T12:25:47.353724+00:00"
     }
   },
   "last_run": {
@@ -9235,7 +9325,7 @@
     "2026-10-28": 0.0919,
     "2026-10-29": 0.0677,
     "2026-10-30": 0.111,
-    "2026-10-31": 0.0157
+    "2026-10-31": 0.0757
   },
   "status_updated": "2026-10-31T12:06:20.106246+00:00",
   "streamers": {
