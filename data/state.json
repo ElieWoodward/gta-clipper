@@ -1958,10 +1958,6 @@
           "date": "2026-10-29",
           "history": [
             [
-              "2026-10-29T18:01:29.422717+00:00",
-              412
-            ],
-            [
               "2026-10-29T18:16:44.591458+00:00",
               474
             ],
@@ -2196,6 +2192,10 @@
             [
               "2026-10-31T12:36:21.782255+00:00",
               2261
+            ],
+            [
+              "2026-10-31T12:51:47.025067+00:00",
+              2264
             ]
           ],
           "hour": "10:00",
@@ -2206,7 +2206,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/YkTwjOBhzJM",
-          "views": 2261
+          "views": 2264
         }
       },
       "punch_at": 4.74,
@@ -4953,6 +4953,10 @@
             [
               "2026-10-31T12:36:21.782318+00:00",
               1312
+            ],
+            [
+              "2026-10-31T12:51:47.025136+00:00",
+              1314
             ]
           ],
           "hour": "10:00",
@@ -4963,7 +4967,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/zL32s57me8Y",
-          "views": 1312
+          "views": 1314
         }
       },
       "punch_at": 25.1,
@@ -9207,7 +9211,8 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-10-31T12:36:21.584989+00:00"
+      "at": "2026-10-31T12:51:46.837634+00:00",
+      "error": "to extract secondary user ID. If you are able to get the channel_id from a video posted by this user, try using \"tiktokuser:channel_id\" as the input URL (replacing `channel_id` with its actual value)\n"
     }
   },
   "last_run": {
