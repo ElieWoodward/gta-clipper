@@ -5502,6 +5502,8 @@
       "caption": "the daylight savings excuse got me \ud83d\ude2d\ud83d\udc80",
       "created": "2026-11-01T09:39:53.907740+00:00",
       "duration": 26.9,
+      "email_message_id": "<179354914027.2354.516898745219333013@gmail.com>",
+      "emailed_at": "2026-11-01T16:05:47.465730+00:00",
       "end": 26392.0,
       "facecam": true,
       "file": "70d6f37366.mp4",
@@ -5526,6 +5528,8 @@
       "punch_text": "Only four months remaining",
       "said": "I'm gizz- So Mr. Paul. So- You're not gonna believe this. What? Are you familiar with a thing called Daylight Savings Time? Uh, no? So I was trying to adjust your time. And I can't adjust it because technically that time won't exist anymore because Daylight Savings Time. So you only have four months remaining on your time, or I have to give you 89 months. Well... I was trying to adjust it to 25 months. No, no, no, it did adjust, it did adjust. I was giving them 109. Right, right, right, no, no, now it's",
       "score": 7,
+      "sent_caption": "the daylight savings excuse got me \ud83d\ude2d\ud83d\udc80\n\nStreamer: xQc\n#gta6 #gtarp #gta #funny #fyp #xqc",
+      "sent_title": "POV: daylight savings broke your jail time \ud83d\udc80 #shorts",
       "speed": 1.3,
       "start": 26357.0,
       "status": "approved",
@@ -9709,9 +9713,16 @@
         "date": "2026-10-31",
         "subject": "Post now: POV: the hostage has to take a call from his grandma mid-negotiation \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-11-01T16:05:47.465730+00:00",
+        "clip": "70d6f37366",
+        "date": "2026-11-01",
+        "subject": "Post now: POV: the judge blames daylight savings for your jail time \ud83d\udc80 (7/10)",
+        "test": false
       }
     ],
-    "replies_at": "2026-11-01T15:09:26.264736+00:00"
+    "replies_at": "2026-11-01T16:05:39.369517+00:00"
   },
   "health": {
     "post": {
@@ -9727,7 +9738,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-11-01T15:54:22.773673+00:00"
+      "ok": "2026-11-01T16:05:39.178065+00:00"
     }
   },
   "last_run": {
@@ -9855,7 +9866,7 @@
     "2026-10-31": 0.091,
     "2026-11-01": 0.0515
   },
-  "status_updated": "2026-11-01T15:09:28.868201+00:00",
+  "status_updated": "2026-11-01T16:05:48.683876+00:00",
   "streamers": {
     "Cinna": {
       "facecam": true
