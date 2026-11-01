@@ -4134,6 +4134,10 @@
             [
               "2026-11-01T09:23:40.561494+00:00",
               1370
+            ],
+            [
+              "2026-11-01T09:39:56.181133+00:00",
+              1364
             ]
           ],
           "hour": "13:00",
@@ -4144,7 +4148,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/kGzuWpQPByM",
-          "views": 1370
+          "views": 1364
         }
       },
       "punch_at": 0,
@@ -4478,6 +4482,10 @@
             [
               "2026-11-01T09:23:40.561522+00:00",
               1379
+            ],
+            [
+              "2026-11-01T09:39:56.181151+00:00",
+              1380
             ]
           ],
           "hour": "13:00",
@@ -4488,7 +4496,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/LUhzwhU8rp0",
-          "views": 1379
+          "views": 1380
         }
       },
       "punch_at": 0,
@@ -5107,10 +5115,6 @@
           "date": "2026-10-30",
           "history": [
             [
-              "2026-10-30T17:48:51.485979+00:00",
-              175
-            ],
-            [
               "2026-10-30T18:00:13.402073+00:00",
               310
             ],
@@ -5345,6 +5349,10 @@
             [
               "2026-11-01T09:23:40.561537+00:00",
               1340
+            ],
+            [
+              "2026-11-01T09:39:56.181160+00:00",
+              1347
             ]
           ],
           "hour": "10:00",
@@ -5355,7 +5363,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/zL32s57me8Y",
-          "views": 1340
+          "views": 1347
         }
       },
       "punch_at": 25.1,
@@ -5425,6 +5433,49 @@
       "vod": "twitch:v2908856317",
       "vod_url": "https://www.twitch.tv/videos/2908856317",
       "why": "Absurd 726-month sentence escalates into cops arguing over rank and a recruit getting dressed down; clear scenario with a payoff."
+    },
+    "70d6f37366": {
+      "asset_id": 697901298,
+      "caption": "the daylight savings excuse got me \ud83d\ude2d\ud83d\udc80",
+      "created": "2026-11-01T09:39:53.907740+00:00",
+      "duration": 26.9,
+      "end": 26392.0,
+      "facecam": true,
+      "file": "70d6f37366.mp4",
+      "framing": "The player, the guard and the other inmate stand spread across the frame (and a second guard appears in the last frame), so a narrow crop would lose people in the conversation.",
+      "hook": "POV: the judge blames daylight savings for your jail time \ud83d\udc80",
+      "hook_options": [
+        "POV: the cop says daylight savings broke your jail time \ud83d\udc80",
+        "He tried to explain jail time with daylight savings \ud83d\ude2d",
+        "POV: you ask for 25 months and get four \ud83d\udc80",
+        "Who let him run the jail clock \ud83d\ude2d\ud83d\udc80",
+        "The cop's excuse for your sentence is crazy \ud83e\udd23",
+        "POV: the cop says daylight savings broke your jail time \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "70d6f37366",
+      "issue": 43,
+      "layout": "cam+wide",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/f93b8ea25a/70d6f37366.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/70d6f37366.mp4",
+      "posts": {},
+      "punch_at": 23.36,
+      "punch_text": "Only four months remaining",
+      "said": "I'm gizz- So Mr. Paul. So- You're not gonna believe this. What? Are you familiar with a thing called Daylight Savings Time? Uh, no? So I was trying to adjust your time. And I can't adjust it because technically that time won't exist anymore because Daylight Savings Time. So you only have four months remaining on your time, or I have to give you 89 months. Well... I was trying to adjust it to 25 months. No, no, no, it did adjust, it did adjust. I was giving them 109. Right, right, right, no, no, now it's",
+      "score": 7,
+      "speed": 1.3,
+      "start": 26357.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "funny_line",
+        "rp_drama",
+        "police"
+      ],
+      "title": "POV: daylight savings broke your jail time \ud83d\udc80",
+      "vod": "twitch:v2916181042",
+      "vod_url": "https://www.twitch.tv/videos/2916181042",
+      "why": "An authority figure commits fully to an absurd excuse about adjusting jail time, and chat reacted with disbelief."
     },
     "725f8099b5": {
       "asset_deleted": true,
@@ -5826,10 +5877,6 @@
           "date": "2026-10-29",
           "history": [
             [
-              "2026-10-29T17:31:25.214576+00:00",
-              1266
-            ],
-            [
               "2026-10-29T17:46:31.604430+00:00",
               1268
             ],
@@ -6064,6 +6111,10 @@
             [
               "2026-11-01T09:23:40.561556+00:00",
               1385
+            ],
+            [
+              "2026-11-01T09:39:56.181172+00:00",
+              1386
             ]
           ],
           "hour": "18:00",
@@ -6074,7 +6125,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/IR7kMyHhfMg",
-          "views": 1385
+          "views": 1386
         }
       },
       "punch_at": 0,
@@ -7914,10 +7965,6 @@
           "date": "2026-10-30",
           "history": [
             [
-              "2026-10-31T11:17:09.773329+00:00",
-              9161
-            ],
-            [
               "2026-10-31T11:21:27.949116+00:00",
               9197
             ],
@@ -8152,6 +8199,10 @@
             [
               "2026-11-01T09:23:40.561593+00:00",
               15472
+            ],
+            [
+              "2026-11-01T09:39:56.181194+00:00",
+              15474
             ]
           ],
           "hour": "09:00",
@@ -8162,7 +8213,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/riWHNuaX9Oo",
-          "views": 15472
+          "views": 15474
         }
       },
       "punch_at": 17.86,
@@ -9613,7 +9664,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-11-01T09:23:40.425433+00:00"
+      "ok": "2026-11-01T09:39:55.965566+00:00"
     }
   },
   "last_run": {
@@ -9726,7 +9777,6 @@
   },
   "slot_plan_mode": {},
   "spend": {
-    "2026-10-18": 0.0473,
     "2026-10-19": 0.132,
     "2026-10-20": 0.0997,
     "2026-10-21": 0.1228,
@@ -9739,7 +9789,8 @@
     "2026-10-28": 0.0919,
     "2026-10-29": 0.0677,
     "2026-10-30": 0.111,
-    "2026-10-31": 0.091
+    "2026-10-31": 0.091,
+    "2026-11-01": 0.0515
   },
   "status_updated": "2026-11-01T09:08:35.763419+00:00",
   "streamers": {
