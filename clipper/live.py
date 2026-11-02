@@ -464,7 +464,8 @@ def watch():
                 info = live_info(login)
                 if info == UNKNOWN:
                     continue   # a Twitch hiccup isn't a reason to stop (or start) watching
-                on_gta = info and (test or re.search(game_re, info["game"], re.I))
+                on_gta = info and (test or (re.search(game_re, info["game"], re.I) and
+                                            (not st.get("title_match") or re.search(st["title_match"], info["title"], re.I))))
                 if login in watching:
                     w = watching[login]
                     w["misses"] = 0 if on_gta else w.get("misses", 0) + 1

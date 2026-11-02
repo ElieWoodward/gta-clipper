@@ -393,8 +393,13 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
     if layout == "auto":
         layout = look["layout"]
     speed = clip_speed(cfg)
+    st = vod["streamer"]
+    commentary = cfg["clip"].get("commentary", False)
+    if st.get("context") and (p.get("context") or "").strip():   # campaign rule: give the clip context
+        p = dict(p, commentary=[{"at": 0.0, "text": p["context"].strip()[:70]}])
+        commentary = True
     render.render(src, src_offset, p, words, out, facecam=facecam, focus_x=look["focus_x"],
-                  commentary=cfg["clip"].get("commentary", False), layout=layout, speed=speed)
+                  commentary=commentary, layout=layout, speed=speed, handle=st.get("handle"))
     if facecam:  # remember which streamers show their face; their clips get priority
         state.setdefault("streamers", {}).setdefault(vod["streamer"]["name"], {})["facecam"] = True
     asset_id = None
@@ -412,6 +417,7 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         "punch_text": p.get("punch_text", ""), "punch_at": p.get("punch_at", 0), "media_url": media_url,
         "facecam": bool(facecam), "layout": "cam+" + layout if facecam else layout, "framing": look["why"],
         "said": " ".join(w["w"] for w in words if p["start"] <= w["s"] < p["end"])[:600], "file": out.name,
+        "context": p.get("context", ""), "handle": st.get("handle"), "preapproval": bool(st.get("preapproval")),
         "created": now_utc().isoformat(), "posts": {}, "issue": None, "local_file": str(out), "asset_id": asset_id,
     }
     auto = cfg["review"]["mode"] == "auto"
@@ -502,6 +508,8 @@ def _caption(cfg, clip, platform):
         tags.append("#" + "".join(ch for ch in clip["streamer"].lower() if ch.isalnum()))
     tags = " ".join(dict.fromkeys(tags))
     credit = f"Streamer: {clip['streamer']}" if clip["streamer"] not in ("manual", "test") else ""
+    if clip.get("handle"):
+        credit = f"Streamer: {clip['handle']}"
     if platform == "tiktok":
         return f"{clip['caption']}\n\n{credit}\n{tags}".strip()
     return f"{clip['caption']}\n\n{credit}\n{tags} #shorts".strip()
@@ -660,7 +668,7 @@ def deliver(cfg, state, clip):
     """At a posting slot: post through Blotato in launch mode with automatic posting, otherwise email it.
     A failed automatic post falls back to the email, so the slot isn't lost."""
     from . import launch
-    if launch.auto_post(cfg, state) and not DRY_RUN:
+    if launch.auto_post(cfg, state) and not DRY_RUN and not clip.get("preapproval"):
         try:
             return auto_post_clip(cfg, state, clip)
         except Exception as e:

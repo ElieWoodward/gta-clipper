@@ -1147,3 +1147,23 @@ _wc["launch"].update(enabled=True, date=common.now_local(_wcfg).date().isoformat
 assert weekly.series(common.load_config())[0] == "GTA 6"   # from launch day the series is GTA 6, from #1
 weekly.run = _wrun
 print("WEEKLY OK")
+
+# ---------- 28. campaign rules per streamer (Lysium): context line, handle on screen, title rule, pre-approval ----------
+from clipper import render as _r2  # noqa: E402
+_ass = _r2.build_ass({"start": 0, "end": 10, "commentary": [{"at": 0.0, "text": "Benji owes the mechanic 40K"}]}, [],
+                     TMP / "lys.ass", commentary=True, handle="twitch.tv/Lysium")
+_txt = Path(_ass).read_text()
+assert "twitch.tv/Lysium" in _txt and "Benji owes the mechanic 40K" in _txt
+_lys = next(x for x in common.load_config()["streamers"] if x["channel"] == "lysium")
+assert _lys["preapproval"] and _lys["context"] and _lys["handle"] == "twitch.tv/Lysium"
+assert _re.search(_lys["title_match"], "BENJI RAMOS WHO IS YOUR BIA", _re.I) and not _re.search(_lys["title_match"], "Fortnite w/ the boys", _re.I)
+_jp = highlights.judge_prompt(_cfgs, {"streamer": _lys, "title": "x"}, [{"id": 0, "start": 0, "end": 60, "text": "hi"}])
+assert "No drama baiting" in _jp and "context" in _jp
+_pc = dict(_c, id="lysclip", streamer="Lysium", handle="twitch.tv/Lysium", preapproval=True, duration=30.0)
+_pk = clipqueue.package(dict(_cfgs, posting=dict(_cfgs["posting"], tiktok_paused_until="")), _pc, [], {})
+assert _pk["blocks"][0][0] == "Campaign approval first" and "twitch.tv/Lysium" in _pk["tiktok_caption"]
+# waiting for approval: not expired after 2 days, and never auto-posted
+_old = common.now_utc() - timedelta(hours=60)
+_q = {"clips": {"w": dict(_pc, status="approved", score=7, created=_old.isoformat(), emailed_at=_old.isoformat())}}
+assert not clipqueue.expire(_cfgs, _q) and _q["clips"]["w"]["status"] == "approved"
+print("CAMPAIGN RULES OK")

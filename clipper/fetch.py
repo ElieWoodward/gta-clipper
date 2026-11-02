@@ -58,6 +58,10 @@ def list_new_vods(cfg, state):
                 skipped.append(f"{s['name']} {e.get('id')} too old")
                 continue
             pat = f.get("title_match") or ""
+            own = s.get("title_match")   # a streamer's own rule (a campaign that wants only NoPixel streams)
+            if own and not re.search(own, e.get("title") or "", re.I):
+                skipped.append(f"{s['name']} {e.get('id')} title doesn't match its rule")
+                continue
             game, ranges = (twitch_game(vid, f.get("game_match") or "grand theft auto|gta")
                             if s["platform"] == "twitch" else (None, None))
             if pat and game:

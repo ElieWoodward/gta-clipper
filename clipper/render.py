@@ -152,7 +152,7 @@ def hook_image(text, out_path, size=76):
 
 
 # ------------------------------------------------------------------ captions + punchline
-def build_ass(pick, words, out_path, commentary=False):
+def build_ass(pick, words, out_path, commentary=False, handle=None):
     """words: absolute-time words; pick: start/end, optional punch_text/punch_at (seconds from clip start)."""
     dur = pick["end"] - pick["start"]
     punch = strip_emoji(pick.get("punch_text") or "").upper()
@@ -165,6 +165,7 @@ def build_ass(pick, words, out_path, commentary=False):
         f"Style: Cap,{FONT},76,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,6,2,2,60,60,{CAP_FROM_BOTTOM},1",
         f"Style: Punch,{PUNCH_FONT},124,{YELLOW},{YELLOW},&H00000000,&H96000000,0,0,0,0,100,100,1,0,1,8,4,2,60,60,{PUNCH_FROM_BOTTOM},1",
         f"Style: Note,{FONT},52,&H00FFFFFF,&H00FFFFFF,&H40000000,&H00000000,-1,0,0,0,100,100,0,0,3,14,0,8,100,100,520,1",
+        f"Style: Handle,{FONT},40,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,3,1,8,60,60,178,1",
         "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
     if punch and punch_at < dur - 0.5:
@@ -172,6 +173,8 @@ def build_ass(pick, words, out_path, commentary=False):
         lines.append(f"Dialogue: 3,{_ts(punch_at)},{_ts(min(dur, punch_at + 3.5))},Punch,,0,0,0,,"
                      f"{{\\fscx120\\fscy120\\t(0,150,\\fscx100\\fscy100)}}{_esc(punch)}")
 
+    if handle:   # the streamer's handle, all the way through (campaign rule), just above the hook box
+        lines.append(f"Dialogue: 2,{_ts(0)},{_ts(dur)},Handle,,0,0,0,,{_esc(handle)}")
     if commentary:  # optional context lines (off by default)
         notes = sorted(pick.get("commentary", []), key=lambda x: float(x["at"]))
         for i, n in enumerate(notes):
@@ -229,13 +232,14 @@ def speed_up(src, dest, speed, ffmpeg="ffmpeg"):
     return dest
 
 
-def render(src, src_offset, pick, words, out, facecam=None, commentary=False, layout="fill", focus_x=0.5, speed=1.0):
+def render(src, src_offset, pick, words, out, facecam=None, commentary=False, layout="fill", focus_x=0.5, speed=1.0,
+           handle=None):
     """src: downloaded section; src_offset: seconds into src where the clip starts.
     layout: fill (gameplay fills the screen, cropped around focus_x), wide (more of the frame visible),
     blur (whole frame over a blurred copy). With a facecam box the cam goes on top and gameplay below.
     speed: play the clip this many times faster (pitch stays the same); captions are timed before speeding up."""
     out = Path(out)
-    ass = build_ass(pick, words, out.with_suffix(".ass"), commentary)
+    ass = build_ass(pick, words, out.with_suffix(".ass"), commentary, handle=handle)
     hook_png = hook_image(pick["hook"], out.with_suffix(".hook.png"))
     ass_arg = str(ass).replace(":", r"\:") + "':fontsdir='" + str(FONTS_DIR).replace(":", r"\:")
     mode = "wide" if layout == "wide" else "fill"

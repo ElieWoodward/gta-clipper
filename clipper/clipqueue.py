@@ -85,6 +85,9 @@ def expire(cfg, state, now=None):
     cutoff = now - timedelta(hours=settings(cfg)["max_age_hours"])
     gone = []
     for c in queue(state):
+        # a clip emailed for a campaign's approval gets 5 days: the campaign has to approve it before it's posted
+        if c.get("preapproval") and c.get("emailed_at") and _created(c) >= now - timedelta(hours=120):
+            continue
         if _created(c) < cutoff:
             c["status"] = "expired"
             gone.append(c)
@@ -165,6 +168,12 @@ def package(cfg, clip, queue_now, state=None):
         back = datetime.fromisoformat(paused).strftime("%A %b %-d")
         blocks.insert(0, ("YouTube only", f"TikTok is taking a few days off, so post this one on YouTube only. "
                           f"TikTok comes back {back}, and the emails will have the TikTok caption again."))
+    if clip.get("preapproval"):
+        blocks.insert(0, ("Campaign approval first", "This campaign approves every clip before it's posted:\n"
+                          "1. On the campaign page, submit the attached video as a draft.\n"
+                          "2. Wait for it to be approved, then post it with the caption below.\n"
+                          "3. Reply \"posted\" here once it's up (or \"skip\" if they turn it down).\n"
+                          "Your TikTok and YouTube bios need twitch.tv/Lysium in them for this campaign."))
     if rec and rec.get("status") == "joined":
         blocks.insert(0, ("Paid campaign", f"{rec['name']} ({rec.get('rate') or '?'} per 1K views).\nFollow the brief's "
                           f"caption/hashtag rules (on the board), post, then submit your link at "

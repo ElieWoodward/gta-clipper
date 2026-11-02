@@ -67,7 +67,8 @@ Rules:
 - No in-game character names a stranger wouldn't know ("Breckers", "Mickey"): say "bro", "he", "my boss", "the cops".
   A famous streamer's real name is fine.
 - Banned: stating what the streamer thinks or feels about something, narrating a boring action ("he grabs the horse"),
-  spoilers of the ending, hashtags, "insane", "epic", "you won't believe", "wait for it", headline or trailer language.
+  spoilers of the ending, hashtags, "insane", "epic", "you won't believe", "wait for it", headline or trailer language,
+  drama bait (inventing beef, "X EXPOSES Y", making a joke sound like real conflict between streamers).
 The account owner's taste:
   Liked:    "he told chat to spam W way too early" (promises a fail without saying how)
   Liked:    "he still doesn't know what he did 💀" (confusion makes you watch to find out)
@@ -159,6 +160,13 @@ def judge_prompt(cfg, vod, windows, max_picks=None):
         lo, hi = ins["target_seconds"]
         length_note = (f"\nOn this account, clips of {lo}-{hi} seconds have been doing best so far: aim for that "
                        f"unless the moment truly needs more or less.")
+    st = vod.get("streamer") or {}
+    if st.get("picker_notes"):
+        playbook = f"RULES FOR THIS STREAMER (a paid campaign; follow them strictly): {st['picker_notes']}\n\n" + playbook
+    if st.get("context"):
+        playbook = ("Also give each pick a field context: one short line (4-10 words, no emojis) telling a stranger "
+                    "what's going on, e.g. \"Benji owes the mechanic 40K\". It shows for the first few seconds. "
+                    "State the situation, never the ending.\n\n") + playbook
     return JUDGE_PROMPT.format(length_note=length_note, streamer=vod["streamer"]["name"], title=vod.get("title", ""),
                                max_picks=max_picks or c.get("min_per_vod", 3), min_s=c["min_seconds"], max_s=c["max_seconds"],
                                hook_guide=HOOK_GUIDE, playbook=playbook, candidates=cand_txt)
