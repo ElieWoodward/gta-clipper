@@ -30,23 +30,32 @@ def transcribe(wav, model, start=0.0, end=None, lenient=False):
         seg_len = min(CHUNK, end - t)
         chunk = wav.parent / f"chunk_{int(t)}.mp3"
         run(["ffmpeg", "-y", "-loglevel", "error", "-ss", t, "-t", seg_len, "-i", wav, "-b:a", "48k", chunk])
-        for attempt in range(4):
-            with open(chunk, "rb") as fh:
-                r = requests.post(GROQ_URL, headers={"Authorization": f"Bearer {key}"},
-                                  files={"file": (chunk.name, fh, "audio/mpeg")},
-                                  data=[("model", model), ("response_format", "verbose_json"),
-                                        ("timestamp_granularities[]", "word"),
-                                        ("timestamp_granularities[]", "segment"), ("language", "en")],
-                                  timeout=300)
+        for attempt in range(6):
+            try:
+                with open(chunk, "rb") as fh:
+                    r = requests.post(GROQ_URL, headers={"Authorization": f"Bearer {key}"},
+                                      files={"file": (chunk.name, fh, "audio/mpeg")},
+                                      data=[("model", model), ("response_format", "verbose_json"),
+                                            ("timestamp_granularities[]", "word"),
+                                            ("timestamp_granularities[]", "segment"), ("language", "en")],
+                                      timeout=300)
+            except requests.RequestException as e:   # dropped connection: same as a server hiccup
+                log.warning("Groq request failed (%s), retrying", e)
+                time.sleep(15 * (attempt + 1))
+                continue
             if r.status_code == 429:
                 wait = float(r.headers.get("retry-after") or 20 * (attempt + 1))
                 log.warning("Groq rate limit, waiting %.0fs", wait)
                 time.sleep(min(wait, 120))
                 continue
+            if r.status_code >= 500:   # Groq has short outages (502/503); wait them out
+                log.warning("Groq error %s, retrying", r.status_code)
+                time.sleep(15 * (attempt + 1))
+                continue
             r.raise_for_status()
             break
         else:
-            raise RuntimeError("Groq kept rate-limiting; try again later or lower clip.transcribe_minutes")
+            raise RuntimeError("Groq kept failing (rate limit or outage); the stream is retried on a later run")
         data = r.json()
         # Whisper invents words over music and game noise; drop stretches it isn't confident are speech.
         def unsure(g):
