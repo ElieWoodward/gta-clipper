@@ -63,6 +63,24 @@ def _campaigns():
     from . import campaigns
     from .common import load_config, load_state, save_state
     cfg, state = load_config(), load_state()
+    want = os.environ.get("TEST_SOURCE", "").strip().lower()
+    if want:   # debug one campaign: test_source = part of its URL, e.g. "benji-ramos"
+        import re as _re
+        from . import twitch
+        for c in campaigns.list_campaigns():
+            if want in c["id"].lower():
+                print(f"::notice::card {c['id']}: name={c['name']!r} kind={c['kind']!r} rate={c['rate']}", flush=True)
+                for g in dict.fromkeys(campaigns._slug_guess(c) + campaigns.login_guesses(c["name"])):
+                    vods = twitch.list_archives(g, 10)
+                    titles = " | ".join((v.get("title") or "")[:30] for v in vods[:4])
+                    print(f"::notice::  guess {g}: {len(vods)} vods; {titles}", flush=True)
+                try:
+                    d = campaigns.detail(c)
+                    print(f"::notice::  page twitch={d['twitch']} join={d['join_url']} brief={d['brief'][:200]!r}",
+                          flush=True)
+                except Exception as e:
+                    print(f"::notice::  detail failed: {e}", flush=True)
+        return
     try:
         found = campaigns.scan(cfg, state)
         print(f"::notice::campaign scan done: {len(found)} new match(es)", flush=True)
