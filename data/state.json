@@ -6856,6 +6856,7 @@
       "why": "Deadpan retelling of a gun-point wallet robbery with a number request, ending with the guy still running; chat exploded laughing."
     },
     "9e397cad98": {
+      "asset_deleted": true,
       "asset_id": 693798697,
       "caption": "the way he went silent then threatened to get everyone fired \ud83d\ude2d\ud83d\udc80",
       "created": "2026-10-30T23:53:24.647051+00:00",
@@ -6878,6 +6879,7 @@
       "hook_score": 8,
       "id": "9e397cad98",
       "issue": 40,
+      "issue_closed": true,
       "layout": "cam+fill",
       "live": true,
       "live_signal": "chat exploded live (3.1x normal)",
@@ -6892,7 +6894,7 @@
       "sent_title": "POV: cops add a robbery charge out of nowhere \ud83d\udc80 #shorts",
       "speed": 1.3,
       "start": 16010.0,
-      "status": "approved",
+      "status": "expired",
       "streamer": "xQc",
       "tags": [
         "rp_drama",
@@ -9895,7 +9897,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-11-01T23:50:29.764365+00:00"
+      "ok": "2026-11-02T00:05:32.728275+00:00"
     }
   },
   "last_run": {
