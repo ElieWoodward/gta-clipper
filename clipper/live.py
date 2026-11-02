@@ -336,6 +336,9 @@ class Heartbeat:
         return False
 
     def tick(self, now):
+        if now >= self.next_process and self.waiting():   # never bump a run already in line (e.g. a test run)
+            self.next_process = now + 300
+            log.info("a clipper run is waiting; trying the stream check again in 5 minutes")
         if now >= self.next_process:   # the stream check also does the posting check, so it covers a due post
             self.next_process = now + self.PROCESS_EVERY
             self.next_post = max(self.next_post, now + self.POST_EVERY)
