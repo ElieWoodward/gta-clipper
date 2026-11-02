@@ -21,6 +21,14 @@ streamers:
     platform: twitch
     channel: vanillamace
     enabled: true
+  - name: Burn                    # tested Nov 2: 1 of 3 at 7+, no webcam; #1 most-viewed GTA clip that week
+    platform: twitch
+    channel: burn
+    enabled: true
+  - name: youney                  # tested Nov 2: 1 of 4 at 7+, webcam; #2 most-viewed GTA clip that week
+    platform: twitch
+    channel: youney
+    enabled: true
   - name: Lysium                  # paid campaign "Lysium/Benji Ramos Clips" ($1.50 per 1K views); rules from the brief:
     platform: twitch
     channel: lysium
