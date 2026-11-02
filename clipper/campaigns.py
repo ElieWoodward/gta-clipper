@@ -123,7 +123,7 @@ def login_guesses(name):
     return list(dict.fromkeys([base, "_".join(words).lower(), words[0].lower()]))
 
 
-def streams_gta(login, game_re=r"grand theft auto|gta"):
+def streams_gta(login, game_re=r"grand theft auto|gta", max_chapter_checks=10):
     """(True, details) if the Twitch channel had GTA in any of its last 10 broadcasts."""
     from . import twitch
     try:
@@ -132,10 +132,13 @@ def streams_gta(login, game_re=r"grand theft auto|gta"):
         return False, "no Twitch channel"
     if not vods:
         return False, "no Twitch broadcasts"
-    hits = 0
+    hits, checked = 0, 0
     for v in vods[:10]:
         if re.search(r"gta|grand theft|nopixel|\brp\b", v.get("title") or "", re.I):
             hits += 1
+            continue
+        checked += 1
+        if checked > max_chapter_checks:
             continue
         try:
             if any(re.search(game_re, g or "", re.I) for _, _, g in twitch.chapters(v["id"].lstrip("v"))):
@@ -145,13 +148,48 @@ def streams_gta(login, game_re=r"grand theft auto|gta"):
     return hits > 0, f"GTA in {hits} of their last {len(vods)} streams"
 
 
+class Deferred(Exception):
+    """This scan's budget of Twitch lookups is used up; check the campaign on a later scan."""
+
+
+QUICK = {"left": 0}   # Twitch lookups left this scan for campaigns named only after a person ("Benji Ramos")
+
+
+def _slug_guess(card):
+    tail = card["id"].split("__")[-1]
+    tail = re.sub(r"-?(clipping|clips?|campaign|official|stream(er)?|rewards?|\d+)(-|$)", "-", tail)
+    return [w for w in {tail.replace("-", "").lower(), tail.replace("-", "_").strip("_").lower()} if len(w) >= 3]
+
+
+def quick_gta_login(card, game_re):
+    """For a clipping campaign whose name has no GTA or streaming word: is it named after a Twitch streamer who
+    plays GTA? Cheap (a few Twitch lookups, no page load), capped per scan."""
+    guesses = list(dict.fromkeys(_slug_guess(card) + login_guesses(card["name"])))[:4]
+    if QUICK["left"] < len(guesses):
+        raise Deferred(card["id"])
+    for g in guesses:
+        QUICK["left"] -= 1
+        ok, _ = streams_gta(g, game_re, max_chapter_checks=3)
+        if ok:
+            return g
+    return None
+
+
 def evaluate(card, game_re):
     """Decide whether a campaign fits. Returns a match dict or None."""
     gta_text = bool(GTA_RE.search(card["name"]))
     streamer = bool(STREAMER_RE.search(card["name"])) and card["kind"] in ("CLIPPING", "")
+    named_after = None
     if not (gta_text or streamer):
-        return None
+        # Campaigns are often just the streamer's name ("Benji Ramos"): check that name against Twitch.
+        if card["kind"] not in ("CLIPPING", ""):
+            return None
+        named_after = quick_gta_login(card, game_re)
+        if not named_after:
+            return None
     d = detail(card)
+    if named_after:
+        d["twitch"] = [named_after] + [t for t in d["twitch"] if t != named_after]
     gta_text = gta_text or bool(GTA_RE.search(d["brief"]))
     login, why = None, ""
     for cand in d["twitch"] + login_guesses(card["name"]):
@@ -233,15 +271,25 @@ def scan(cfg, state):
                               f"{rec.get('join_url') or rec['url']} while the page is still up.")
                 except Exception as e:
                     log.info("couldn't send the campaign-ended email: %s", e)
-    for c in cards:
+    QUICK["left"] = int((cfg.get("campaigns") or {}).get("lookups_per_scan", 400))
+    if not state.get("campaigns_recheck_v2"):   # earlier scans skipped campaigns named only after a streamer
+        for k in [k for k in seen if k not in book]:
+            seen.pop(k)
+        state["campaigns_recheck_v2"] = now_utc().isoformat()
+    deferred = 0
+    for c in sorted(cards, key=lambda c: -(c.get("rate") or 0)):   # best paying first
         if c["id"] in seen or c["id"] in book:
             continue
-        seen[c["id"]] = now_utc().date().isoformat()
         try:
             m = evaluate(c, game_re)
+        except Deferred:
+            deferred += 1
+            continue   # not marked seen: checked on a later scan
         except Exception as e:
             log.info("couldn't check campaign %s: %s", c["id"], e)
+            seen[c["id"]] = now_utc().date().isoformat()
             continue
+        seen[c["id"]] = now_utc().date().isoformat()
         if not m:
             continue
         rec = {k: m.get(k) for k in ("id", "name", "url", "join_url", "rate", "left", "budget", "platforms", "kind",
@@ -275,6 +323,9 @@ def scan(cfg, state):
                 break
             rec["status"] = "notified"
             sent += 1
+    if deferred:
+        print(f"::notice::campaign scan: {deferred} campaign(s) named after people left to check on later scans",
+              flush=True)
     for k in sorted(seen, key=seen.get)[:-3000]:   # keep the seen list bounded
         seen.pop(k)
     return found
