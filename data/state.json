@@ -2876,10 +2876,6 @@
           "date": "2026-10-24",
           "history": [
             [
-              "2026-10-30T03:17:31.884217+00:00",
-              10827
-            ],
-            [
               "2026-10-30T03:32:39.918181+00:00",
               10000
             ],
@@ -3114,6 +3110,10 @@
             [
               "2026-11-02T21:37:45.792378+00:00",
               10663
+            ],
+            [
+              "2026-11-02T21:56:28.533488+00:00",
+              10667
             ]
           ],
           "hour": "19:00",
@@ -3124,7 +3124,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/pcS400uUl7c",
-          "views": 10663
+          "views": 10667
         }
       },
       "punch_at": 21.4,
@@ -3820,6 +3820,51 @@
       "vod_url": "https://www.twitch.tv/videos/2908743871",
       "why": "After jumping off a roof, she keeps insisting to a bystander that the huge crack wasn't from her, committing harder and harder to the bit."
     },
+    "4d09113317": {
+      "asset_id": 703303313,
+      "caption": "the way his friend just goes 'I love you' anyway \ud83d\ude2d\ud83d\udc80",
+      "context": "",
+      "created": "2026-11-02T21:54:14.874001+00:00",
+      "duration": 26.2,
+      "end": 36508.0,
+      "facecam": false,
+      "file": "4d09113317.mp4",
+      "framing": "No webcam is visible, and the two characters stand close together near the center of the frame.",
+      "handle": null,
+      "hook": "He forwarded the text to five people so his kids don't get vaccinated \ud83d\udc80",
+      "hook_options": [
+        "POV: your buddy explains why he keeps a thing in his head \ud83d\udc80",
+        "Bro explains his conspiracy and nobody understands a word \ud83d\ude2d",
+        "He forwarded the text to five people or his kids die \ud83d\udc80",
+        "Chat, this is the worst character he's ever played \ud83d\ude2d",
+        "I met the guy with red dye in his head \ud83d\udc80",
+        "He forwarded the text to five people or his kids die \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "4d09113317",
+      "issue": 45,
+      "layout": "fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/23bc0f3202/4d09113317.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/4d09113317.mp4",
+      "posts": {},
+      "preapproval": false,
+      "punch_at": 19.42,
+      "punch_text": "I didn't understand a word",
+      "said": "And then I don't know. She sent me one of those texts that you have to sit into five people. Otherwise, all your children are going to get vaccinated. So I had to forward it to five other people. Otherwise, my children were going to get vaccinated. I don't know what that happened. Because if they did, then they would have probably died. Bobby, I didn't understand a fucking word you just said. But I love you. What are you doing? Why are you in the hospital? Are you finally going to get the goddamn thing removed? I can't get it removed.",
+      "score": 7,
+      "speed": 1.3,
+      "start": 36474.0,
+      "status": "approved",
+      "streamer": "Burn",
+      "tags": [
+        "rp_drama",
+        "funny_line"
+      ],
+      "title": "He forwarded the text to five people or his kids die \ud83d\udc80",
+      "vod": "twitch:v2915839157",
+      "vod_url": "https://www.twitch.tv/videos/2915839157",
+      "why": "A conspiracy-brained character rambles with total confidence and his friend admits he understood none of it but loves him; chat was dying."
+    },
     "5246834e2b": {
       "asset_deleted": true,
       "asset_id": 695317821,
@@ -4108,6 +4153,55 @@
       "vod": "twitch:v2915062847",
       "vod_url": "https://www.twitch.tv/videos/2915062847",
       "why": "Absurd straight-faced hostage negotiation where everyone has to shut up so the hostage can take grandma's call; chat exploded."
+    },
+    "56c73ba12f": {
+      "asset_id": 703307786,
+      "caption": "nobody knew who she was and the doctor still didn't get it \ud83d\ude2d",
+      "context": "",
+      "created": "2026-11-02T21:56:24.542209+00:00",
+      "duration": 29.2,
+      "email_message_id": "<179365658913.3203.9927574514389680891@gmail.com>",
+      "emailed_at": "2026-11-02T21:56:35.660440+00:00",
+      "end": 17995.0,
+      "facecam": false,
+      "file": "56c73ba12f.mp4",
+      "framing": "No facecam; the plague doctor, trenchcoat character and blonde woman are spread across the middle of the frame, with the purple-haired character at the left edge, so a wider view keeps the group in sh",
+      "handle": null,
+      "hook": "We kidnapped a doctor and made him eat four hot dogs \ud83d\ude2d",
+      "hook_options": [
+        "POV: the doctor asks your take on ivermectin and pulls out a tiny machine \ud83d\udc80",
+        "He ran every test with one drop of blood \ud83d\ude2d",
+        "When the doctor's costume is a famous scammer \ud83d\udc80",
+        "Who let this guy be a medical doctor \ud83d\ude2d\ud83d\udc80",
+        "I forced a guy to eat four hot dogs then quizzed him \ud83d\ude2d",
+        "POV: the doctor asks your take on ivermectin and pulls out a tiny machine \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "56c73ba12f",
+      "issue": 46,
+      "layout": "wide",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/23bc0f3202/56c73ba12f.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/56c73ba12f.mp4",
+      "posts": {},
+      "preapproval": false,
+      "punch_at": 31.22,
+      "punch_text": "It's Elizabeth Holmes",
+      "said": "Just on a secondary anecdote, though, what's your take on ivermectin? Oh, I don't. I've never used ivermectin. What's your take on with one drop of blood, I could do every single test? What? I'm sorry. With one drop of blood, I could run every single test with this little machine. What is this little machine? I'm sorry. It's my Halloween costume, man. It's Elizabeth Holmes, man. Oh, I don't know who that is. Theranos? I'm sorry. You're a medical doctor? There you go,",
+      "score": 7,
+      "sent_caption": "nobody knew who she was and the doctor still didn't get it \ud83d\ude2d\n\nStreamer: Burn\n#gta6 #gtarp #gta #funny #fyp #burn",
+      "sent_title": "When the doctor's Halloween costume is a famous scammer \ud83d\udc80 #shorts",
+      "speed": 1.3,
+      "start": 17957.0,
+      "status": "approved",
+      "streamer": "Burn",
+      "tags": [
+        "rp_drama",
+        "funny_line"
+      ],
+      "title": "When the doctor's Halloween costume is a famous scammer \ud83d\udc80",
+      "vod": "twitch:v2915839157",
+      "vod_url": "https://www.twitch.tv/videos/2915839157",
+      "why": "A kidnapped doctor insists he can run every test with one drop of blood, then reveals his costume is Elizabeth Holmes, which nobody gets."
     },
     "5e059eaf31": {
       "asset_deleted": true,
@@ -5204,6 +5298,10 @@
             [
               "2026-11-02T18:37:40.024196+00:00",
               1320
+            ],
+            [
+              "2026-11-02T21:56:28.533540+00:00",
+              1321
             ]
           ],
           "hour": "09:00",
@@ -5214,7 +5312,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/3rGpwW9mCFM",
-          "views": 1320
+          "views": 1321
         }
       },
       "punch_at": 23.36,
@@ -9471,6 +9569,13 @@
         "date": "2026-11-02",
         "subject": "Post now: Bro paid 50K for gangster school and thinks he won \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-11-02T21:56:35.660440+00:00",
+        "clip": "56c73ba12f",
+        "date": "2026-11-02",
+        "subject": "Post now: We kidnapped a doctor and made him eat four hot dogs \ud83d\ude2d (7/10)",
+        "test": false
       }
     ],
     "replies_at": "2026-11-02T21:22:43.582461+00:00"
@@ -9489,7 +9594,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-11-02T21:37:45.559177+00:00"
+      "ok": "2026-11-02T21:56:28.351478+00:00"
     }
   },
   "last_run": {
@@ -9621,7 +9726,7 @@
     "2026-10-30": 0.111,
     "2026-10-31": 0.091,
     "2026-11-01": 0.0515,
-    "2026-11-02": 0.064
+    "2026-11-02": 0.1806
   },
   "status_updated": "2026-11-02T21:22:47.163836+00:00",
   "streamers": {
