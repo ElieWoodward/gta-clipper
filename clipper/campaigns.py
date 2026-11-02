@@ -131,7 +131,15 @@ def streams_gta(login, game_re=r"grand theft auto|gta", max_chapter_checks=10):
     except Exception:
         return False, "no Twitch channel"
     if not vods:
-        return False, "no Twitch broadcasts"
+        # empty can also mean Twitch answered "service error": ask again before deciding there's nothing
+        q = 'query { user(login: "%s") { id videos(first: 1, type: ARCHIVE) { edges { node { id } } } } }' % login.lower()
+        data = twitch._gql({"query": q}) or {}
+        if data.get("errors") or data.get("data") is None:
+            raise Deferred(f"Twitch didn't answer for {login}")
+        if (((data.get("data") or {}).get("user") or {}).get("videos") or {}).get("edges"):
+            vods = twitch.list_archives(login, 10)
+        if not vods:
+            return False, "no Twitch broadcasts"
     hits, checked = 0, 0
     for v in vods[:10]:
         if re.search(r"gta|grand theft|nopixel|\brp\b", v.get("title") or "", re.I):
