@@ -20,10 +20,10 @@
       "name": "BIOS 3v3 Buildfigh Campaign Map: 7242-6817-1945 Post on TikTok, Instagram, YouTube, X CLIPPING CPM $1.10 $1.10 per 1K vi",
       "platforms": "",
       "rate": 1.1,
-      "status": "notified",
+      "status": "skipped",
       "twitch_login": "bios",
       "url": "https://clippingalpha.com/campaigns/bios-3v3-buildfigh-campaign-map/clipping",
-      "why": "GTA in 3 of their last 10 streams"
+      "why": "GTA in 3 of their last 10 streams (false match: Fortnite map, not a GTA streamer)"
     },
     "flower-in-a-hurricane__music": {
       "auto_clip": false,

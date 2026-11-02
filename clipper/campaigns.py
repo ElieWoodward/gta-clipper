@@ -164,21 +164,31 @@ QUICK = {"left": 0}   # Twitch lookups left this scan for campaigns named only a
 
 
 def _slug_guess(card):
-    tail = card["id"].split("__")[-1]
+    """Logins from the campaign's URL. ClippingAlpha URLs are /campaigns/<creator>/<campaign>, and the creator part
+    is usually the streamer's own name ("lysium" in lysium/benji-ramos, where Benji Ramos is his GTA character)."""
+    parts = card["id"].split("__")
+    head = [re.sub(r"[^a-z0-9_]", "", parts[0].lower())] if len(parts) > 1 else []
+    tail = parts[-1]
     tail = re.sub(r"-?(clipping|clips?|campaign|official|stream(er)?|rewards?|\d+)(-|$)", "-", tail)
-    return [w for w in {tail.replace("-", "").lower(), tail.replace("-", "_").strip("_").lower()} if len(w) >= 3]
+    out = head + [tail.replace("-", "").lower(), tail.replace("-", "_").strip("_").lower()]
+    return [w for w in dict.fromkeys(out) if len(w) >= 3]
 
 
 def quick_gta_login(card, game_re):
     """For a clipping campaign whose name has no GTA or streaming word: is it named after a Twitch streamer who
     plays GTA? Cheap (a few Twitch lookups, no page load), capped per scan."""
-    guesses = list(dict.fromkeys(_slug_guess(card) + login_guesses(card["name"])))[:4]
+    name = re.split(r"\bPost on\b|\bCLIPPING\b", card["name"])[0]
+    words = [w for w in re.split(r"[/|,]", name) if w.strip()]
+    guesses = _slug_guess(card) + [g for w in words for g in login_guesses(w)] + login_guesses(name)
+    guesses = list(dict.fromkeys(guesses))[:6]
     if QUICK["left"] < len(guesses):
         raise Deferred(card["id"])
     for g in guesses:
         QUICK["left"] -= 1
-        ok, _ = streams_gta(g, game_re, max_chapter_checks=3)
-        if ok:
+        ok, why = streams_gta(g, game_re, max_chapter_checks=5)
+        # a mostly-GTA streamer only: a name guess can hit an unrelated channel that played GTA once or twice
+        m = re.search(r"GTA in (\d+) of their last (\d+)", why) if ok else None
+        if m and int(m.group(1)) >= max(3, (int(m.group(2)) + 1) // 2):   # at least half their recent streams
             return g
     return None
 
@@ -197,7 +207,7 @@ def evaluate(card, game_re):
             return None
     d = detail(card)
     if named_after:
-        d["twitch"] = [named_after] + [t for t in d["twitch"] if t != named_after]
+        d["twitch"] = [named_after] + [t for t in dict.fromkeys(d["twitch"]) if t != named_after]
     gta_text = gta_text or bool(GTA_RE.search(d["brief"]))
     login, why = None, ""
     for cand in d["twitch"] + login_guesses(card["name"]):
@@ -280,10 +290,10 @@ def scan(cfg, state):
                 except Exception as e:
                     log.info("couldn't send the campaign-ended email: %s", e)
     QUICK["left"] = int((cfg.get("campaigns") or {}).get("lookups_per_scan", 400))
-    if not state.get("campaigns_recheck_v2"):   # earlier scans skipped campaigns named only after a streamer
+    if not state.get("campaigns_recheck_v3"):   # earlier scans skipped campaigns named only after a streamer
         for k in [k for k in seen if k not in book]:
             seen.pop(k)
-        state["campaigns_recheck_v2"] = now_utc().isoformat()
+        state["campaigns_recheck_v3"] = now_utc().isoformat()
     deferred = 0
     for c in sorted(cards, key=lambda c: -(c.get("rate") or 0)):   # best paying first
         if c["id"] in seen or c["id"] in book:

@@ -65,7 +65,6 @@ def _campaigns():
     cfg, state = load_config(), load_state()
     want = os.environ.get("TEST_SOURCE", "").strip().lower()
     if want:   # debug one campaign: test_source = part of its URL, e.g. "benji-ramos"
-        import re as _re
         from . import twitch
         for c in campaigns.list_campaigns():
             if want in c["id"].lower():
