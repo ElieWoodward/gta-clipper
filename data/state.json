@@ -1441,10 +1441,6 @@
           "date": "2026-10-29",
           "history": [
             [
-              "2026-10-31T18:07:30.045693+00:00",
-              2425
-            ],
-            [
               "2026-10-31T18:22:14.986176+00:00",
               2405
             ],
@@ -1679,6 +1675,10 @@
             [
               "2026-11-03T08:09:11.889166+00:00",
               2818
+            ],
+            [
+              "2026-11-03T11:18:13.162810+00:00",
+              2817
             ]
           ],
           "hour": "10:00",
@@ -1689,7 +1689,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/YkTwjOBhzJM",
-          "views": 2818
+          "views": 2817
         }
       },
       "punch_at": 4.74,
@@ -2904,6 +2904,51 @@
       "vod_url": "https://www.twitch.tv/videos/2911620180",
       "why": "Suspected undercover cops fumble a weed quiz with 'one communal phone' and 'sativa THC', then get accused, an escalating bit that chat loved."
     },
+    "3548bd6702": {
+      "asset_id": 705327765,
+      "caption": "chat said 'damn she got you boy' and they were right \ud83d\ude2d",
+      "context": "",
+      "created": "2026-11-03T11:15:47.308226+00:00",
+      "duration": 29.2,
+      "end": 8788.0,
+      "facecam": true,
+      "file": "3548bd6702.mp4",
+      "framing": "The streamer's webcam is in the top-left, and the action is a single car driving near the center of the frame.",
+      "handle": null,
+      "hook": "She said \"I don't know how to do refunds\" \ud83d\udc80",
+      "hook_options": [
+        "He bought one radio and asked for a refund \ud83d\ude2d",
+        "POV: you get scammed by the undercover girl \ud83d\udc80",
+        "Bro begged for his money back after the deal \ud83d\ude2d",
+        "She said she doesn't know how to do refunds \ud83d\udc80",
+        "When the plan works but you're still broke \ud83d\ude2d",
+        "He begged for a refund after the deal \ud83d\ude2d"
+      ],
+      "hook_score": 8,
+      "id": "3548bd6702",
+      "issue": 51,
+      "layout": "cam+fill",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/5f583fec6e/3548bd6702.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/3548bd6702.mp4",
+      "posts": {},
+      "preapproval": false,
+      "punch_at": 12.7,
+      "punch_text": "I don't know how to do refunds",
+      "said": "Good, we're good. Everything worked out. Um, how many did you buy? One. Good. Can I get the rest of the money, please? Because I'm poor. Oh, I don't know how to do refunds. Oh. Damn. She got you, boy. Um. All right. How about half refund because of your job? because what you did for us, right? That's what at least half a radio. Can I have $7,000, please? I'm begging, please. I'm on my last leg. Thank you.",
+      "score": 7,
+      "speed": 1.3,
+      "start": 8750.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "funny_line",
+        "rp_drama"
+      ],
+      "title": "She said she doesn't know how to do refunds \ud83d\udc80",
+      "vod": "twitch:v2917899069",
+      "vod_url": "https://www.twitch.tv/videos/2917899069",
+      "why": "Deadpan 'I'm poor' and 'I don't know how to do refunds' shut the buyer down, then he's reduced to begging for $7,000."
+    },
     "3bae37770e": {
       "asset_deleted": true,
       "asset_id": 668634387,
@@ -3483,10 +3528,6 @@
           "date": "2026-10-31",
           "history": [
             [
-              "2026-10-31T21:22:29.952561+00:00",
-              542
-            ],
-            [
               "2026-10-31T21:37:30.669723+00:00",
               635
             ],
@@ -3721,6 +3762,10 @@
             [
               "2026-11-03T10:39:37.208878+00:00",
               1477
+            ],
+            [
+              "2026-11-03T11:18:13.162864+00:00",
+              1475
             ]
           ],
           "hour": "13:00",
@@ -3731,7 +3776,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/kGzuWpQPByM",
-          "views": 1477
+          "views": 1475
         }
       },
       "punch_at": 0,
@@ -3994,6 +4039,10 @@
             [
               "2026-11-03T10:54:36.808835+00:00",
               217
+            ],
+            [
+              "2026-11-03T11:18:13.162882+00:00",
+              243
             ]
           ],
           "hour": "01:00",
@@ -4004,7 +4053,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/_bJLPr1_X8s",
-          "views": 217
+          "views": 243
         }
       },
       "preapproval": false,
@@ -4465,6 +4514,10 @@
             [
               "2026-11-03T09:54:21.897099+00:00",
               1306
+            ],
+            [
+              "2026-11-03T11:18:13.162901+00:00",
+              1304
             ]
           ],
           "hour": "14:00",
@@ -4475,7 +4528,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/EeQdj6i_Hws",
-          "views": 1306
+          "views": 1304
         }
       },
       "preapproval": false,
@@ -5094,10 +5147,6 @@
           "date": "2026-10-30",
           "history": [
             [
-              "2026-10-31T19:22:17.197459+00:00",
-              1322
-            ],
-            [
               "2026-10-31T20:04:24.700700+00:00",
               1323
             ],
@@ -5332,6 +5381,10 @@
             [
               "2026-11-03T10:05:37.426901+00:00",
               1523
+            ],
+            [
+              "2026-11-03T11:18:13.162916+00:00",
+              1521
             ]
           ],
           "hour": "10:00",
@@ -5342,7 +5395,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/zL32s57me8Y",
-          "views": 1523
+          "views": 1521
         }
       },
       "punch_at": 25.1,
@@ -6328,6 +6381,52 @@
       "vod": "twitch:v2912487657",
       "vod_url": "https://www.twitch.tv/videos/2912487657",
       "why": "A cop witness walks into a contradiction (testifying about a callout he says he was out cold for) and the cross-examiner shuts it down."
+    },
+    "7f3000b290": {
+      "asset_id": 705320661,
+      "caption": "the 30 second warning to the wrong guy \ud83d\ude2d\ud83d\udc80",
+      "context": "",
+      "created": "2026-11-03T11:13:10.886121+00:00",
+      "duration": 31.5,
+      "end": 15384.0,
+      "facecam": true,
+      "file": "7f3000b290.mp4",
+      "framing": "The character, the car and the phone UI/call overlay on the right are spread across the frame, so a wide view keeps all of them in sight.",
+      "handle": null,
+      "hook": "He threatened the wrong helicopter \ud83d\udc80",
+      "hook_options": [
+        "He threatened the wrong helicopter \ud83d\udc80",
+        "POV: you threaten a pilot and he answers the phone",
+        "We told the helicopter to leave or else \ud83d\ude2d",
+        "Bro gave a news van a 30 second warning \ud83d\udc80",
+        "When you threaten the guy who's been right under you \ud83d\ude2d",
+        "He gave the wrong guy a 30 second warning \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "7f3000b290",
+      "issue": 50,
+      "layout": "cam+wide",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/5f583fec6e/7f3000b290.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/7f3000b290.mp4",
+      "posts": {},
+      "preapproval": false,
+      "punch_at": 36.44,
+      "punch_text": "That's Air 1, jackass",
+      "said": "Yeah Waterman Hey man, hey yo I have two operators looking at your flying and that bullshit right now He says stop hovering, oh it's gonna go down, you have 30 seconds I give him warning yeah hello is this i'm in a goddamn newsman that's air one jackass oh i've been on the ground i have been for 20",
+      "score": 7,
+      "speed": 1.3,
+      "start": 15343.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "funny_line",
+        "rp_drama",
+        "fail"
+      ],
+      "title": "He threatened the wrong helicopter in GTA RP \ud83d\udc80",
+      "vod": "twitch:v2917899069",
+      "vod_url": "https://www.twitch.tv/videos/2917899069",
+      "why": "A threat to a hovering helicopter backfires when the target turns out to be a news van on the ground, and the pilot's reply shuts the threat down."
     },
     "838d4951bc": {
       "asset_deleted": true,
@@ -8287,10 +8386,6 @@
           "date": "2026-10-30",
           "history": [
             [
-              "2026-10-31T20:52:32.752974+00:00",
-              14185
-            ],
-            [
               "2026-10-31T21:07:36.639596+00:00",
               14291
             ],
@@ -8525,6 +8620,10 @@
             [
               "2026-11-03T08:09:11.889294+00:00",
               15760
+            ],
+            [
+              "2026-11-03T11:18:13.162973+00:00",
+              15809
             ]
           ],
           "hour": "09:00",
@@ -8535,7 +8634,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/riWHNuaX9Oo",
-          "views": 15760
+          "views": 15809
         }
       },
       "punch_at": 17.86,
@@ -9199,6 +9298,52 @@
       "vod": "twitch:v2907037919",
       "vod_url": "https://www.twitch.tv/videos/2907037919",
       "why": "Pest control character vents about the cop on the radio, gets caught, and commits to a deadpan cover story; chat reacted heavily."
+    },
+    "e03b9f6982": {
+      "asset_id": 705333454,
+      "caption": "the apology on the phone was too much \ud83d\ude2d\ud83d\udc80",
+      "context": "",
+      "created": "2026-11-03T11:18:10.298328+00:00",
+      "duration": 28.5,
+      "end": 7877.0,
+      "facecam": true,
+      "file": "e03b9f6982.mp4",
+      "framing": "There is a facecam at the top left. The phone UI on the right and the two characters in the center-left are both important, so the crop needs to show more of the frame.",
+      "handle": null,
+      "hook": "Bro thought his own guy was an ambush \ud83d\udc80",
+      "hook_options": [
+        "He hit his own guy and came back to apologize \ud83d\udc80",
+        "POV: your crew attacks the wrong person",
+        "Bro really said sorry on the radio \ud83d\ude2d",
+        "The whole crew malding after one mistake \ud83d\udc80",
+        "I told them why I didn't invite them \ud83d\ude2d",
+        "He attacked his own guy then came back to apologize \ud83d\udc80"
+      ],
+      "hook_score": 8,
+      "id": "e03b9f6982",
+      "issue": 52,
+      "layout": "cam+wide",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/5f583fec6e/e03b9f6982.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/e03b9f6982.mp4",
+      "posts": {},
+      "preapproval": false,
+      "punch_at": 36.02,
+      "punch_text": "This is why I didn't invite you",
+      "said": "Yo! Why the fu- What the fuck are you doing? Yeah, look, he apologizes. Look, look. Say you're sorry. Because you didn't know it was him. I'm so sorry. That was a miscommunication. I had the wrong person. I thought we were being ambushed. Come back up. Come back up. Come back up. Yeah, yeah, we're good. We're good. We're good. Holy shit, it's crazy. I have to ask you three times. Yeah, yeah, come on. Come on, quickly. I'm on the phone! Shut up! Shut up! Shut up! I'm turning the radio off. I'm turning off the radio. See? See? See, you're asking why I didn't invite you guys.",
+      "score": 7,
+      "speed": 1.3,
+      "start": 7840.0,
+      "status": "approved",
+      "streamer": "xQc",
+      "tags": [
+        "chaos",
+        "rp_drama",
+        "funny_line"
+      ],
+      "title": "He hit the wrong person and came back to apologize \ud83d\udc80",
+      "vod": "twitch:v2917899069",
+      "vod_url": "https://www.twitch.tv/videos/2917899069",
+      "why": "A teammate mistakes an ally for an ambush, then gets coached into a forced apology while the crew melts down."
     },
     "e1eee15461": {
       "asset_deleted": true,
@@ -10070,7 +10215,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-11-03T10:54:36.649892+00:00"
+      "ok": "2026-11-03T11:18:12.783385+00:00"
     }
   },
   "last_run": {
@@ -10207,7 +10352,7 @@
     "2026-10-31": 0.091,
     "2026-11-01": 0.0515,
     "2026-11-02": 0.2236,
-    "2026-11-03": 0.0738
+    "2026-11-03": 0.1359
   },
   "status_updated": "2026-11-03T10:24:45.048809+00:00",
   "streamers": {
