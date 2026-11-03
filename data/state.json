@@ -10041,17 +10041,17 @@
       "why": "Absurd premise of being stuck inside a vending machine, then a stranger finds her and she tries to act normal; chat laughed at 22x."
     },
     "f4d88b2ddd": {
-      "asset_id": 703019899,
+      "asset_id": 706478595,
       "caption": "gangster school tuition is crazy \ud83d\ude2d\ud83d\udc80",
-      "context": "Benji brags about his big Halloween deal",
-      "created": "2026-11-02T20:05:11.092518+00:00",
+      "context": "",
+      "created": "2026-11-03T17:31:54.449795+00:00",
       "duration": 33.8,
-      "email_message_id": "<179364991390.3211.5145555697384206677@gmail.com>",
-      "emailed_at": "2026-11-02T20:05:23.405616+00:00",
+      "email_message_id": "<179372711530.3445.13359531966314892954@gmail.com>",
+      "emailed_at": "2026-11-03T17:32:03.679155+00:00",
       "end": 2730.0,
       "facecam": false,
       "file": "f4d88b2ddd.mp4",
-      "framing": "Most of the clip is the inventory menu, which spans the whole screen, and there is no facecam.",
+      "framing": "No webcam is visible, and most of the clip is an inventory menu that spans the whole screen, so a wide crop is needed.",
       "handle": "twitch.tv/Lysium",
       "hook": "Bro paid 50K for gangster school and thinks he won \ud83d\udc80",
       "hook_options": [
@@ -10064,9 +10064,9 @@
       ],
       "hook_score": 8,
       "id": "f4d88b2ddd",
-      "issue": 44,
+      "issue": 53,
       "layout": "wide",
-      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/56f52d5a88/f4d88b2ddd.mp4",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/rerender_f4d88b2ddd/f4d88b2ddd.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/f4d88b2ddd.mp4",
       "posts": {},
       "preapproval": true,
@@ -10385,6 +10385,13 @@
         "date": "2026-11-03",
         "subject": "Post now: POV: your blind date threatens you with an RPG and you hit them with the wife card \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-11-03T17:32:03.679155+00:00",
+        "clip": "f4d88b2ddd",
+        "date": "2026-11-03",
+        "subject": "Post now: Bro paid 50K for gangster school and thinks he won \ud83d\udc80 (7/10)",
+        "test": false
       }
     ],
     "replies_at": "2026-11-03T17:25:34.098823+00:00"
@@ -10540,7 +10547,7 @@
     "2026-10-31": 0.091,
     "2026-11-01": 0.0515,
     "2026-11-02": 0.2236,
-    "2026-11-03": 0.1359
+    "2026-11-03": 0.1435
   },
   "status_updated": "2026-11-03T17:25:38.645897+00:00",
   "streamers": {
