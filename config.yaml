@@ -36,11 +36,12 @@ streamers:
     campaign: "Lysium/Benji Ramos Clips"
     title_match: "nopixel|\\bnp\\b|benji"   # NoPixel V streams only (Benji Ramos is his NoPixel character)
     handle: "twitch.tv/Lysium"    # his handle on every clip and in every caption
-    context: true                 # a short line at the start saying what's going on
     preapproval: true             # each clip goes to the campaign as a draft first; never auto-posted
     picker_notes: >-
       Campaign rules: pick high-energy moments, which don't have to be loud or only funny (tense chases, clutch
       escapes, big RP scenes count). No drama baiting: no hooks or titles that stir up beef or fake conflict.
+      Give context through the hook: it should tell a stranger what's going on (e.g. "Benji tried to sell the cops
+      their own car back"), since there's no separate context line.
   - name: AnthonyZ
     platform: twitch
     channel: anthonyz
