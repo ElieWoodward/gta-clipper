@@ -588,7 +588,7 @@ twitch.chapters = lambda vid: [(0.0, None, "Grand Theft Auto V")] if vid == "9" 
 _benji = '<article><a href="/campaigns/lysium/benji-ramos">x</a>Board: Content Rewards SOLID 60 Lysium/Benji Ramos Clips Post on TikTok\nPlatforms TikTok, YouTubeCLIPPINGCPM$2.00$2.00 per 1K views$3K of $5K left</article>'
 campaigns._get = lambda url: (LIST_HTML.replace("</body>", _benji + "</body>") if url.endswith("/campaigns")
                               else ("" if "/page/" in url else
-                                    '<a href="https://clippingalpha.com/go/777">Join</a> THRESHOLDS AND CAPS clip his streams'
+                                    '<a href="https://clippingalpha.com/go/777">Join</a> THRESHOLDS AND CAPS clip his streams at twitch.tv/lysium'
                                     if "benji" in url else DETAIL[url.replace(campaigns.BASE, "")]))
 st = common.load_state()
 st.pop("campaigns_recheck_v3", None)
@@ -599,6 +599,18 @@ _b = st["campaigns"].get("lysium__benji-ramos")
 assert _b and _b["twitch_login"] == "lysium" and _b["auto_clip"] and _b["status"] == "notified", _b
 assert any("Benji Ramos" in m["subject"] for m in sent[_n:])
 assert campaigns._slug_guess({"id": "lysium__benji-ramos"})[0] == "lysium"
+# a talk-show campaign named "Harry Jowsey x Shane Parton" isn't the GTA streamer "harry"
+assert "harry" not in [g for g in campaigns._slug_guess({"id": "harry-jowsey__boyfriend-material"})]
+_card = {"id": "harry-jowsey__boyfriend-material", "name": "Harry Jowsey x Shane Parton, Boyfriend Material Post on TikTok",
+         "kind": "CLIPPING"}
+_la3 = twitch.list_archives
+twitch.list_archives = lambda login, n=10: [{"id": "v9", "title": "GTA RP", "duration": 3600}] * 6 if login == "harry" else []
+campaigns.QUICK["left"] = 50
+_gq = twitch._gql
+twitch._gql = lambda body, timeout=15: {"data": {"user": None}}   # those channels don't exist
+assert campaigns.quick_gta_login(_card, "grand theft auto|gta") is None
+twitch._gql = _gq
+twitch.list_archives = _la3
 # out of lookups: the campaign waits for a later scan instead of being marked seen
 st["campaigns"].pop("lysium__benji-ramos"); st["campaigns_seen"].pop("lysium__benji-ramos")
 cfg2["campaigns"] = {"lookups_per_scan": 0}

@@ -180,7 +180,9 @@ def quick_gta_login(card, game_re):
     name = re.split(r"\bPost on\b|\bCLIPPING\b", card["name"])[0]
     words = [w for w in re.split(r"[/|,]", name) if w.strip()]
     guesses = _slug_guess(card) + [g for w in words for g in login_guesses(w)] + login_guesses(name)
-    guesses = list(dict.fromkeys(guesses))[:6]
+    # a first name alone ("harry" from "Harry Jowsey") matches some random streamer: only full names
+    firsts = {w.split()[0].lower() for w in words if len(w.split()) > 1}
+    guesses = [g for g in dict.fromkeys(guesses) if g not in firsts][:6]
     if QUICK["left"] < len(guesses):
         raise Deferred(card["id"])
     for g in guesses:
@@ -207,6 +209,9 @@ def evaluate(card, game_re):
             return None
     d = detail(card)
     if named_after:
+        # the campaign page itself has to point at that channel or at GTA, or it's a name clash
+        if named_after not in [t.lower() for t in d["twitch"]] and not GTA_RE.search(d["brief"]):
+            return None
         d["twitch"] = [named_after] + [t for t in dict.fromkeys(d["twitch"]) if t != named_after]
     gta_text = gta_text or bool(GTA_RE.search(d["brief"]))
     login, why = None, ""

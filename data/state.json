@@ -56,10 +56,10 @@
       "name": "Harry Jowsey x Shane Parton, Boyfriend Material Post on TikTok, Instagram, YouTube US +3 At least 40% of viewers in US, ",
       "platforms": "",
       "rate": 1.0,
-      "status": "notified",
+      "status": "skipped",
       "twitch_login": "harry",
       "url": "https://clippingalpha.com/campaigns/harry-jowsey/shane-parton-boyfriend-material",
-      "why": "GTA in 10 of their last 10 streams"
+      "why": "GTA in 10 of their last 10 streams (false match: a talk show, not the GTA streamer 'harry')"
     },
     "last-thing-you-need__ig": {
       "auto_clip": false,
