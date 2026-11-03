@@ -1065,3 +1065,40 @@ def learn(client=None):
     if not DRY_RUN:
         services.gh_upsert_pinned("weekly-report", f"Weekly report {now_local(cfg):%b %d}",
                                   f"{out['summary']}\n\n### Playbook the picker now follows\n\n{out['playbook']}")
+
+
+def rerender():
+    """CLIP_ID=<id>: make a queued clip again from its stream with the current settings (same cut, hook, title and
+    caption), replace its stored video, and email it again. For fixing a clip that went out with an old look."""
+    cfg, state = load_config(), load_state()
+    cid = os.environ.get("CLIP_ID", "").strip()
+    old = state["clips"].get(cid)
+    if not old:
+        raise RuntimeError(f"no clip {cid!r}")
+    streamer = next((s for s in cfg.get("streamers", []) if s["name"] == old["streamer"]),
+                    {"name": old["streamer"], "platform": "twitch", "channel": old["streamer"].lower()})
+    vod = {"id": old["vod"], "url": old["vod_url"], "title": "", "streamer": streamer}
+    keep = ("start", "end", "score", "hook", "title", "caption", "tags", "why", "hook_options", "hook_score",
+            "punch_text", "punch_at")
+    p = {k: old.get(k) for k in keep}
+    del state["clips"][cid]   # same id: make_clip would otherwise return the old one
+    d = WORK / f"rerender_{cid}"
+    d.mkdir(parents=True, exist_ok=True)
+    try:
+        new = make_clip(cfg, state, vod, p, [], d)
+    except Exception:
+        state["clips"][cid] = old
+        save_state(state)
+        raise
+    for k in ("issue_closed",):
+        new.pop(k, None)
+    if old.get("asset_id") and old.get("asset_id") != new.get("asset_id") and not DRY_RUN:
+        try:
+            services.release_delete(old["asset_id"])
+        except Exception as e:
+            log.info("couldn't delete the old video: %s", e)
+    new["status"] = "approved"
+    save_state(state)
+    print(f"::notice::made again: {new['hook']} ({new['duration']}s)", flush=True)
+    deliver(cfg, state, new)
+    save_state(state)

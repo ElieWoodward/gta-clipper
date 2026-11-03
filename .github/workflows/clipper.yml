@@ -11,7 +11,7 @@ on:
       job:
         description: "Which job to run"
         type: choice
-        options: [process, post, analytics, learn, accounts, probe, preflight, live, campaigns, check_streamers, launch_check]
+        options: [process, post, analytics, learn, accounts, probe, preflight, live, campaigns, check_streamers, launch_check, rerender]
         default: process
       force:
         description: "Ignore launch date and quotas (for testing)"
@@ -19,6 +19,10 @@ on:
         default: false
       test_source:
         description: "Test only: a VOD link, twitch:<channel>, live:<channel> (job=live), or email (job=post, sends one test email). Posts nothing"
+        type: string
+        default: ""
+      clip:
+        description: "job=rerender only: the id of a queued clip to make again with the current settings (and email again)"
         type: string
         default: ""
 
@@ -56,18 +60,18 @@ jobs:
 
       - name: Runner image version (cache key)
         id: img
-        if: steps.pick.outputs.job == 'process' || (steps.pick.outputs.job == 'post' && inputs.test_source != '') || steps.pick.outputs.job == 'probe' || steps.pick.outputs.job == 'preflight' || steps.pick.outputs.job == 'live'
+        if: steps.pick.outputs.job == 'process' || (steps.pick.outputs.job == 'post' && inputs.test_source != '') || steps.pick.outputs.job == 'probe' || steps.pick.outputs.job == 'preflight' || steps.pick.outputs.job == 'live' || steps.pick.outputs.job == 'rerender'
         run: echo "v=${ImageOS}-${ImageVersion}" >> "$GITHUB_OUTPUT"
 
       - name: Restore ffmpeg and fonts packages
         uses: actions/cache@v4
-        if: steps.pick.outputs.job == 'process' || (steps.pick.outputs.job == 'post' && inputs.test_source != '') || steps.pick.outputs.job == 'probe' || steps.pick.outputs.job == 'preflight' || steps.pick.outputs.job == 'live'
+        if: steps.pick.outputs.job == 'process' || (steps.pick.outputs.job == 'post' && inputs.test_source != '') || steps.pick.outputs.job == 'probe' || steps.pick.outputs.job == 'preflight' || steps.pick.outputs.job == 'live' || steps.pick.outputs.job == 'rerender'
         with:
           path: ~/apt-debs
           key: media-debs-${{ steps.img.outputs.v }}-v1
 
       - name: Install ffmpeg and fonts
-        if: steps.pick.outputs.job == 'process' || (steps.pick.outputs.job == 'post' && inputs.test_source != '') || steps.pick.outputs.job == 'probe' || steps.pick.outputs.job == 'preflight' || steps.pick.outputs.job == 'live'
+        if: steps.pick.outputs.job == 'process' || (steps.pick.outputs.job == 'post' && inputs.test_source != '') || steps.pick.outputs.job == 'probe' || steps.pick.outputs.job == 'preflight' || steps.pick.outputs.job == 'live' || steps.pick.outputs.job == 'rerender'
         timeout-minutes: 25
         run: bash .github/scripts/install-media.sh
 
@@ -87,6 +91,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE: ${{ inputs.force && '1' || '0' }}
           TEST_SOURCE: ${{ inputs.test_source }}
+          CLIP_ID: ${{ inputs.clip }}
           DRY_RUN: ${{ inputs.test_source != '' && '1' || '0' }}
         run: |
           set -o pipefail
