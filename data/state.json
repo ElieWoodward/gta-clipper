@@ -6616,6 +6616,8 @@
       "context": "Buying radios from a sketchy seller",
       "created": "2026-11-02T23:58:16.351545+00:00",
       "duration": 26.9,
+      "email_message_id": "<179366452819.2391.7773919490148079624@gmail.com>",
+      "emailed_at": "2026-11-03T00:08:55.428687+00:00",
       "end": 10478.0,
       "facecam": false,
       "file": "94b1bb716b.mp4",
@@ -6642,6 +6644,8 @@
       "punch_text": "I believe you",
       "said": "Offer them 8k for two radios. See what they say. No, no. I don't need to do that. I trust the scammer. It's okay. That's fine. I'll give you 5k down. No problem. I'm giving you actual psycho prices, man. I'm giving you psycho prices. I'm not kidding. Psycho prices. Okay, okay. It's all good. I got you. I know. I believe you. I believe you, man. I believe you, bro. I believe you, bro. 15, 20k. Okay. I believe you. I believe you. I believe you. People will want 30k for this, I'm giving you like a 27,000 dollar discount Okay, okay, okay, I got you, no worries",
       "score": 7,
+      "sent_caption": "bro said I believe you like 15 times \ud83d\ude2d\n\nStreamer: twitch.tv/Lysium\n#gta6 #gtarp #gta #funny #fyp #lysium",
+      "sent_title": "He believes every word the scammer says \ud83d\udc80 #shorts",
       "speed": 1.3,
       "start": 10443.0,
       "status": "approved",
@@ -9787,6 +9791,13 @@
         "date": "2026-11-02",
         "subject": "Post now: We kidnapped a doctor and made him eat four hot dogs \ud83d\ude2d (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-11-03T00:08:55.428687+00:00",
+        "clip": "94b1bb716b",
+        "date": "2026-11-02",
+        "subject": "Post now: POV: you keep telling the scammer \"I believe you\" \ud83d\udc80 (7/10)",
+        "test": false
       }
     ],
     "replies_at": "2026-11-02T23:23:31.305142+00:00"
@@ -9805,7 +9816,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-11-02T23:58:18.923040+00:00"
+      "ok": "2026-11-03T00:08:36.435577+00:00"
     }
   },
   "last_run": {
