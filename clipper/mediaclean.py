@@ -3,8 +3,9 @@
 Once a day (mac.py decides when):
 - a movie or episode watched JELLYFIN_DELETE_DAYS (default 3) or more days ago is deleted through Jellyfin, which
   removes the file too. Radarr/Sonarr see it's gone (with "Unmonitor deleted" on, they don't download it again).
-- the day before, Elie gets a Telegram message with a Keep button. Keep = favorite (the heart) in Jellyfin.
-- favorites are never deleted, and neither is any episode of a favorited show.
+- it happens silently. Set JELLYFIN_NOTIFY=1 in .env to get a heads-up the day before (with a Keep button) and a
+  note of what was cleared.
+- favorites (the heart in Jellyfin) are never deleted, and neither is any episode of a favorited show.
 Settings in the Mac's .env: JELLYFIN_API_KEY (Jellyfin > Dashboard > API Keys > +), optional JELLYFIN_URL
 (default http://localhost:8096), JELLYFIN_USER (whose "watched" counts; default the first admin), JELLYFIN_DELETE_DAYS.
 No Claude calls.
@@ -111,9 +112,12 @@ def keep(item_id):
         _req("POST", f"/Users/{uid}/FavoriteItems/{item_id}")
 
 
-def run(st, send, days=None):
-    """One clean-up pass. send(text, rows) delivers Telegram messages. Returns (deleted labels, warned labels)."""
+def run(st, send, days=None, notify=None):
+    """One clean-up pass. send(text, rows) delivers Telegram messages (only with notify / JELLYFIN_NOTIFY=1).
+    Returns (deleted labels, warned labels)."""
     days = int(days or os.environ.get("JELLYFIN_DELETE_DAYS") or 3)
+    if notify is None:
+        notify = os.environ.get("JELLYFIN_NOTIFY") == "1"
     uid = user_id()
     delete, warn = plan(watched_items(uid), favorite_series(uid), days=days)
     warned = st.setdefault("jf_warned", [])
@@ -124,7 +128,7 @@ def run(st, send, days=None):
             done.append(_label(it))
         except Exception as e:
             log.warning("couldn't delete %s: %s", _label(it), e)
-    for it in warn:
+    for it in (warn if notify else []):
         if it["Id"] in warned:
             continue
         warned.append(it["Id"])
@@ -133,6 +137,8 @@ def run(st, send, days=None):
              [[("Keep it", f"jf:keep:{it['Id']}")]])
     del warned[:-500]
     if done:
+        log.info("cleared %d watched title(s): %s", len(done), ", ".join(done))
+    if done and notify:
         send("🧹 Cleared " + str(len(done)) + f" watched title{'s' if len(done) > 1 else ''} to free up space:\n" +
              "\n".join(f"• {d}" for d in done), None)
     return done, told

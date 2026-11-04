@@ -310,8 +310,8 @@ def run_cleanup(st):
     if not mediaclean.configured():
         if not st.get("jf_key_asked"):
             st["jf_key_asked"] = now_utc().isoformat()
-            tg.send("🧹 To turn on auto-delete for watched movies and shows, Jellyfin needs to give the bot a key:\n\n"
-                    + FIX_JF_KEY)
+            tg.send("🧹 To turn on auto-delete for watched movies and shows (3 days after watching, no messages; "
+                    "anything you heart in Jellyfin is kept), Jellyfin needs to give the bot a key:\n\n" + FIX_JF_KEY)
         return
     try:
         mediaclean.run(st, lambda text, rows: tg.send(text, rows))

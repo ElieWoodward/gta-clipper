@@ -1355,12 +1355,15 @@ def _fake_req(method, path, **kw):  # noqa: E302
 mediaclean._req, _real_req = _fake_req, mediaclean._req
 os.environ["JELLYFIN_API_KEY"] = "test"
 _jst = {}
-_done, _told = mediaclean.run(_jst, lambda t, r: _sent.append((t, r)), days=3)
+_done, _told = mediaclean.run({}, lambda t, r: _sent.append((t, r)), days=3)   # default: silent
+assert _done == ["old (1925)", "Other S01E03"] and _told == [] and _sent == [], _sent
+_calls.clear()
+_done, _told = mediaclean.run(_jst, lambda t, r: _sent.append((t, r)), days=3, notify=True)
 assert ("DELETE", "/Items/old") in _calls and ("DELETE", "/Items/ep2") in _calls
 assert not [c for c in _calls if c[0] == "DELETE" and c[1] in ("/Items/fav", "/Items/ep", "/Items/fresh", "/Items/warnme")]
 assert _told == ["warnme (1925)"] and _sent[0][1][0][0][1] == "jf:keep:warnme" and "Cleared 2" in _sent[1][0], _sent
 _sent.clear()
-mediaclean.run(_jst, lambda t, r: _sent.append((t, r)), days=3)
+mediaclean.run(_jst, lambda t, r: _sent.append((t, r)), days=3, notify=True)
 assert not [s for s in _sent if "deleted tomorrow" in s[0]]   # warned once only
 mediaclean._req = _real_req
 os.environ.pop("JELLYFIN_API_KEY")
