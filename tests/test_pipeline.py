@@ -1365,3 +1365,72 @@ assert not [s for s in _sent if "deleted tomorrow" in s[0]]   # warned once only
 mediaclean._req = _real_req
 os.environ.pop("JELLYFIN_API_KEY")
 print("JELLYFIN CLEANUP OK")
+
+# ---------- 34. Mac clipping mode: clips stored on the Mac, everything via Telegram with buttons, Mac job schedule ----------
+from clipper import services as _sv, mail as _ml  # noqa: E402
+os.environ.update(CLIP_STORAGE="local", CLIP_STORE=str(TMP / "store"))
+_f = TMP / "c1.mp4"
+_f.write_bytes(b"video")
+_aid, _url = _sv.release_upload(_f, "c1.mp4")
+assert _aid == "local:c1.mp4" and _url.startswith("file://") and (TMP / "store" / "c1.mp4").exists()
+assert [a["id"] for a in _sv.queue_release()["assets"]] == ["local:c1.mp4"]
+assert _sv.download(_url, TMP / "back.mp4").read_bytes() == b"video"
+_sv.release_delete(_aid)
+assert not (TMP / "store" / "c1.mp4").exists()
+os.environ.pop("CLIP_STORAGE")
+_tgcalls = []
+_real_call = tg._call
+tg._call = lambda m, data=None, files=None, timeout=30: (_tgcalls.append((m, data)), {"message_id": len(_tgcalls)})[1]
+os.environ.update(NOTIFY_VIA="telegram", TELEGRAM_TOKEN="t", TELEGRAM_CHAT_ID="1")
+_dry = os.environ.pop("DRY_RUN", None)
+assert _ml.telegram_mode() and _ml.configured() and _ml.down_until() is None
+_mid = _ml.send("Post now: boy band (8/10)", 'blah\n\nReply "posted" once it\'s up, or "skip" to drop it (a skipped clip '
+                'gets replaced). It also notices on its own when it shows up on your TikTok.', attachment=str(_f))
+assert _mid.startswith("tg:") and [c[0] for c in _tgcalls] == ["sendVideo", "sendMessage"], _tgcalls
+_kb = json.loads(_tgcalls[-1][1]["reply_markup"])["inline_keyboard"]
+assert _kb[0][0]["callback_data"] == f"r:posted:{_mid[3:]}" and "Tap Posted" in _tgcalls[-1][1]["text"]
+_ml.send("Campaign: Benji ($1.50 per 1K)", "fits")
+assert json.loads(_tgcalls[-1][1]["reply_markup"])["inline_keyboard"][0][0]["callback_data"].startswith("r:join:")
+_ml.send("Clip bot problem: x", "y")
+assert "reply_markup" not in _tgcalls[-1][1]
+_ml.queue_reply(_mid, "posted")
+_ml.queue_reply("", "pause")
+assert _ml.read_replies() == [(_mid, "posted"), ("", "pause")] and _ml.read_replies() == []
+_ml.check_login()
+assert _tgcalls[-1][0] == "getMe"
+# the Mac loop turns a tap into a reply and marks the message
+os.environ["MAC_RUNS_CLIPPER"] = "1"
+mac.handle({}, "tap", f"r:skip:{_mid[3:]}", 7, "📲 Post now")
+assert _ml.read_replies() == [(_mid, "skip")] and _tgcalls[-1][0] == "editMessageText"
+mac.handle({}, "text", "pause", 8, "")
+assert _ml.read_replies() == [("", "pause")]
+# the job schedule: process first, then posting checks, never two main jobs at once, live watcher kept running
+_started = []
+class _P:  # noqa: E302
+    def __init__(self, j): self.j, self.done = j, False  # noqa: E704
+    def poll(self): return 0 if self.done else None  # noqa: E704
+    pid = 1
+_J = mac.Jobs()
+_J._start = lambda j: (_started.append(j), _P(j))[1]
+_J.next_process = _J.next_post = 0
+_J.tick({})
+assert _started == ["live", "process"], _started
+_J.tick({})
+assert _started == ["live", "process"]   # process still running: nothing else starts
+_J.cur.done = True
+_J.next_post = 0
+_J.tick({})
+assert _started[-1] == "post" and _J.busy()
+_J.live.done = True
+_J.cur.done = True
+_J.tick({})
+assert _started.count("live") == 2   # the watcher ended (6-hour limit): restarted
+os.environ["CLIPPER_WORK"] = "/Volumes/NoSuchDrive/clipper"
+_ast = {}
+assert _J.drive_ok(_ast) is False and "Work SSD" in json.dumps(_tgcalls[-1])
+for _k in ("MAC_RUNS_CLIPPER", "CLIPPER_WORK", "NOTIFY_VIA", "TELEGRAM_TOKEN", "TELEGRAM_CHAT_ID", "CLIP_STORE"):
+    os.environ.pop(_k, None)
+if _dry is not None:
+    os.environ["DRY_RUN"] = _dry
+tg._call = _real_call
+print("MAC CLIPPING OK")

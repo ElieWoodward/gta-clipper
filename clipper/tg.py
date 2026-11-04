@@ -63,6 +63,16 @@ def send_video(path, caption, rows=None):
         return _call("sendVideo", data, files={"video": f}, timeout=300)["message_id"]
 
 
+def send_file(path, caption):
+    """Any other attachment (thumbnails, reports) as a document."""
+    if not configured() or os.environ.get("DRY_RUN") == "1":
+        log.info("[telegram off] file %s", path)
+        return None
+    with open(path, "rb") as f:
+        return _call("sendDocument", {"chat_id": os.environ["TELEGRAM_CHAT_ID"], "caption": caption[:1000]},
+                     files={"document": f}, timeout=300)["message_id"]
+
+
 def edit(message_id, text):
     """Replace a message's text and remove its buttons (after a tap, so it can't be tapped twice)."""
     if not configured() or not message_id:

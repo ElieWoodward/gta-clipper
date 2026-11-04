@@ -45,6 +45,9 @@ def load_env(path=None):
             continue
         k, v = line.split("=", 1)
         os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+    tools = os.path.expanduser("~/.clipper/bin")   # ffmpeg for the clipping jobs (mac/enable-clipping.sh)
+    if os.path.isdir(tools) and tools not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = tools + os.pathsep + os.environ.get("PATH", "")
 
 
 def load():
@@ -259,7 +262,26 @@ def handle(st, kind, data, message_id, text):
         except Exception as e:
             tg.send(f"Couldn't mark it as kept ({str(e)[:150]}). In the Jellyfin app, tap the heart on it instead.")
         return
+    if kind == "tap" and data.startswith("r:"):
+        from . import mail
+        _, verdict, token = (data.split(":", 2) + ["", ""])[:3]
+        mail.queue_reply(f"tg:{token}", verdict)
+        done = {"posted": "✅ Marked posted", "skip": "⏭ Skipped (a replacement comes at the next slot)",
+                "next": "➕ Another clip is on its way", "join": "✅ Joined: its clips go first now. Apply with the "
+                "link above if you haven't yet; I'll tell you when they approve you.", "skip_c": ""}.get(verdict, "Got it")
+        tg.edit(message_id, f"{(text or '')[:3500]}\n\n{done}")
+        return
     if kind == "text":
+        if clipping_on() and low not in ("status", "/status", "check", "/check", "cleanup", "/cleanup",
+                                         "/start", "start", "help", "/help"):
+            from . import mail
+            verdict = mail.reply_verdict(data or "")
+            if verdict in ("pause", "resume", "next") or (verdict or "").startswith("launch:"):
+                mail.queue_reply("", verdict)
+                tg.send({"pause": "⏸ Posting messages paused (clips keep collecting). Text resume to restart.",
+                         "resume": "▶️ Posting messages back on.", "next": "➕ Sending another clip shortly."}
+                        .get(verdict, f"📅 Got it: {verdict}"), silent=True)
+                return
         if low in ("status", "/status"):
             tg.send(summary(st))
         elif low in ("check", "/check"):
@@ -332,6 +354,92 @@ def self_update():
     return True
 
 
+def clipping_on():
+    """MAC_RUNS_CLIPPER=1 in .env: the Mac runs the clipping jobs itself (GitHub's are paused)."""
+    return os.environ.get("MAC_RUNS_CLIPPER") == "1"
+
+
+class Jobs:
+    """GitHub's schedule, run on the Mac: posting check every 15 min, stream check hourly (it posts too), campaign
+    scan daily from 7 AM, report Mondays from 8 AM, the long video when weekly.due() says so, and the live watcher
+    always on. Main jobs run one at a time (they share data/state.json); the live watcher writes its own file."""
+
+    def __init__(self):
+        import sys
+        self.py, self.cur, self.live = sys.executable, None, None
+        now = time.time()
+        self.next_post, self.next_process, self.next_daily = now + 60, now + 180, now + 300
+        self.pidfile = DATA / "live.pid"
+        try:   # a live watcher left over from before a restart: stop it so two never run at once
+            import signal
+            os.kill(int(self.pidfile.read_text()), signal.SIGTERM)
+            time.sleep(5)
+        except (OSError, ValueError):
+            pass
+
+    def busy(self):
+        return self.cur is not None and self.cur.poll() is None
+
+    def stop_live(self):
+        if self.live is not None and self.live.poll() is None:
+            self.live.terminate()
+            try:
+                self.live.wait(30)
+            except subprocess.TimeoutExpired:
+                self.live.kill()
+
+    def _start(self, job):
+        log.info("starting job %s", job)
+        logf = open(DATA.parent / "logs" / f"{job}.log", "ab") if (DATA.parent / "logs").exists() else None
+        return subprocess.Popen([self.py, "-m", "clipper", job], cwd=str(ROOT), stdout=logf or subprocess.DEVNULL,
+                                stderr=subprocess.STDOUT)
+
+    def drive_ok(self, st):
+        work = os.environ.get("CLIPPER_WORK", "")
+        if work.startswith("/Volumes/") and not os.path.isdir("/Volumes/" + work.split("/")[2]):
+            tg.problem(st, "work_drive", f"The Work SSD isn't connected ({work}), so clipping is paused.",
+                       "Plug the Work SSD back into the Mac. Clipping picks up again within a few minutes.")
+            return False
+        return True
+
+    def tick(self, st):
+        now = time.time()
+        if not self.drive_ok(st):
+            return
+        if self.live is None or self.live.poll() is not None:   # the live watcher ends every ~6 hours: restart it
+            self.live = self._start("live")
+            self.pidfile.write_text(str(self.live.pid))
+        if self.cur is not None and self.cur.poll() is None:
+            return   # a main job is still running
+        self.cur = None
+        lt = local_now()
+        last = st.setdefault("jobs_last", {})
+        today = lt.date().isoformat()
+        if now >= self.next_process:
+            self.next_process, self.next_post = now + 3600, now + 15 * 60
+            self.cur = self._start("process")
+        elif now >= self.next_post:
+            self.next_post = now + 15 * 60
+            self.cur = self._start("post")
+        elif now >= self.next_daily:
+            self.next_daily = now + 600
+            if lt.hour >= 7 and last.get("analytics") != today:
+                last["analytics"] = today
+                self.cur = self._start("analytics")
+            elif lt.weekday() == 0 and lt.hour >= 8 and last.get("learn") != today:
+                last["learn"] = today
+                self.cur = self._start("learn")
+            else:
+                try:
+                    from . import weekly
+                    from .common import load_config
+                    if weekly.due(load_config()) and last.get("weekly_try") != f"{today}:{lt.hour}":
+                        last["weekly_try"] = f"{today}:{lt.hour}"
+                        self.cur = self._start("weekly")
+                except Exception as e:
+                    log.warning("weekly check failed: %s", e)
+
+
 def loop():
     load_env()
     if not tg.configured():
@@ -339,6 +447,8 @@ def loop():
     from . import relay
     st = load()
     nxt, nxt_relay, nxt_update = 0.0, 0.0, time.time() + UPDATE_EVERY
+    jobs = None
+    (DATA.parent / "logs").mkdir(exist_ok=True)
     if not st.get("started_once"):
         tg.send("🟢 Clip bot is running on the Mac. Text \"status\" any time.", silent=True)
         st["started_once"] = now_utc().isoformat()
@@ -352,7 +462,14 @@ def loop():
             log.warning("telegram poll failed: %s", e)
             time.sleep(30)
         now = time.time()
-        if now >= nxt_relay:   # posting clips, live links, campaigns and problems from the bot on GitHub
+        if clipping_on():
+            if jobs is None:
+                jobs = Jobs()
+            try:
+                jobs.tick(st)
+            except Exception as e:
+                log.warning("job scheduler hiccup: %s", e)
+        elif now >= nxt_relay:   # posting clips, live links, campaigns and problems from the bot on GitHub
             nxt_relay = now + RELAY_EVERY
             try:
                 relay.run(st)
@@ -367,11 +484,13 @@ def loop():
             st["jf_day"] = local_now().date().isoformat()
             run_cleanup(st)
             save(st)
-        if now >= nxt_update:
+        if now >= nxt_update and not (jobs and jobs.busy()):   # never restart in the middle of a clipping job
             nxt_update = now + UPDATE_EVERY
             try:
                 if self_update():
                     save(st)
+                    if jobs:
+                        jobs.stop_live()
                     raise SystemExit(0)   # launchd starts the new version within a minute
             except SystemExit:
                 raise

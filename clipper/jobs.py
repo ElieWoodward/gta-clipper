@@ -931,6 +931,8 @@ def _status_email_mode(cfg, state):
 
 
 def _status_issue(cfg, state):
+    if not os.environ.get("GITHUB_TOKEN"):   # on the Mac the dashboard is the Telegram "status" message
+        return
     rows = []
     posts = [(c, pl, p) for c in state["clips"].values() for pl, p in c["posts"].items()]
     posts.sort(key=lambda x: x[2].get("posted_at") or x[2].get("seen_at") or "", reverse=True)

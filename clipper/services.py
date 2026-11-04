@@ -1,5 +1,7 @@
 """Thin clients for Blotato (posting + analytics), GitHub (issues as the dashboard) and YouTube (hiding videos)."""
 import os
+from pathlib import Path
+import shutil
 import time
 
 import requests
@@ -164,8 +166,21 @@ def youtube_set_private(video_id):
 QUEUE_TAG = "queue"
 
 
+def _local_store():
+    """On the Mac (CLIP_STORAGE=local) clips wait in a folder on its drive instead of a GitHub release."""
+    if os.environ.get("CLIP_STORAGE") != "local":
+        return None
+    from .common import WORK
+    p = Path(os.environ.get("CLIP_STORE") or (WORK / "store"))
+    p.mkdir(parents=True, exist_ok=True)
+    return p
+
+
 def queue_release():
     """The `queue` release (created on first use). Returns its JSON."""
+    store = _local_store()
+    if store:
+        return {"id": "local", "assets": [{"id": f"local:{f.name}", "name": f.name} for f in sorted(store.iterdir())]}
     r = requests.get(f"{GH}/repos/{_repo()}/releases/tags/{QUEUE_TAG}", headers=_gh(), timeout=30)
     if r.status_code == 200:
         return r.json()
@@ -179,6 +194,12 @@ def queue_release():
 
 def release_upload(path, name=None):
     """Upload a file to the queue release. Returns (asset_id, public download URL)."""
+    store = _local_store()
+    if store:
+        dest = store / (name or os.path.basename(str(path)))
+        if Path(path).resolve() != dest.resolve():
+            shutil.copy(path, dest)
+        return f"local:{dest.name}", dest.as_uri()
     rel = queue_release()
     name = name or os.path.basename(str(path))
     for a in rel.get("assets") or []:   # re-running a clip replaces its old upload
@@ -195,12 +216,21 @@ def release_upload(path, name=None):
 
 
 def release_delete(asset_id):
+    if str(asset_id).startswith("local:"):
+        store = _local_store()
+        if store:
+            (store / str(asset_id)[6:]).unlink(missing_ok=True)
+        return
     r = requests.delete(f"{GH}/repos/{_repo()}/releases/assets/{asset_id}", headers=_gh(), timeout=30)
     if r.status_code not in (204, 404):
         r.raise_for_status()
 
 
 def download(url, dest):
+    if str(url).startswith("file://"):   # a clip kept on the Mac's own drive
+        from urllib.parse import unquote, urlparse
+        shutil.copy(unquote(urlparse(url).path), dest)
+        return dest
     with requests.get(url, stream=True, timeout=600) as r:
         r.raise_for_status()
         with open(dest, "wb") as f:

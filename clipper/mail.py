@@ -22,8 +22,70 @@ IMAP_HOST = "imap.gmail.com"
 ATTACH_LIMIT = 24 * 1024 * 1024   # Gmail allows 25 MB; stay under it
 
 
+def telegram_mode():
+    """On the Mac (NOTIFY_VIA=telegram) every "email" goes to Telegram instead, and taps stand in for replies."""
+    from . import tg
+    return os.environ.get("NOTIFY_VIA") == "telegram" and tg.configured()
+
+
 def configured():
+    if telegram_mode():
+        return True
     return all(os.environ.get(k) for k in ("GMAIL_ADDRESS", "GMAIL_APP_PASSWORD", "NOTIFY_EMAIL"))
+
+
+REPLIES = DATA / "tg_replies.json"   # taps and texts the Mac loop collected, waiting for the post job
+
+
+def queue_reply(ref, verdict):
+    """Called by the Mac loop when Elie taps a button or texts a command."""
+    try:
+        items = json.loads(REPLIES.read_text())
+    except (OSError, ValueError):
+        items = []
+    items.append([ref, verdict])
+    REPLIES.parent.mkdir(parents=True, exist_ok=True)
+    tmp = REPLIES.with_suffix(".tmp")
+    tmp.write_text(json.dumps(items[-200:]))
+    tmp.replace(REPLIES)
+
+
+def _buttons_for(subject, token):
+    if subject.startswith("Post now") or subject.startswith("[TEST] Post now"):
+        return [[("✅ Posted", f"r:posted:{token}"), ("⏭ Skip", f"r:skip:{token}")], [("➕ Send another", f"r:next:{token}")]]
+    if subject.startswith("Campaign:"):
+        return [[("✅ Join", f"r:join:{token}"), ("✖️ Skip", f"r:skip:{token}")]]
+    return None
+
+
+def _send_telegram(subject, text, attachment, maintype):
+    import uuid
+    from . import tg
+    token = uuid.uuid4().hex[:10]
+    rows = _buttons_for(subject, token)
+    files = [a for a in (attachment if isinstance(attachment, (list, tuple)) else [attachment] if attachment else [])]
+    body = text.replace('Reply "posted" once it\'s up, or "skip" to drop it (a skipped clip gets replaced). It also '
+                        "notices on its own when it shows up on your TikTok.",
+                        "Tap Posted once it's up, or Skip to drop it (it gets replaced). It also notices on its own "
+                        "when it shows up on your TikTok.")
+    body = body.replace('Other replies: "next" sends another clip now, "pause" stops posting emails, "resume" starts them '
+                        "again.", 'Text "pause" to stop posting messages, "resume" to start them again.')
+    for f in files[:1]:
+        if maintype == "video":
+            tg.send_video(str(f), subject)
+        else:
+            tg.send_file(str(f), subject)
+    chunks, cur = [], f"{subject}\n\n"
+    for para in body.split("\n\n"):
+        if len(cur) + len(para) > 3800:
+            chunks.append(cur)
+            cur = ""
+        cur += para + "\n\n"
+    chunks.append(cur)
+    for i, c in enumerate(chunks):
+        tg.send(c.strip(), rows if i == len(chunks) - 1 else None)
+    log.info("sent to telegram: %s", subject)
+    return f"tg:{token}"
 
 
 # If Gmail refuses a login (account locked, password revoked, Google blocking the sign-in), the bot stops trying for
@@ -38,6 +100,8 @@ class MailDown(RuntimeError):
 
 def down_until():
     """When Gmail logins may be tried again (UTC ISO string), or None if they can be tried now."""
+    if telegram_mode():
+        return None
     try:
         rec = json.loads(BACKOFF.read_text())
     except (OSError, ValueError):
@@ -98,6 +162,10 @@ def _login_imap(force=False):
 
 def check_login():
     """Log in to SMTP and IMAP and log straight out (preflight). Tries even during a pause."""
+    if telegram_mode():
+        from . import tg
+        tg._call("getMe")
+        return
     _login_smtp(force=True).quit()
     m = _login_imap(force=True)
     m.logout()
@@ -105,6 +173,8 @@ def check_login():
 
 def send(subject, text, html=None, attachment=None, attachment_name=None, maintype="video", subtype="mp4"):
     """Send to NOTIFY_EMAIL. Returns the Message-ID (replies point back to it)."""
+    if telegram_mode():
+        return _send_telegram(subject, text, attachment, maintype)
     sender = require_env("GMAIL_ADDRESS")
     msg = EmailMessage()
     msg["Subject"] = subject
@@ -167,6 +237,13 @@ def reply_verdict(text):
 
 def read_replies(since_days=7):
     """[(in_reply_to_message_id, 'posted'|'skip')] from unread replies to the bot's emails; marks them read."""
+    if telegram_mode():
+        try:
+            items = json.loads(REPLIES.read_text())
+            REPLIES.unlink()
+        except (OSError, ValueError):
+            items = []
+        return [(ref, verdict) for ref, verdict in items]
     out = []
     m = _login_imap()
     try:

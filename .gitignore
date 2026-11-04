@@ -5,3 +5,8 @@ __pycache__/
 .venv/
 data/mac.json
 data/telegram.json
+logs/
+data/live.pid
+data/tg_replies.json
+fonts/NotoColorEmoji.ttf
+fonts/DejaVuSans*.ttf
