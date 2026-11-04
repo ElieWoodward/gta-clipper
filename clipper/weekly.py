@@ -35,6 +35,7 @@ YELLOW = (255, 214, 10)
 WHITE = (245, 245, 245)
 GREY = (160, 160, 170)
 RED = (235, 64, 52)
+COLD_S, INTRO_S, CARD_S, TEASE_S, END_S = 5.0, 2.0, 1.0, 3.0, 12.0   # cold open, title card, rank card, teaser, end
 CHAT_DELAY = 4          # chat in a replay reacts a few seconds after the moment
 DEFAULTS = {"enabled": True, "weekday": 6, "hour": 9, "target_minutes": 10, "min_minutes": 8, "max_clips": 18,
             "min_clip_seconds": 10, "languages": ["EN"], "keep_episodes": 2}
@@ -477,10 +478,155 @@ def thumbnail(clip, frame_png, series_name, out):
     return out
 
 
+# ------------------------------------------------------------------ 3b. retention: cold open and teasers
+def peak_time(clip):
+    """Second (from the clip's start) where chat went hardest; the middle if there's no chat."""
+    curve = (clip.get("stats") or {}).get("curve") or []
+    if curve and max(curve) > 0:
+        return float(max(range(len(curve)), key=lambda i: curve[i]))
+    return clip["duration"] / 2
+
+
+def banner(text, sub, out, color=YELLOW):
+    """A transparent 1920x1080 overlay with a top banner (used over teaser footage)."""
+    from PIL import Image, ImageDraw
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    f, fs = _font(96, bold=True), _font(46, bold=True)
+    tw = d.textlength(text, font=f)
+    d.rounded_rectangle([(W - tw) / 2 - 40, 40, (W + tw) / 2 + 40, 170], 24, fill=(14, 14, 18, 225))
+    d.text(((W - tw) / 2, 48), text, font=f, fill=color)
+    if sub:
+        sw = d.textlength(sub, font=fs)
+        d.rounded_rectangle([(W - sw) / 2 - 24, 184, (W + sw) / 2 + 24, 250], 18, fill=(145, 70, 255, 235))
+        d.text(((W - sw) / 2, 190), sub, font=fs, fill=WHITE)
+    im.save(out)
+    return out
+
+
+def teaser(src, start, dur, overlay_png, out, ff="ffmpeg"):
+    """A few seconds of a clip, full frame, with a banner on top (cold open / "still to come")."""
+    vf = (f"[0:v]scale={W}:{H}:force_original_aspect_ratio=decrease,pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=black,"
+          f"setsar=1[c];[c][1:v]overlay=0:0,fps={FPS},format=yuv420p[v]")
+    run([ff, "-y", "-loglevel", "error", "-ss", f"{max(0, start):.2f}", "-i", src, "-loop", "1", "-i", overlay_png,
+         "-filter_complex", vf, "-map", "[v]", "-map", "0:a?", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
+         "-t", f"{dur:.2f}", *ENC, out])
+    return out
+
+
+def end_card(series_name, episode, frame_png, out):
+    """Last 12 seconds: left side text, right side kept clear for YouTube's end-screen video and subscribe boxes."""
+    from PIL import ImageDraw
+    im = _blurred(frame_png, 0.25)
+    d = ImageDraw.Draw(im)
+    d.text((110, 300), "THAT'S THE WEEK", font=_font(120, bold=True), fill=YELLOW, stroke_width=5, stroke_fill=(0, 0, 0))
+    d.text((116, 470), f"Episode #{episode + 1} drops next Sunday", font=_font(58, bold=True), fill=WHITE,
+           stroke_width=3, stroke_fill=(0, 0, 0))
+    d.text((116, 560), "Watch the last one while you wait  >", font=_font(44), fill=(190, 160, 255))
+    for box in ([1120, 230, 1820, 624], [1290, 680, 1650, 860]):   # where the end-screen elements go
+        d.rounded_rectangle(box, 18, outline=(90, 90, 105), width=4)
+    im.save(out)
+    return out
+
+
+def _words(text, n=4):
+    """A thumbnail's few words from a Twitch clip title (vidIQ's breakout thumbnails: median five words)."""
+    w = _clean(text).upper().split()
+    return " ".join(w[:n]) if w else ""
+
+
+def _thumb_base(frame_png):
+    from PIL import Image, ImageDraw, ImageEnhance
+    im = Image.open(frame_png).convert("RGB").resize((1280, 720))
+    im = ImageEnhance.Contrast(ImageEnhance.Color(im).enhance(1.35)).enhance(1.15)
+    shade = Image.new("RGBA", (1280, 720), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(shade)
+    for x in range(620):
+        sd.line([x, 0, x, 720], fill=(0, 0, 0, int(210 * (1 - x / 620))))
+    return Image.alpha_composite(im.convert("RGBA"), shade).convert("RGB")
+
+
+def thumbnails(clip, frame_png, series_name, out_dir, facecam=None):
+    """Three thumbnails for YouTube's Test & Compare (it keeps the one with the most watch time). Same layout
+    family every week so the series is recognisable; yellow and purple, not YouTube's red/white/black; nothing in
+    the lower right, where the video length sits."""
+    from PIL import Image, ImageDraw
+    out_dir = Path(out_dir)
+    words = _words(clip["title"]) or clip["name"].upper()
+    paths = []
+    # A: #1 + the moment in a few words
+    im = _thumb_base(frame_png)
+    d = ImageDraw.Draw(im)
+    d.text((40, 0), "#1", font=_font(300, bold=True), fill=YELLOW, stroke_width=8, stroke_fill=(0, 0, 0))
+    y = 370
+    for line in _wrap(d, words, _font(92, bold=True), 700)[:2]:
+        d.text((48, y), line, font=_font(92, bold=True), fill=WHITE, stroke_width=5, stroke_fill=(0, 0, 0))
+        y += 110
+    d.rounded_rectangle([40, 616, 640, 692], 14, fill=(145, 70, 255))
+    d.text((58, 620), f"{series_name.upper()} · {clip['name'].upper()}"[:28], font=_font(52, bold=True), fill=WHITE)
+    paths.append(out_dir / "thumb_a.jpg")
+    im.save(paths[-1], quality=92)
+    # B: the streamer's face big (a clear face is in most breakout thumbnails), #1 beside it
+    im = _thumb_base(frame_png)
+    if facecam:
+        src = Image.open(frame_png).convert("RGB")
+        fw, fh = src.size
+        box = (int(fw * facecam["x"]), int(fh * facecam["y"]), int(fw * (facecam["x"] + facecam["w"])),
+               int(fh * (facecam["y"] + facecam["h"])))
+        cam = src.crop(box)
+        cam = cam.resize((560, max(1, int(560 * cam.height / max(1, cam.width)))))
+        cam = cam.crop((0, 0, 560, min(cam.height, 560)))
+        im.paste(cam, (680, 40))
+        ImageDraw.Draw(im).rectangle([680, 40, 680 + cam.width, 40 + cam.height], outline=YELLOW, width=8)
+    d = ImageDraw.Draw(im)
+    d.text((40, 20), "#1", font=_font(330, bold=True), fill=YELLOW, stroke_width=8, stroke_fill=(0, 0, 0))
+    d.text((48, 430), _fit(d, clip["name"].upper(), _font(110, bold=True), 600), font=_font(110, bold=True),
+           fill=WHITE, stroke_width=6, stroke_fill=(0, 0, 0))
+    paths.append(out_dir / "thumb_b.jpg")
+    im.save(paths[-1], quality=92)
+    # C: the number nobody else has: how hard chat went
+    st = clip.get("stats") or {}
+    im = _thumb_base(frame_png)
+    d = ImageDraw.Draw(im)
+    hype = f"x{st.get('peak', 0):.0f}" if st.get("peak", 0) >= 2 else f"{_views(clip['views'])}"
+    d.text((40, 20), "CHAT WENT" if st.get("peak", 0) >= 2 else "VIEWS", font=_font(96, bold=True), fill=WHITE,
+           stroke_width=5, stroke_fill=(0, 0, 0))
+    d.text((36, 120), hype, font=_font(300, bold=True), fill=YELLOW, stroke_width=8, stroke_fill=(0, 0, 0))
+    d.rounded_rectangle([40, 540, 700, 640], 14, fill=(145, 70, 255))
+    d.text((60, 546), f"#1 · {clip['name'].upper()}"[:22], font=_font(70, bold=True), fill=WHITE)
+    paths.append(out_dir / "thumb_c.jpg")
+    im.save(paths[-1], quality=92)
+    return paths
+
+
+def _wrap(d, text, font, width):
+    lines, cur = [], ""
+    for w in text.split():
+        t = (cur + " " + w).strip()
+        if d.textlength(t, font=font) <= width or not cur:
+            cur = t
+        else:
+            lines.append(cur)
+            cur = w
+    return lines + ([cur] if cur else [])
+
+
 # ------------------------------------------------------------------ 4. text
 def _clock(s):
     s = int(s)
     return f"{s // 60}:{s % 60:02d}" if s < 3600 else f"{s // 3600}:{s % 3600 // 60:02d}:{s % 60:02d}"
+
+
+def titles(series_name, episode, clips):
+    """Three titles for Test & Compare: the plain series title, and two that add the #1 moment."""
+    one = next(c for c in sorted(clips, key=lambda c: c["rank"]))
+    moment = _clean(one["title"])[:45].strip()
+    base = f"{series_name} MOST VIEWED Twitch Clips of The Week! #{episode}"
+    out = [base]
+    if moment:
+        out.append(f"{base} ({moment})"[:100])
+        out.append(f"{one['name']}: {moment} | {series_name} Most Viewed Clips #{episode}"[:100])
+    return out
 
 
 def texts(series_name, episode, span, chapters, clips):
@@ -522,7 +668,7 @@ def build(cfg, out_dir, test=False, ff=None):
     end = now_utc().astimezone(ZoneInfo(cfg.get("timezone", "UTC"))).date()
     span = f"{end - timedelta(days=6):%b %-d} to {end:%b %-d}"
     emotes = Emotes(out_dir / "emotes")
-    segs, chapters, t = [], [], 0.0
+    made = []   # (clip, card, seg) in countdown order
     for c in picked:
         d = out_dir / f"r{c['rank']:02d}"
         d.mkdir(exist_ok=True)
@@ -542,31 +688,64 @@ def build(cfg, out_dir, test=False, ff=None):
         c["stats"] = stats(msgs, float(c["offset"] or 0), c["duration"])
         frame_at(src, min(c["duration"] / 2, 3), d / "frame.png", ff)
         c["frame"] = str(d / "frame.png")
-        card = still(rank_card(c, d / "frame.png", d / "card.png"), 1.6, d / "card.mp4", ff)
+        c["src"] = str(src)
+        frame_at(src, peak_time(c), d / "peak.png", ff)   # the moment chat exploded: for cards and thumbnails
+        card = still(rank_card(c, d / "peak.png", d / "card.png"), CARD_S, d / "card.mp4", ff)
         bg = background(c, c["stats"], name, d / "bg.png")
         chat_seq, meter_seq = panel_frames(msgs, float(c["offset"] or 0), c["duration"], c["stats"]["curve"], d, emotes)
         seg = segment(src, bg, chat_seq, meter_seq, c["duration"], d / "seg.mp4", ff)
-        label = f"#{c['rank']} {c['name']}: {_clean(c['title'])[:60] or 'clip'}"
-        chapters.append((t, label))
-        segs += [card, seg]
-        t += 1.6 + c["duration"]
-    if len(chapters) < (2 if test else 5):
+        made.append((c, card, seg))
+    if len(made) < (2 if test else 5):
         raise RuntimeError("too few clips downloaded")
-    top = next(c for c in sorted(picked, key=lambda c: c["rank"]) if c.get("frame"))   # #1, or the best we got
-    intro = still(intro_card(name, episode, span, top["frame"], out_dir / "intro.png"), 3.5, out_dir / "intro.mp4", ff)
-    outro = still(outro_card(name, episode, top["frame"], out_dir / "outro.png"), 4.0, out_dir / "outro.mp4", ff)
-    # YouTube chapters: the first starts at 0:00 (it includes the intro) and each is at least 10 seconds
-    chapters = [(0.0 if i == 0 else ct + 3.5, lab) for i, (ct, lab) in enumerate(chapters)]
+    by_rank = sorted((m[0] for m in made), key=lambda c: c["rank"])
+    top = by_rank[0]   # #1, or the best we got
+
+    def snippet(c, dur, text, sub, tag):
+        a = max(0.0, min(peak_time(c) - dur * 0.6, c["duration"] - dur))
+        ov = banner(text, sub, out_dir / f"{tag}.png")
+        return teaser(c["src"], a, min(dur, c["duration"]), ov, out_dir / f"{tag}.mp4", ff)
+
+    # Cold open: the payoff of #1 right away, so the first seconds confirm what the title promised.
+    order, chapters, t = [], [], 0.0
+    cold = snippet(top, COLD_S, f"#{top['rank']} IS COMING UP", f"{top['name']} · {top['views']:,} views", "cold")
+    intro = still(intro_card(name, episode, span, top["frame"].replace("frame", "peak"), out_dir / "intro.png"),
+                  INTRO_S, out_dir / "intro.mp4", ff)
+    order += [cold, intro]
+    t += COLD_S + INTRO_S
+    # Re-hook about every third of the way: a few seconds of a higher-ranked clip still to come.
+    teaser_at = {len(made) // 3, (2 * len(made)) // 3} - {0}
+    for i, (c, card, seg) in enumerate(made):
+        if i in teaser_at:
+            ahead = [x for x in by_rank if x["rank"] < c["rank"] and x is not top]
+            if ahead:
+                nxt = ahead[len(ahead) // 2]
+                order.append(snippet(nxt, TEASE_S, "STILL TO COME", f"#{nxt['rank']} · {nxt['name']}", f"tease{i}"))
+                t += TEASE_S
+        label = f"#{c['rank']} {c['name']}: {_clean(c['title'])[:60] or 'clip'}"
+        chapters.append((0.0 if not chapters else t, label))   # YouTube: the first chapter starts at 0:00
+        order += [card, seg]
+        t += CARD_S + c["duration"]
+    endc = still(end_card(name, episode, top["frame"].replace("frame", "peak"), out_dir / "end.png"), END_S,
+                 out_dir / "end.mp4", ff)
+    order.append(endc)
+    t += END_S
     lst = out_dir / "list.txt"
-    lst.write_text("".join(f"file '{p.resolve()}'\n" for p in [intro, *segs, outro]))
+    lst.write_text("".join(f"file '{Path(p).resolve()}'\n" for p in order))
     video = out_dir / f"weekly_{name.replace(' ', '').lower()}_{episode}.mp4"
     run([ff, "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", lst, "-c", "copy",
          "-movflags", "+faststart", video])
-    thumb = thumbnail(top, top["frame"], name, out_dir / f"thumb_{episode}.jpg")
+    face = None
+    try:   # where the #1 streamer's webcam is, for the face thumbnail (one small Claude call)
+        from . import vision
+        face = vision.analyze_frames(cfg, top["src"], 0.0, top["duration"], out_dir / "look").get("facecam")
+    except Exception as e:
+        log.info("no webcam found for the thumbnail: %s", e)
+    thumbs = thumbnails(top, top["frame"].replace("frame", "peak"), name, out_dir, facecam=face)
     title, desc = texts(name, episode, span, chapters, picked)
-    return {"video": video, "thumb": thumb, "title": title, "description": desc, "series": name,
-            "episode": episode, "seconds": t + 7.5, "clips": [{k: c[k] for k in ("rank", "name", "title", "views")}
-                                                              for c in sorted(picked, key=lambda c: c["rank"])]}
+    return {"video": video, "thumb": thumbs[0], "thumbs": thumbs, "title": title,
+            "titles": titles(name, episode, picked), "description": desc, "series": name,
+            "episode": episode, "seconds": t, "clips": [{k: c[k] for k in ("rank", "name", "title", "views")}
+                                                        for c in by_rank]}
 
 
 # ------------------------------------------------------------------ 6. the job
@@ -576,13 +755,17 @@ def email_text(ep, url):
         "To post it:",
         f"1. Download the video: {url}",
         "2. Go to studio.youtube.com and click Create (top right) > Upload videos, then pick the file.",
-        "3. Title: copy the TITLE block below.",
+        "3. Title: paste TITLE 1 below.",
         "4. Description: copy the DESCRIPTION block below. The timestamps in it become chapters on their own.",
-        "5. Thumbnail: click Upload file under Thumbnail and pick the attached image. (Custom thumbnails need a "
-        "phone-verified account: studio.youtube.com > Settings > Channel > Feature eligibility.)",
+        "5. Under the Title box, click A/B Testing > Title and thumbnail. Add TITLE 1, 2 and 3 below, and the three "
+        "attached thumbnails (thumb_a, thumb_b, thumb_c), then click Done. YouTube shows each to part of your "
+        "viewers and keeps the one that gets the most watch time. (Needs a computer, not the phone app, and "
+        "Advanced features turned on: studio.youtube.com > Settings > Channel > Feature eligibility.)",
         "6. Audience: No, it's not made for kids. Altered content: No.",
-        "7. Visibility: Public, then Publish.", "",
-        "=== TITLE ===", ep["title"], "",
+        "7. End screen: on the Video elements step, click End screen > Import from video if you've set one up, or "
+        "add 'Most recent upload' and 'Subscribe'. The last 12 seconds leave space for them on the right.",
+        "8. Visibility: Public, then Publish.", "",
+        *[f"=== TITLE {i} ===\n{t}\n" for i, t in enumerate(ep.get("titles") or [ep["title"]], 1)],
         "=== DESCRIPTION ===", ep["description"], "",
         "The download link stays up for two weeks."])
 
@@ -627,15 +810,16 @@ def job():
         ff = _ffmpeg()
         for i, frac in enumerate((0.02, 0.3, 0.6, 0.9)):
             frame_at(ep["video"], ep["seconds"] * frac, prev / "previews" / f"weekly_{i}.jpg", ff)
-        shutil.copy(ep["thumb"], prev / "previews" / "weekly_thumb.jpg")
+        for tp in ep.get("thumbs") or [ep["thumb"]]:
+            shutil.copy(tp, prev / "previews" / f"weekly_{Path(tp).name}")
         summ = {k: v for k, v in ep.items() if k not in ("video", "thumb")}
         top = out / "top.json"
         summ["twitch_top"] = json.loads(top.read_text()) if top.exists() else None
         (prev / "summary.json").write_text(json.dumps(summ, indent=1, default=str))
         return ep
     _, url = services.release_upload(ep["video"], ep["video"].name)
-    mail.send(f"Weekly video ready: {ep['title']}", email_text(ep, url), attachment=ep["thumb"],
-              attachment_name=ep["thumb"].name, maintype="image", subtype="jpeg")
+    mail.send(f"Weekly video ready: {ep['title']}", email_text(ep, url), attachment=ep.get("thumbs") or ep["thumb"],
+              attachment_name=None, maintype="image", subtype="jpeg")
     ser = st.setdefault("series", {}).setdefault(ep["series"], {})
     ser.update(episode=ep["episode"], last=now_utc().date().isoformat())
     st["last_made"] = now_utc().isoformat()

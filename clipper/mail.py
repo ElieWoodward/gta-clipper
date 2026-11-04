@@ -115,10 +115,10 @@ def send(subject, text, html=None, attachment=None, attachment_name=None, mainty
     msg.set_content(text)
     if html:
         msg.add_alternative(html, subtype="html")
-    if attachment:
-        with open(attachment, "rb") as f:
+    for i, a in enumerate(attachment if isinstance(attachment, (list, tuple)) else [attachment] if attachment else []):
+        with open(a, "rb") as f:
             msg.add_attachment(f.read(), maintype=maintype, subtype=subtype,
-                               filename=attachment_name or os.path.basename(str(attachment)))
+                               filename=(attachment_name if i == 0 and attachment_name else os.path.basename(str(a))))
     s = _login_smtp()
     try:
         s.send_message(msg)

@@ -1122,6 +1122,9 @@ _wc = _yaml.safe_load((TMP / "config.yaml").read_text())
 _wc["launch"]["enabled"] = False   # section 21 turned launch day on; the GTA 6 series is checked at the end
 (TMP / "config.yaml").write_text(_yaml.safe_dump(_wc, sort_keys=False))
 _wcfg = common.load_config()
+import clipper.vision as _vis  # noqa: E402
+_vis.analyze_frames = lambda cfg, src, off, dur, d: {"facecam": {"x": 0.7, "y": 0.05, "w": 0.25, "h": 0.25},
+                                                     "layout": "wide", "focus_x": 0.5, "why": "test"}
 if weekly.STATE.exists():
     weekly.STATE.unlink()
 _ep = weekly.build(_wcfg, TMP / "weekly_out", ff="ffmpeg", test=True)
@@ -1132,6 +1135,9 @@ assert abs(float(_info["format"]["duration"]) - _ep["seconds"]) < 1.0, (_info, _
 assert _ep["title"] == "GTA RP MOST VIEWED Twitch Clips of The Week! #1"
 _lines = _ep["description"].splitlines()
 assert "0:00 #3 vanillamace: he really said that to a cop" in _lines and any(l.startswith("0:") and "#1 xQc" in l for l in _lines)
+assert len(_ep["thumbs"]) == 3 and all(Path(x).exists() for x in _ep["thumbs"]) and len(_ep["titles"]) == 3
+# the cold open is the #1 clip: its first frames come from the #1 clip, not a title card
+assert _ep["seconds"] > 5 + 2 + 12
 assert "xQc: https://twitch.tv/xqc" in _lines
 _st = weekly.stats(_fake_chat("1", 900, 1030), 1000, 12)
 assert _st["peak"] > 3 and _st["top_word"] and _st["have_chat"]
@@ -1144,6 +1150,7 @@ mail.send = lambda subject, text, html=None, attachment=None, attachment_name=No
     sent.append({"subject": subject, "text": text, "attach": attachment, "type": maintype}) or "<w@x>"
 weekly.job()
 assert sent[-1]["subject"].startswith("Weekly video ready: GTA RP MOST VIEWED") and sent[-1]["type"] == "image"
+assert len(sent[-1]["attach"]) == 3 and "A/B Testing" in sent[-1]["text"] and "=== TITLE 3 ===" in sent[-1]["text"]
 assert "studio.youtube.com" in sent[-1]["text"] and "=== DESCRIPTION ===" in sent[-1]["text"]
 assert weekly.load()["series"]["GTA RP"]["episode"] == 1
 weekly.job()
