@@ -250,15 +250,59 @@ def run_check(st, force=False):
 
 def handle(st, kind, data, message_id, text):
     low = (data or "").lower()
+    if kind == "tap" and data.startswith("jf:keep:"):
+        from . import mediaclean
+        try:
+            mediaclean.keep(data.split(":", 2)[2])
+            title = (text or "").split(" gets deleted tomorrow")[0].lstrip("🗑 ").strip() or "It"
+            tg.edit(message_id, f"❤️ Kept: {title}. It's a favorite in Jellyfin now, so it won't be deleted.")
+        except Exception as e:
+            tg.send(f"Couldn't mark it as kept ({str(e)[:150]}). In the Jellyfin app, tap the heart on it instead.")
+        return
     if kind == "text":
         if low in ("status", "/status"):
             tg.send(summary(st))
         elif low in ("check", "/check"):
             tg.send("Checking Content Rewards now…", silent=True)
             run_check(st, force=True)
+        elif low in ("cleanup", "/cleanup"):
+            st.pop("jf_key_asked", None)
+            run_cleanup(st)
+            tg.send("Clean-up done.", silent=True)
         elif low in ("/start", "start", "help", "/help"):
             tg.send("I'm the Wanted Level clip bot. I'll message you about campaigns, your bio, drafts and problems.\n"
                     "Text \"status\" for a summary or \"check\" to look at Content Rewards right now.")
+
+
+FIX_JF_KEY = ("1. On the Mac, open http://localhost:8096 and log in.\n"
+              "2. Click the menu (☰), then Dashboard, then API Keys, then the + button. Name it clipbot.\n"
+              "3. Copy the key. In Terminal paste: open -e ~/projects/gta-clipper/.env\n"
+              "4. Add a new line: JELLYFIN_API_KEY=the-key  then save. The bot picks it up within a day "
+              "(or text it \"cleanup\" after restarting it).")
+
+
+def run_cleanup(st):
+    """Delete titles watched 3+ days ago (warn the day before). Problems come back as one message a day."""
+    from . import mediaclean
+    load_env()
+    if not mediaclean.configured():
+        if not st.get("jf_key_asked"):
+            st["jf_key_asked"] = now_utc().isoformat()
+            tg.send("🧹 To turn on auto-delete for watched movies and shows, Jellyfin needs to give the bot a key:\n\n"
+                    + FIX_JF_KEY)
+        return
+    try:
+        mediaclean.run(st, lambda text, rows: tg.send(text, rows))
+    except Exception as e:
+        msg = str(e)
+        if "401" in msg or "403" in msg:
+            fix = "The Jellyfin key in the .env file was rejected. Make a new one:\n" + FIX_JF_KEY
+        elif "Connection" in msg or "refused" in msg.lower() or "Max retries" in msg:
+            fix = ("Jellyfin isn't running. Open Jellyfin from Applications on the Mac (and in its menu bar icon, "
+                   "make sure it opens at login).")
+        else:
+            fix = "If this repeats tomorrow, send this message to Claude."
+        tg.problem(st, "jellyfin", f"The watched-title clean-up failed: {msg[:250]}", fix)
 
 
 RELAY_EVERY = 3 * 60      # seconds between reads of the GitHub bot's state
@@ -319,6 +363,10 @@ def loop():
             run_check(st)
             save(st)
             nxt = time.time() + (EVERY_MIN + random.uniform(0, 8)) * 60
+        if local_now().hour >= 10 and st.get("jf_day") != local_now().date().isoformat():   # once a day, 10 AM+
+            st["jf_day"] = local_now().date().isoformat()
+            run_cleanup(st)
+            save(st)
         if now >= nxt_update:
             nxt_update = now + UPDATE_EVERY
             try:

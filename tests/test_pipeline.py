@@ -1326,3 +1326,42 @@ assert mac.self_update() is True and (_g / "mac" / "new.txt").read_text() == "v2
 assert mac.self_update() is False
 mac.ROOT = _old_root
 print("SELF UPDATE OK")
+
+# ---------- 33. Jellyfin clean-up: watched 3+ days ago is deleted, warned the day before, favorites kept ----------
+from clipper import mediaclean  # noqa: E402
+_n = _dt.now(_tz.utc)   # run() uses the real clock
+assert mediaclean._when("2026-11-04T10:22:33.1234567Z") == _dt(2026, 11, 4, 10, 22, 33, 123456, tzinfo=_tz.utc)
+assert mediaclean._when("2026-11-04T10:22:33Z").hour == 10 and mediaclean._when("2026-11-04T10:22:33.5+00:00").microsecond == 500000
+def _it(i, days, **kw):  # noqa: E302
+    return dict({"Id": i, "Type": "Movie", "Name": i, "ProductionYear": 1925,
+                 "UserData": {"Played": True, "LastPlayedDate": (_n - _td(days=days)).isoformat().replace("+00:00", "Z")}}, **kw)
+_items = [_it("old", 4), _it("warnme", 2.5), _it("fresh", 1), _it("fav", 9),
+          _it("ep", 5, Type="Episode", SeriesId="S1", SeriesName="Show", ParentIndexNumber=1, IndexNumber=2),
+          _it("ep2", 5, Type="Episode", SeriesId="S2", SeriesName="Other", ParentIndexNumber=1, IndexNumber=3)]
+_items[3]["UserData"]["IsFavorite"] = True
+_d, _w = mediaclean.plan(_items, {"S1"}, now=_n, days=3)
+assert [x["Id"] for x in _d] == ["old", "ep2"] and [x["Id"] for x in _w] == ["warnme"], (_d, _w)
+assert mediaclean._label(_items[5]) == "Other S01E03" and mediaclean._label(_items[0]) == "old (1925)"
+_calls, _sent = [], []
+def _fake_req(method, path, **kw):  # noqa: E302
+    _calls.append((method, path))
+    if path == "/Users":
+        return [{"Id": "u1", "Name": "elie", "Policy": {"IsAdministrator": True}}]
+    if path.endswith("/Items") and "IsFavorite" in str(kw.get("params")):
+        return {"Items": [{"Id": "S1"}]}
+    if path.endswith("/Items"):
+        return {"Items": _items}
+    return None
+mediaclean._req, _real_req = _fake_req, mediaclean._req
+os.environ["JELLYFIN_API_KEY"] = "test"
+_jst = {}
+_done, _told = mediaclean.run(_jst, lambda t, r: _sent.append((t, r)), days=3)
+assert ("DELETE", "/Items/old") in _calls and ("DELETE", "/Items/ep2") in _calls
+assert not [c for c in _calls if c[0] == "DELETE" and c[1] in ("/Items/fav", "/Items/ep", "/Items/fresh", "/Items/warnme")]
+assert _told == ["warnme (1925)"] and _sent[0][1][0][0][1] == "jf:keep:warnme" and "Cleared 2" in _sent[1][0], _sent
+_sent.clear()
+mediaclean.run(_jst, lambda t, r: _sent.append((t, r)), days=3)
+assert not [s for s in _sent if "deleted tomorrow" in s[0]]   # warned once only
+mediaclean._req = _real_req
+os.environ.pop("JELLYFIN_API_KEY")
+print("JELLYFIN CLEANUP OK")
