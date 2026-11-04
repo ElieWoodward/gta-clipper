@@ -1179,3 +1179,16 @@ _old = common.now_utc() - timedelta(hours=60)
 _q = {"clips": {"w": dict(_pc, status="approved", score=7, created=_old.isoformat(), emailed_at=_old.isoformat())}}
 assert not clipqueue.expire(_cfgs, _q) and _q["clips"]["w"]["status"] == "approved"
 print("CAMPAIGN RULES OK")
+
+# ---------- 29. a joined campaign's clip always goes first, even against a higher score or a newer clip ----------
+_now = common.now_utc()
+_pq = {"campaigns": {"l": {"status": "joined", "twitch_login": "lysium"}},
+       "clips": {"x": {"streamer": "xQc", "status": "approved", "score": 10, "created": _now.isoformat(), "posts": {}},
+                 "l": {"streamer": "Lysium", "status": "approved", "score": 7,
+                       "created": (_now - timedelta(hours=5)).isoformat(), "posts": {}}},
+       "email": {}}
+assert [c["streamer"] for c in clipqueue.queue(_pq)] == ["Lysium", "xQc"]
+_pq["clips"]["e"] = {"streamer": "Cinna", "status": "posted", "score": 7, "posts": {},
+                     "created": (_now - timedelta(hours=8)).isoformat(), "emailed_at": (_now - timedelta(hours=3)).isoformat()}
+assert clipqueue.pick_for_email(_pq)["streamer"] == "Lysium"   # older than the xQc clip, still first
+print("CAMPAIGN FIRST OK")

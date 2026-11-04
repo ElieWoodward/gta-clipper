@@ -60,9 +60,9 @@ def dead_on_tiktok(state, last=3, min_views=10, min_hours=6):
 
 
 def queue(state):
-    """Clips waiting to be posted, best first. A clip from a paid campaign you joined counts one point higher; one
-    from a streamer whose recent TikTok posts all stalled counts two points lower (it still goes out if it's all
-    there is)."""
+    """Clips waiting to be posted, best first. Clips from a paid campaign you joined always come first; among the
+    rest, one from a streamer whose recent TikTok posts all stalled counts two points lower (it still goes out if
+    it's all there is)."""
     paid = {(r.get("twitch_login") or "").lower() for r in (state.get("campaigns") or {}).values()
             if r.get("status") == "joined"}
     dead = set() if state.get("tiktok_paused") else dead_on_tiktok(state)   # YouTube-only days: no TikTok penalty
@@ -71,8 +71,9 @@ def queue(state):
         return (c.get("streamer") or "").lower() in paid
     def rank(c):
         name = (c.get("streamer") or "").lower()
-        return c["score"] + (1 if is_paid(c) else 0) - (2 if name in dead else 0)
-    return sorted(q, key=lambda c: (rank(c), is_paid(c), bool(c.get("facecam")), c["created"]), reverse=True)
+        return c["score"] - (2 if name in dead and not is_paid(c) else 0)
+    # a clip from a paid campaign you joined always goes ahead of everything that isn't
+    return sorted(q, key=lambda c: (is_paid(c), rank(c), bool(c.get("facecam")), c["created"]), reverse=True)
 
 
 def room(cfg, state):
@@ -116,6 +117,11 @@ def pick_for_email(state):
     waiting = [c for c in queue(state) if not c.get("emailed_at")]
     if not waiting:
         return None
+    paid = {(r.get("twitch_login") or "").lower() for r in (state.get("campaigns") or {}).values()
+            if r.get("status") == "joined"}
+    for c in waiting:   # a paid-campaign clip goes out first, even if something newer came in
+        if (c.get("streamer") or "").lower() in paid:
+            return c
     last = last_emailed(state)
     if last:
         fresh = [c for c in waiting if c["created"] > last]
