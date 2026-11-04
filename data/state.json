@@ -5017,6 +5017,10 @@
             [
               "2026-11-04T12:12:54.636449+00:00",
               1392
+            ],
+            [
+              "2026-11-04T12:42:42.799442+00:00",
+              1401
             ]
           ],
           "hour": "14:00",
@@ -5027,7 +5031,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/EeQdj6i_Hws",
-          "views": 1392
+          "views": 1401
         }
       },
       "preapproval": false,
@@ -7662,6 +7666,10 @@
             [
               "2026-11-04T09:42:37.029163+00:00",
               1211
+            ],
+            [
+              "2026-11-04T12:42:42.799490+00:00",
+              1212
             ]
           ],
           "hour": "09:00",
@@ -7672,7 +7680,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/TC3S-pShZrw",
-          "views": 1211
+          "views": 1212
         }
       },
       "preapproval": true,
@@ -10974,6 +10982,10 @@
             [
               "2026-11-04T12:12:54.636524+00:00",
               1226
+            ],
+            [
+              "2026-11-04T12:42:42.799523+00:00",
+              1229
             ]
           ],
           "hour": "16:00",
@@ -10984,7 +10996,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/v1l-cIEK8ho",
-          "views": 1226
+          "views": 1229
         }
       },
       "preapproval": false,
@@ -11294,7 +11306,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-11-04T12:27:38.556703+00:00"
+      "ok": "2026-11-04T12:42:42.454890+00:00"
     }
   },
   "last_run": {
