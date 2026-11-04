@@ -19,22 +19,22 @@ fi
 mkdir -p "$WORK"
 echo "Free space: $(df -h "$WORK" | awk 'NR==2{print $4}')   Memory: $(( $(sysctl -n hw.memsize) / 1073741824 )) GB"
 
-# 2. ffmpeg + ffprobe (Intel builds), the emoji font and the caption font
+# 2. ffmpeg + ffprobe (Intel builds with subtitle/caption support). The fonts ship in the repo's fonts/ folder.
+FF_URL="https://ffmpeg.martin-riedl.de/download/macos/amd64/1789931006_9.0.2"
 mkdir -p "$BIN"
-if [ ! -x "$BIN/ffmpeg" ]; then
+if [ ! -x "$BIN/ffmpeg" ] || [ ! -x "$BIN/ffprobe" ]; then
   echo "Downloading ffmpeg..."
-  curl -fsSL -o /tmp/ffmpeg.zip https://evermeet.cx/ffmpeg/getrelease/zip
-  curl -fsSL -o /tmp/ffprobe.zip https://evermeet.cx/ffmpeg/getrelease/ffprobe/zip
-  unzip -oq /tmp/ffmpeg.zip -d "$BIN" && unzip -oq /tmp/ffprobe.zip -d "$BIN"
+  for f in ffmpeg ffprobe; do
+    curl -fL --retry 3 -o "/tmp/$f.zip" "$FF_URL/$f.zip"
+    unzip -oq "/tmp/$f.zip" -d "/tmp/$f-unz"
+    find "/tmp/$f-unz" -type f -name "$f" -exec mv {} "$BIN/$f" \;
+    rm -rf "/tmp/$f-unz" "/tmp/$f.zip"
+  done
+  chmod +x "$BIN/ffmpeg" "$BIN/ffprobe"
   xattr -dr com.apple.quarantine "$BIN" 2>/dev/null || true
 fi
 "$BIN/ffmpeg" -hide_banner -version | head -1
-[ -f fonts/NotoColorEmoji.ttf ] || curl -fsSL -o fonts/NotoColorEmoji.ttf \
-  https://github.com/googlefonts/noto-emoji/raw/main/fonts/NotoColorEmoji.ttf
-if [ ! -f fonts/DejaVuSans-Bold.ttf ]; then
-  curl -fsSL -o /tmp/dejavu.zip https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.zip
-  unzip -ojq /tmp/dejavu.zip "dejavu-fonts-ttf-2.37/ttf/DejaVuSans.ttf" "dejavu-fonts-ttf-2.37/ttf/DejaVuSans-Bold.ttf" -d fonts
-fi
+"$BIN/ffmpeg" -hide_banner -filters 2>/dev/null | grep -q " ass " || { echo "This ffmpeg can't draw captions (no libass). Tell Claude."; exit 1; }
 
 # 3. API keys (typed here, saved only in .env on this Mac)
 setkey() {   # setkey NAME VALUE: replace or add a line in .env
