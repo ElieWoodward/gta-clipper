@@ -1369,6 +1369,12 @@ print("JELLYFIN CLEANUP OK")
 # ---------- 34. Mac clipping mode: clips stored on the Mac, everything via Telegram with buttons, Mac job schedule ----------
 from clipper import mail as _ml  # noqa: E402
 import importlib.util as _ilu  # noqa: E402
+_mspec = _ilu.spec_from_file_location("clipper._mail_real", REPO / "clipper" / "mail.py")
+_mreal = _ilu.module_from_spec(_mspec)
+_mreal.__package__ = "clipper"
+_mspec.loader.exec_module(_mreal)
+_saved_mail = (_ml.send, _ml.read_replies)
+_ml.send, _ml.read_replies = _mreal.send, _mreal.read_replies   # earlier sections fake these; use the real ones here
 _spec = _ilu.spec_from_file_location("clipper._services_real", REPO / "clipper" / "services.py",
                                      submodule_search_locations=None)
 _sv = _ilu.module_from_spec(_spec)   # earlier sections replace services' storage functions with fakes; test the real ones
@@ -1439,4 +1445,5 @@ for _k in ("MAC_RUNS_CLIPPER", "CLIPPER_WORK", "NOTIFY_VIA", "TELEGRAM_TOKEN", "
 if _dry is not None:
     os.environ["DRY_RUN"] = _dry
 tg._call = _real_call
+_ml.send, _ml.read_replies = _saved_mail
 print("MAC CLIPPING OK")
