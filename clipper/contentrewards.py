@@ -220,8 +220,8 @@ def login_window():
               "This waits until you're in (up to 10 minutes).", flush=True)
         for _ in range(300):
             time.sleep(2)
-            try:
-                if "/c/" in s.page.url:
+            try:   # a Google login can finish in a popup or another tab: look at every tab
+                if any("contentrewards.com/c/" in p.url for p in s.ctx.pages):
                     print("Logged in. You can close this; the bot remembers the login.", flush=True)
                     time.sleep(3)
                     return True

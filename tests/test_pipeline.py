@@ -1257,3 +1257,72 @@ from clipper import tg  # noqa: E402
 assert not tg.configured() and tg.send("hi") is None and tg.poll() == []
 assert json.loads(tg.buttons([[("Join", "camp:join:" + "x" * 80)]]))["inline_keyboard"][0][0]["callback_data"] == "camp:join:" + "x" * 54
 print("MAC OK")
+
+# ---------- 31. Relay: the GitHub bot's emails, links and problems reach Telegram exactly once ----------
+from clipper import relay  # noqa: E402
+from datetime import datetime as _dt, timedelta as _td, timezone as _tz  # noqa: E402
+_now = _dt(2026, 11, 4, 18, 0, tzinfo=_tz.utc)
+_rcfg = yaml_cfg = __import__("yaml").safe_load((REPO / "config.yaml").read_text())
+_rstate = {"clips": {
+    "old": {"id": "old", "streamer": "xQc", "hook": "old one", "score": 7, "emailed_at": (_now - _td(days=1)).isoformat(),
+            "posts": {"tiktok": {"url": "https://tiktok.com/@w/video/1"}}, "status": "posted"},
+}, "campaigns": {"c1": {"name": "Old campaign", "status": "notified", "rate": 1.0}}}
+_rst = {}
+assert relay.relay(_rst, _rcfg, _rstate, {}, _now.isoformat(), now=_now) == []   # first run: nothing old re-sent
+_clip = {"id": "new1", "streamer": "Lysium", "hook": "he started a boy band 💀", "score": 8, "title": "boy band moment",
+         "caption": "the boy band reveal 😭", "duration": 29.0, "start": 4868, "vod_url": "https://www.twitch.tv/videos/1",
+         "why": "tense meeting derailed", "status": "approved", "posts": {}, "created": _now.isoformat(),
+         "emailed_at": (_now + _td(minutes=1)).isoformat(), "media_url": "https://example.invalid/new1.mp4",
+         "handle": "twitch.tv/Lysium", "preapproval": True}
+_rstate["clips"]["new1"] = _clip
+_rstate["campaigns"]["c2"] = {"name": "Benji Ramos clips", "status": "notified", "rate": 1.5, "why": "GTA RP",
+                              "join_url": "https://example.invalid/join"}
+_items = relay.relay(_rst, _rcfg, _rstate, {}, _now.isoformat(), now=_now + _td(minutes=3))
+_kinds = sorted(i[0] for i in _items)
+assert _kinds == ["post", "text"], _items
+_post = [i for i in _items if i[0] == "post"][0]
+assert "boy band" in _post[2] and "TIKTOK CAPTION" in _post[3] and "YOUTUBE TITLE" in _post[3], _post[3]
+assert "twitch.tv/Lysium" in _post[3] and 'Reply "posted" here' not in _post[3] and "Still in the queue".upper() not in _post[3]
+assert "Benji Ramos clips" in [i for i in _items if i[0] == "text"][0][1]
+assert relay.relay(_rst, _rcfg, _rstate, {}, _now.isoformat(), now=_now + _td(minutes=6)) == []   # nothing twice
+_clip["posts"]["tiktok"] = {"url": "https://www.tiktok.com/@wantedlevelclips8/video/99"}
+_items = relay.relay(_rst, _rcfg, _rstate, {}, _now.isoformat(), now=_now + _td(minutes=9))
+assert len(_items) == 1 and "video/99" in _items[0][1] and "Lysium/Benji Ramos Clips" in _items[0][1], _items
+_rstate["clips"]["x"] = {"id": "x", "streamer": "Cinna", "hook": "h", "posts": {"youtube": {"url": "https://y/1"}}}
+assert relay.relay(_rst, _rcfg, _rstate, {}, _now.isoformat(), now=_now + _td(minutes=12)) == []   # no campaign: no link
+_rstate["health"] = {"process": {"fails": 2, "last_error": "AuthenticationError (anthropic)", "last_fail": "2026-11-04T17"}}
+_p = relay.relay(_rst, _rcfg, _rstate, {"until": "2099-01-01", "error": "535"}, (_now - _td(hours=4)).isoformat(),
+                 now=_now + _td(minutes=15))
+assert sorted(i[1].split(":")[0] for i in _p) == ["fail", "gmail", "stalled"], _p
+assert "console.anthropic.com" in [i for i in _p if i[1].startswith("fail")][0][3]
+assert not [i for i in relay.relay(_rst, _rcfg, dict(_rstate, health={}), {}, (_now - _td(hours=2)).isoformat(),
+                                   now=_now + _td(minutes=18)) if i[0] == "problem"]   # 2h quiet isn't "stopped"
+assert all(len(c) <= 3900 for c in relay._chunks("x" * 3000 + "\n\n" + "y" * 3000)) and len(relay._chunks("a\n\nb")) == 1
+_ps = {}
+os.environ.pop("TELEGRAM_TOKEN", None)
+relay.send(_ps, [("problem", "k", "w", "f")])   # Telegram off: no crash
+print("RELAY OK")
+
+# ---------- 32. The Mac updates itself from GitHub (fast-forward only, restarts on new code) ----------
+_g = TMP / "upd"
+_g.mkdir()
+def _sh(*a, cwd=_g):  # noqa: E302
+    return subprocess.run(list(a), cwd=cwd, capture_output=True, text=True, check=True).stdout.strip()
+_sh("git", "init", "-q", "--bare", "-b", "mac-server", "origin.git")
+_sh("git", "clone", "-q", str(_g / "origin.git"), "work")
+_w = _g / "work"
+for _k, _v in (("user.email", "t@t"), ("user.name", "t")):
+    _sh("git", "config", _k, _v, cwd=_w)
+_sh("git", "checkout", "-q", "-b", "mac-server", cwd=_w)
+(_w / "requirements.txt").write_text("requests\n")
+_sh("git", "add", "-A", cwd=_w); _sh("git", "commit", "-qm", "one", cwd=_w); _sh("git", "push", "-q", "origin", "mac-server", cwd=_w)  # noqa: E702
+_sh("git", "clone", "-q", "-b", "mac-server", str(_g / "origin.git"), "mac")
+_old_root = mac.ROOT
+mac.ROOT = _g / "mac"
+assert mac.self_update() is False   # nothing new
+(_w / "new.txt").write_text("v2")
+_sh("git", "add", "-A", cwd=_w); _sh("git", "commit", "-qm", "two", cwd=_w); _sh("git", "push", "-q", "origin", "mac-server", cwd=_w)  # noqa: E702
+assert mac.self_update() is True and (_g / "mac" / "new.txt").read_text() == "v2"
+assert mac.self_update() is False
+mac.ROOT = _old_root
+print("SELF UPDATE OK")

@@ -198,7 +198,9 @@ def summary(st):
     if d:
         lines.append("Drafts: " + ", ".join(f"{k} {v}" for k, v in d.items()))
     if st.get("last_sync"):
-        lines.append(f"Last check: {st['last_sync'][:16].replace('T', ' ')} UTC")
+        lines.append(f"Last Content Rewards check: {st['last_sync'][:16].replace('T', ' ')} UTC")
+    ok = (st.get("relay") or {}).get("ok")
+    lines.append(f"Watching the GitHub bot: {'yes, last read ' + ok[11:16] + ' UTC' if ok else 'not yet'}")
     return "\n".join(lines)
 
 
@@ -259,13 +261,44 @@ def handle(st, kind, data, message_id, text):
                     "Text \"status\" for a summary or \"check\" to look at Content Rewards right now.")
 
 
+RELAY_EVERY = 3 * 60      # seconds between reads of the GitHub bot's state
+UPDATE_EVERY = 30 * 60    # seconds between checks for a newer version of this code
+
+
+def self_update():
+    """Pull the newest Mac code; if it changed, install any new packages and exit so launchd restarts us on it.
+    Returns quietly if there's nothing new or git can't reach GitHub right now."""
+    def git(*a):
+        return subprocess.run(["git", "-C", str(ROOT), *a], capture_output=True, text=True, timeout=120)
+    branch = git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip() or "mac-server"
+    before = git("rev-parse", "HEAD").stdout.strip()
+    if git("fetch", "-q", "origin", branch).returncode != 0:
+        return False
+    if git("rev-parse", f"origin/{branch}").stdout.strip() == before:
+        return False
+    old_req = git("show", f"{before}:requirements.txt").stdout
+    if git("merge", "--ff-only", "-q", f"origin/{branch}").returncode != 0:
+        log.warning("couldn't fast-forward to the new code (local changes?); staying on this version")
+        return False
+    if (ROOT / "requirements.txt").read_text() != old_req:
+        import sys
+        subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-r", str(ROOT / "requirements.txt"),
+                        "playwright"], timeout=900)
+    log.info("updated to %s; restarting", git("rev-parse", "--short", "HEAD").stdout.strip())
+    return True
+
+
 def loop():
     load_env()
     if not tg.configured():
         raise SystemExit("TELEGRAM_TOKEN and TELEGRAM_CHAT_ID must be set in the .env file next to config.yaml")
+    from . import relay
     st = load()
-    nxt = 0.0
-    tg.send("🟢 Clip bot is running on the Mac. Text \"status\" any time.", silent=True)
+    nxt, nxt_relay, nxt_update = 0.0, 0.0, time.time() + UPDATE_EVERY
+    if not st.get("started_once"):
+        tg.send("🟢 Clip bot is running on the Mac. Text \"status\" any time.", silent=True)
+        st["started_once"] = now_utc().isoformat()
+        save(st)
     while True:
         try:
             for kind, data, mid, text in tg.poll(wait=50):
@@ -274,10 +307,28 @@ def loop():
         except Exception as e:
             log.warning("telegram poll failed: %s", e)
             time.sleep(30)
-        if time.time() >= nxt and awake():
+        now = time.time()
+        if now >= nxt_relay:   # posting clips, live links, campaigns and problems from the bot on GitHub
+            nxt_relay = now + RELAY_EVERY
+            try:
+                relay.run(st)
+            except Exception as e:
+                log.warning("relay round failed: %s", e)
+            save(st)
+        if now >= nxt and awake():
             run_check(st)
             save(st)
             nxt = time.time() + (EVERY_MIN + random.uniform(0, 8)) * 60
+        if now >= nxt_update:
+            nxt_update = now + UPDATE_EVERY
+            try:
+                if self_update():
+                    save(st)
+                    raise SystemExit(0)   # launchd starts the new version within a minute
+            except SystemExit:
+                raise
+            except Exception as e:
+                log.warning("update check failed: %s", e)
 
 
 def once():
