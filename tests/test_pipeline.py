@@ -1367,7 +1367,13 @@ os.environ.pop("JELLYFIN_API_KEY")
 print("JELLYFIN CLEANUP OK")
 
 # ---------- 34. Mac clipping mode: clips stored on the Mac, everything via Telegram with buttons, Mac job schedule ----------
-from clipper import services as _sv, mail as _ml  # noqa: E402
+from clipper import mail as _ml  # noqa: E402
+import importlib.util as _ilu  # noqa: E402
+_spec = _ilu.spec_from_file_location("clipper._services_real", REPO / "clipper" / "services.py",
+                                     submodule_search_locations=None)
+_sv = _ilu.module_from_spec(_spec)   # earlier sections replace services' storage functions with fakes; test the real ones
+_sv.__package__ = "clipper"
+_spec.loader.exec_module(_sv)
 os.environ.update(CLIP_STORAGE="local", CLIP_STORE=str(TMP / "store"))
 _f = TMP / "c1.mp4"
 _f.write_bytes(b"video")
