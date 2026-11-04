@@ -531,8 +531,10 @@ def end_card(series_name, episode, frame_png, out):
 
 def _words(text, n=4):
     """A thumbnail's few words from a Twitch clip title (vidIQ's breakout thumbnails: median five words)."""
-    w = _clean(text).upper().split()
-    return " ".join(w[:n]) if w else ""
+    w = _clean(text).upper().split()[:n + 1]
+    while len(w) > n or (len(w) > 1 and w[-1].lower() in STOP | {"by", "from", "into", "over", "after", "about"}):
+        w = w[:-1]   # never end on a dangling "BY" or "THE"
+    return " ".join(w) if w else ""
 
 
 def _thumb_base(frame_png):
@@ -588,8 +590,9 @@ def thumbnails(clip, frame_png, series_name, out_dir, facecam=None):
     st = clip.get("stats") or {}
     im = _thumb_base(frame_png)
     d = ImageDraw.Draw(im)
-    hype = f"x{st.get('peak', 0):.0f}" if st.get("peak", 0) >= 2 else f"{_views(clip['views'])}"
-    d.text((40, 20), "CHAT WENT" if st.get("peak", 0) >= 2 else "VIEWS", font=_font(96, bold=True), fill=WHITE,
+    big_chat = st.get("peak", 0) >= 5   # "x3" doesn't sell a click; the view count does then
+    hype = f"x{st.get('peak', 0):.0f}" if big_chat else f"{_views(clip['views'])}"
+    d.text((40, 20), "CHAT WENT" if big_chat else "VIEWS", font=_font(96, bold=True), fill=WHITE,
            stroke_width=5, stroke_fill=(0, 0, 0))
     d.text((36, 120), hype, font=_font(300, bold=True), fill=YELLOW, stroke_width=8, stroke_fill=(0, 0, 0))
     d.rounded_rectangle([40, 540, 700, 640], 14, fill=(145, 70, 255))
