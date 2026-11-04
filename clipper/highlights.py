@@ -265,14 +265,28 @@ def record_usage(msg, discount=1.0):
 
 
 def budget_left(cfg, state):
-    """USD of Claude budget left today (inf if no cap is set)."""
-    from .common import spend_today
+    """USD of Claude budget left right now (inf if no cap is set).
+
+    Two limits, whichever is tighter: the daily cap (limits.claude_usd_per_day) and the monthly budget
+    (limits.claude_usd_per_month over the last 30 days, with no single day allowed more than
+    limits.claude_usd_day_max, so one busy day can't use up the month)."""
+    from .common import spend_last_days, spend_today
     lim = (cfg.get("limits") or {})
     prices = lim.get("price_per_mtok")
     if prices:
         PRICE_PER_MTOK.update(prices)
+    today = spend_today(state)
+    left = float("inf")
     cap = lim.get("claude_usd_per_day")
-    return float("inf") if cap is None else cap - spend_today(state)
+    if cap is not None:
+        left = float(cap) - today
+    month = lim.get("claude_usd_per_month")
+    if month is not None:
+        left = min(left, float(month) - spend_last_days(state, 30))
+        day_max = lim.get("claude_usd_day_max")
+        if day_max is not None:
+            left = min(left, float(day_max) - today)
+    return left
 
 
 def parse_json(text):

@@ -161,6 +161,8 @@ accounts:                         # your pages; checked every hour to see which 
 
 limits:
   claude_usd_per_day: 1.00        # no Claude calls after this much spend in a day (UTC); the next day starts fresh
+  claude_usd_per_month: 5.00      # hard budget: no Claude calls once the last 30 days add up to this
+  claude_usd_day_max: 0.50        # and never more than this in one day, so one busy day can't use up the month
   claude_usd_per_day_from: {3: 2.00}   # raised to $2 a day once posting reaches 3 a day (launch.claude_usd_per_day after)
   price_per_mtok: {input: 2.0, output: 10.0}   # Claude Sonnet 5.5 list price in USD per million tokens
   batch: true                     # judge full streams through Anthropic's half-price batch API (live clips stay instant)

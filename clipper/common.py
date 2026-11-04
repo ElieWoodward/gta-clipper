@@ -65,6 +65,16 @@ def spend_today(state):
     return (state.get("spend", {}).get(d, 0.0) + state.get("spend_live", {}).get(d, 0.0) + _SPEND["pending"])
 
 
+def spend_last_days(state, days=30):
+    """USD spent on Claude in the last `days` UTC days, today included, by every job including the live watcher."""
+    from datetime import timedelta
+    start = (datetime.now(timezone.utc).date() - timedelta(days=days - 1)).isoformat()
+    total = _SPEND["pending"]
+    for key in ("spend", "spend_live"):
+        total += sum(v for d, v in (state.get(key) or {}).items() if d >= start)
+    return total
+
+
 def _merge_live(state):
     """Fold the live watcher's clips (and the posts it made) into the main state."""
     state["spend_live"], state["health_live"], state["alerts_live"] = {}, {}, {}
@@ -107,7 +117,7 @@ def save_state(state):
     if _SPEND["pending"]:
         book = state.setdefault(key, {})
         book[_today()] = round(book.get(_today(), 0.0) + _SPEND["pending"], 4)
-        for old in sorted(book)[:-14]:   # two weeks is plenty
+        for old in sorted(book)[:-40]:   # enough for the 30-day budget window
             book.pop(old)
         _SPEND["pending"] = 0.0
     if live:   # the live watcher only ever writes its own file
