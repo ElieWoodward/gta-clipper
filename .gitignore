@@ -1,3 +1,7 @@
 work/
 __pycache__/
 *.pyc
+.env
+.venv/
+data/mac.json
+data/telegram.json

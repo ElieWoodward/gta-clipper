@@ -1199,3 +1199,61 @@ _pq["clips"]["e"] = {"streamer": "Cinna", "status": "posted", "score": 7, "posts
                      "created": (_now - timedelta(hours=8)).isoformat(), "emailed_at": (_now - timedelta(hours=3)).isoformat()}
 assert clipqueue.pick_for_email(_pq)["streamer"] == "Lysium"   # older than the xQc clip, still first
 print("CAMPAIGN FIRST OK")
+
+# ---------- 30. Mac side: Content Rewards page reading and the Telegram messages it produces ----------
+from clipper import contentrewards as cr, mac  # noqa: E402
+
+_list = "Your\nCampaigns\nwantedlevelclips1\nApproved\nLysium\n·\n1mo ago\nLysium/Benji Ramos Clips\n$0\n/$1,000\n0\n$1.50/1K\nSubmit clip"
+assert cr.parse_campaign_list(_list) == [{"status": "approved", "creator": "Lysium", "name": "Lysium/Benji Ramos Clips"}]
+_page = """Back
+wantedlevelclips1
+Lysium
+Lysium/Benji Ramos Clips
+Pushing clips of Lysium. All clips require pre-approval before posting. Campaign ended in drama is not allowed.
+Joined
+Launched 1 month ago
+Submit clip
+Application approved
+You can now submit content for this campaign.
+Budget
+$150 / $1,000
+Content requirements
+Add link in bio
+twitch.tv/Lysium
+Drafts require pre-approval before posting
+Top clippers
+Rank"""
+_info = cr.parse_campaign_page(_page)
+assert _info["joined"] and _info["approved"] and _info["preapproval"] and not _info["ended"], _info
+assert _info["bio"] == ["twitch.tv/Lysium"] and _info["budget_used"] == 150 and _info["budget_total"] == 1000, _info
+assert cr.parse_campaign_page(_page.replace("$150 / $1,000", "$1,000 / $1,000"))["ended"]
+assert cr.parse_campaign_page(_page.replace("Joined\n", "Ended\n"))["ended"]
+assert cr.parse_draft_counts("Your drafts\nwantedlevelclips1\nNeeds changes\n1\nPending\n1\nApproved\n0\nPosted\n2\nRejected\n0") == \
+    {"needs changes": 1, "pending": 1, "approved": 0, "posted": 2, "rejected": 0}
+_tl = cr.parse_timeline("Timeline\nRevision 1\nthorsty\nNov 3, 6:48 AM\n00:03\nremove the line\nBrand reviewer\n"
+                        "Nov 3, 6:48 AM\nRequested changes\nremove the benji brags line, it was mickey\nLeave a comment...\nUpload revision")
+assert _tl == {"who": "Brand reviewer", "when": "Nov 3, 6:48 AM", "note": "remove the benji brags line, it was mickey"}, _tl
+
+_st = {}
+_camp = dict(_info, name="Lysium/Benji Ramos Clips", status="approved", url="https://contentrewards.com/c/campaigns/x")
+_msgs = mac.compare(_st, [_camp], {"counts": {"approved": 0, "rejected": 0, "posted": 2}}, ["Lysium/Benji Ramos Clips"])
+assert len(_msgs) == 1 and "approved for Lysium" in _msgs[0] and "twitch.tv/Lysium" in _msgs[0], _msgs
+assert mac.compare(_st, [_camp], {"counts": {"approved": 0, "rejected": 0, "posted": 2}}, ["Lysium/Benji Ramos Clips"]) == []
+_msgs = mac.compare(_st, [_camp], {"counts": {"approved": 1, "rejected": 0, "posted": 2},
+                                   "needs_changes": [dict(_tl, campaign="Lysium/Benji Ramos Clips", card="x")]},
+                    ["Lysium/Benji Ramos Clips"])
+assert any("1 draft approved" in m for m in _msgs) and any("mickey" in m for m in _msgs), _msgs
+assert not any("mickey" in m for m in mac.compare(_st, [_camp], {"counts": {"approved": 1},
+           "needs_changes": [dict(_tl, campaign="Lysium/Benji Ramos Clips", card="x")]}, ["Lysium/Benji Ramos Clips"]))
+_st2 = {}
+_msgs = mac.compare(_st2, [_camp], {"counts": {}}, ["xQc"])   # joined on the site but not prioritized by the clipper
+assert any("isn't putting its streamer's clips first" in m for m in _msgs), _msgs
+_msgs = mac.compare(_st, [], {"counts": {"approved": 1}}, [])   # dropped off the list: ended, bio can come out
+assert len(_msgs) == 1 and "dropped off" in _msgs[0] and "twitch.tv/Lysium" in _msgs[0], _msgs
+assert mac.same_campaign("Lysium/Benji Ramos Clips", "lysium benji ramos clips") and not mac.same_campaign("a", "")
+assert mac.awake(__import__("datetime").datetime(2026, 11, 4, 9)) and not mac.awake(__import__("datetime").datetime(2026, 11, 4, 3))
+os.environ.pop("TELEGRAM_TOKEN", None)
+from clipper import tg  # noqa: E402
+assert not tg.configured() and tg.send("hi") is None and tg.poll() == []
+assert json.loads(tg.buttons([[("Join", "camp:join:" + "x" * 80)]]))["inline_keyboard"][0][0]["callback_data"] == "camp:join:" + "x" * 54
+print("MAC OK")

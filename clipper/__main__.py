@@ -123,7 +123,12 @@ def _live():
 CMDS = {"process": jobs.process, "post": jobs.post, "analytics": jobs.analytics, "learn": jobs.learn,
         "accounts": lambda: print(services.blotato_accounts()), "probe": probe, "preflight": jobs.preflight_only, "live": _live, "campaigns": _campaigns, "check_streamers": check_streamers,
         "launch_check": _launch_check, "weekly": lambda: __import__("clipper.weekly", fromlist=["job"]).job(),
-        "rerender": jobs.rerender}
+        "rerender": jobs.rerender,
+        # the Mac: always-on Telegram + Content Rewards loop, a one-off check, logging the bot's Chrome in, a test
+        "mac": lambda: __import__("clipper.mac", fromlist=["loop"]).loop(),
+        "mac_once": lambda: __import__("clipper.mac", fromlist=["once"]).once(),
+        "cr_login": lambda: __import__("clipper.contentrewards", fromlist=["login_window"]).login_window(),
+        "tg_test": lambda: __import__("clipper.mac", fromlist=["tg_test"]).tg_test()}
 
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in CMDS:
