@@ -3676,6 +3676,51 @@
       "vod_url": "https://www.twitch.tv/videos/2907037919",
       "why": "Character boasts about beating three guys, the stranger calmly says he heard he got beaten and screamed, and he scrambles to deny it."
     },
+    "3fbc0a638e": {
+      "asset_id": 708356339,
+      "caption": "the way they all turned on him over one word \ud83d\ude2d\ud83d\udc80",
+      "context": "",
+      "created": "2026-11-04T05:29:10.730582+00:00",
+      "duration": 28.8,
+      "end": 17207.5,
+      "facecam": true,
+      "file": "3fbc0a638e.mp4",
+      "framing": "Characters are spread across the sidewalk from the left figure to the car and the man on the right, and the first frame shows an emote menu, so a wider crop is needed.",
+      "handle": null,
+      "hook": "Bro said yes to $10K before checking who's paying \ud83d\udc80",
+      "hook_options": [
+        "Bro said yes to $10K before checking who's paying \ud83d\udc80",
+        "POV: the birthday girl wishes for $10K and the group chat panics",
+        "He agreed to the wish way too fast \ud83d\udc80",
+        "Who let him say yes to $10,000 \ud83d\ude2d",
+        "I just agreed to 10K for a stranger's birthday \ud83d\ude2d"
+      ],
+      "hook_score": 8,
+      "id": "3fbc0a638e",
+      "issue": 57,
+      "layout": "cam+wide",
+      "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/40114b61e8/3fbc0a638e.mp4",
+      "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/3fbc0a638e.mp4",
+      "posts": {},
+      "preapproval": false,
+      "punch_at": 32.28,
+      "punch_text": "She said EACH",
+      "said": "make it come true. Um, can I have, uh, $10,000? Fuck! Please, that sounds like a really good birthday. Yeah, yeah, what, just one moment. Come together, come together, come together. Fuck! Come here, come here, come here! Oh my god, oh my god. Fuck! Alright, fine, no, it's too late. Oh my god, oh my god. You're fucking welcome, right? You're fucking welcome. Thank you so much! Did you guys have $10,000? Here we go, here we go, here we go. Whoa, Hold on, that wasn't the wish. Yeah, she said 10,000 each, you fucking asshole. She said each? I said each. We were going to negotiate, but you said ye",
+      "score": 7,
+      "speed": 1.3,
+      "start": 17170,
+      "status": "approved",
+      "streamer": "Cinna",
+      "tags": [
+        "funny_line",
+        "rp_drama",
+        "chaos"
+      ],
+      "title": "He said yes to the $10K wish way too fast \ud83d\udc80",
+      "vod": "twitch:v2918651212",
+      "vod_url": "https://www.twitch.tv/videos/2918651212",
+      "why": "A birthday wish for $10K gets accepted too quickly, then the group realizes she said 'each' and turns on each other in an escalating argument."
+    },
     "48dbf60f64": {
       "asset_deleted": true,
       "asset_id": 695323312,
@@ -11153,7 +11198,7 @@
         "test": false
       }
     ],
-    "replies_at": "2026-11-04T04:27:14.248812+00:00"
+    "replies_at": "2026-11-04T05:29:24.008267+00:00"
   },
   "health": {
     "post": {
@@ -11169,7 +11214,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-11-04T05:12:01.103444+00:00"
+      "ok": "2026-11-04T05:29:13.042087+00:00"
     }
   },
   "last_run": {
@@ -11309,9 +11354,9 @@
     "2026-11-01": 0.0515,
     "2026-11-02": 0.2236,
     "2026-11-03": 0.1894,
-    "2026-11-04": 0.0308
+    "2026-11-04": 0.0629
   },
-  "status_updated": "2026-11-04T04:27:16.821215+00:00",
+  "status_updated": "2026-11-04T05:29:26.045090+00:00",
   "streamers": {
     "Cinna": {
       "facecam": true
