@@ -8517,6 +8517,8 @@
       "context": "",
       "created": "2026-11-04T00:43:30.458130+00:00",
       "duration": 29.2,
+      "email_message_id": "<179376553116.2453.10300277272302270394@gmail.com>",
+      "emailed_at": "2026-11-04T04:12:17.163315+00:00",
       "end": 4906.0,
       "facecam": false,
       "file": "ae5c52d7ad.mp4",
@@ -8543,6 +8545,8 @@
       "punch_text": "Sorry, what?",
       "said": "Honestly, man I'm just curious Right now, I'd say Honestly, we're waiting on the release of our first K-pop song Sorry, what? Yeah You threw me for a loop there Yeah, we started a boy band Almost a week and a half ago Boy band, girl band, full band you never heard of k-pop oh yeah oh i mean i've definitely heard of it i can't say i've",
       "score": 7,
+      "sent_caption": "the way he just casually dropped the boy band like nothing \ud83d\ude2d\ud83d\udc80\n\nStreamer: twitch.tv/Lysium\n#gta6 #gtarp #gta #funny #fyp #lysium",
+      "sent_title": "They called a serious meeting and he said boy band \ud83d\udc80 #shorts",
       "speed": 1.3,
       "start": 4868.0,
       "status": "approved",
@@ -10837,6 +10841,10 @@
             [
               "2026-11-04T03:57:09.627149+00:00",
               965
+            ],
+            [
+              "2026-11-04T04:12:10.106440+00:00",
+              1000
             ]
           ],
           "hour": "16:00",
@@ -10847,7 +10855,7 @@
           "shares": null,
           "status": "published",
           "url": "https://www.youtube.com/shorts/v1l-cIEK8ho",
-          "views": 965
+          "views": 1000
         }
       },
       "preapproval": false,
@@ -11132,6 +11140,13 @@
         "date": "2026-11-03",
         "subject": "Post now: POV: you copy your friend's stunt but skip the most important part \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-11-04T04:12:17.163315+00:00",
+        "clip": "ae5c52d7ad",
+        "date": "2026-11-03",
+        "subject": "Post now: POV: they sit you down for a warning and you say you started a boy band \ud83d\udc80 (7/10)",
+        "test": false
       }
     ],
     "replies_at": "2026-11-04T03:23:04.854351+00:00"
@@ -11150,7 +11165,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-11-04T03:56:58.163583+00:00"
+      "ok": "2026-11-04T04:11:58.858762+00:00"
     }
   },
   "last_run": {
