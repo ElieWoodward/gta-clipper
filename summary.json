@@ -1,0 +1,233 @@
+{
+ "thumbs": [
+  "/home/runner/work/gta-clipper/gta-clipper/work/weekly/thumb_a.jpg",
+  "/home/runner/work/gta-clipper/gta-clipper/work/weekly/thumb_b.jpg",
+  "/home/runner/work/gta-clipper/gta-clipper/work/weekly/thumb_c.jpg"
+ ],
+ "title": "GTA RP MOST VIEWED Twitch Clips of The Week! #2",
+ "titles": [
+  "GTA RP MOST VIEWED Twitch Clips of The Week! #2",
+  "GTA RP MOST VIEWED Twitch Clips of The Week! #2 (Fanny gets chased by the Plague Doctor)",
+  "fanfan: Fanny gets chased by the Plague Doctor | GTA RP Most Viewed Clips #2"
+ ],
+ "description": "The most-watched GTA RP clips on Twitch this week (Oct 28 to Nov 3), counted down to #1 by their Twitch view counts, with the live chat replay and how hard chat went for each moment.\n\n0:00 #2 Harmless: Maynard Slams X\n0:38 #1 fanfan: Fanny gets chased by the Plague Doctor\n\nStreamers in this episode (go follow them):\nfanfan: https://twitch.tv/fanfan\nHarmless: https://twitch.tv/harmless\n\nA new episode every Sunday.\n\n#gta #gtarp #twitch #gta6",
+ "series": "GTA RP",
+ "episode": 2,
+ "seconds": 111.0,
+ "clips": [
+  {
+   "rank": 1,
+   "name": "fanfan",
+   "title": "Fanny gets chased by the Plague Doctor",
+   "views": 14090
+  },
+  {
+   "rank": 2,
+   "name": "Harmless",
+   "title": "Maynard Slams X",
+   "views": 13573
+  }
+ ],
+ "twitch_top": [
+  {
+   "name": "fanfan",
+   "views": 14090,
+   "lang": "EN",
+   "created": "2026-10-30T17:22:44Z",
+   "title": "Fanny gets chased by the Plague Doctor",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "Harmless",
+   "views": 13573,
+   "lang": "EN",
+   "created": "2026-10-28T06:05:12Z",
+   "title": "Maynard Slams X",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "\u5207\u561b",
+   "views": 13536,
+   "lang": "JA",
+   "created": "2026-10-28T14:32:02Z",
+   "title": "\u30b8\u30e7\u30a2\u306e\u5727",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "\u3054\u3063\u3061\u3083\u3093\u30de\u30a4\u30ad\u30fc",
+   "views": 13423,
+   "lang": "JA",
+   "created": "2026-10-28T14:50:18Z",
+   "title": "\u4e45\u3057\u3076\u308a\u306e868",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "\u3068\u3068\u307f\u3063\u304f\u3059",
+   "views": 13006,
+   "lang": "JA",
+   "created": "2026-10-28T14:31:00Z",
+   "title": "\u3071\u3061\u304a\u3092\u4fe1\u7528\u3059\u308b\u306f\u305a\u3082\u306a\u3044\u97f3\u9cf4(\uff76\uff82\uff7a\uff72\uff72)",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "Shiron103",
+   "views": 12214,
+   "lang": "JA",
+   "created": "2026-10-31T11:26:54Z",
+   "title": "\u4e0a\u304b\u3089\u76ee\u7dda\u306a\u65e5\u4e4b\u3071\u3061\u304a \u306b\u5fe0\u544a\u3059\u308b\u6551\u6025\u968a",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "Burn",
+   "views": 10604,
+   "lang": "EN",
+   "created": "2026-11-01T00:30:27Z",
+   "title": "Owner and DM RP",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "\u30ae\u30eb\u304f\u3093",
+   "views": 10299,
+   "lang": "JA",
+   "created": "2026-10-29T02:25:01Z",
+   "title": "\u30ab\u30d0\u30fc",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "xQc",
+   "views": 9888,
+   "lang": "EN",
+   "created": "2026-10-29T07:05:59Z",
+   "title": "becoming a jet with 48% jet",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "\u307f\u3064\u304d\u3055\u3093\u3067\u3059",
+   "views": 8707,
+   "lang": "JA",
+   "created": "2026-10-28T18:12:26Z",
+   "title": "\u30d0\u30b1MonD\u3092\u9593\u8fd1\u3067\u76ee\u6483\u3059\u308b\u307f\u3064\u30fc",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "\u30ae\u30eb\u304f\u3093",
+   "views": 8591,
+   "lang": "JA",
+   "created": "2026-10-28T14:49:37Z",
+   "title": "10/28\u3000\u7d76\u5bfe\u305d\u308c\u3069\u3053\u308d\u3058\u3083\u306a\u3044",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "Acie",
+   "views": 8220,
+   "lang": "EN",
+   "created": "2026-10-29T21:49:37Z",
+   "title": "Evil twin hiding",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "Garek",
+   "views": 7963,
+   "lang": "EN",
+   "created": "2026-10-29T03:57:04Z",
+   "title": "Gloryon (Garek) Finally hits max jett 50% max.",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "Jerma985",
+   "views": 7935,
+   "lang": "EN",
+   "created": "2026-10-31T01:37:41Z",
+   "title": "ur good",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "\u3068\u3068\u307f\u3063\u304f\u3059",
+   "views": 7879,
+   "lang": "JA",
+   "created": "2026-10-28T14:12:04Z",
+   "title": "\u5143\u8b66\u5bdf\u304c\uff81\uff97\u3064\u304f\u97f3\u9cf4",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "\u5b99\u661f\u3071\u308b",
+   "views": 7802,
+   "lang": "JA",
+   "created": "2026-10-28T11:11:03Z",
+   "title": "\u3059\u3079\u3066\u306e\u30ae\u30e3\u30f3\u30b0\u3092\u76f8\u624b\u306b\u3059\u308b\u4e8b\u306b\u306a\u308b\u53ef\u80fd\u6027",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "\u3084\u306a\u3064\u3093",
+   "views": 7679,
+   "lang": "JA",
+   "created": "2026-10-28T14:11:42Z",
+   "title": "\u9921\u306e\u6297\u4e89\u8eca\u4e21\u305f\u3061",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "Shiron103",
+   "views": 7617,
+   "lang": "JA",
+   "created": "2026-10-28T14:16:37Z",
+   "title": "\u6551\u6025\u968a\u3000\u4eee\u63a1\u7528\u306e\u5408\u5426 \u5185\u90e8\u767a\u8868",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "\u30a2\u30b8\u5409",
+   "views": 7434,
+   "lang": "JA",
+   "created": "2026-10-28T17:50:23Z",
+   "title": "\u4e00\u4eba\u3067\u8b66\u5bdf\u3092\u5168\u6ec5\u3055\u305b\u308bMonD",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "\u3048\u3073\u3059\u304f\u3093",
+   "views": 7155,
+   "lang": "JA",
+   "created": "2026-10-28T14:39:47Z",
+   "title": "\u3042\u306e\u602a\u7269\u305f\u3061\u304c\u5e30\u3063\u3066\u304f\u308b\u2026\uff01\uff1f",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "\u3057\u3087\u307c\u3059\u3051",
+   "views": 7146,
+   "lang": "JA",
+   "created": "2026-10-28T13:54:39Z",
+   "title": "\u795e\u8996\u70b9",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "\u307f\u3064\u304d\u3055\u3093\u3067\u3059",
+   "views": 7024,
+   "lang": "JA",
+   "created": "2026-10-28T18:12:30Z",
+   "title": "\u5f3e\u3092\u5f53\u3066\u308b\u30b3\u30c4\u3092\u6559\u3048\u3066\u304f\u308c\u308bMonD(\u72a0\u7272\u8005\u30d8\u30eb\u30a2\u30f3)",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "xQc",
+   "views": 6744,
+   "lang": "EN",
+   "created": "2026-10-29T05:15:41Z",
+   "title": "Brick bois finally found the drill",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "\u5207\u561b",
+   "views": 6546,
+   "lang": "JA",
+   "created": "2026-10-28T14:01:34Z",
+   "title": "\u76f8\u5909\u308f\u3089\u305a\u30cf\u30c3\u30ad\u30ea\u3057\u3066\u308b\u30b8\u30e7\u30b7\u30e5\u30a2\u3000\u30b9\u30c8\u30b0\u30e9",
+   "shape": "{filter: LAST_WEEK}"
+  },
+  {
+   "name": "Burn",
+   "views": 6534,
+   "lang": "EN",
+   "created": "2026-10-30T19:03:04Z",
+   "title": "Kevin's Dad is Dead",
+   "shape": "{filter: LAST_WEEK}"
+  }
+ ]
+}
