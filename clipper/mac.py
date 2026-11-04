@@ -34,9 +34,19 @@ AWAKE = (8, 23)          # local hours the browser checks may run in
 EVERY_MIN = 30           # minutes between Content Rewards checks (plus a random few)
 
 
+def _add_tool_paths():
+    import sys
+    # ffmpeg (mac/enable-clipping.sh puts it in ~/.clipper/bin) and the tools installed with the bot's own Python,
+    # like yt-dlp: the clipping jobs call them by name
+    for tools in (os.path.dirname(sys.executable), os.path.expanduser("~/.clipper/bin")):
+        if os.path.isdir(tools) and tools not in os.environ.get("PATH", "").split(os.pathsep):
+            os.environ["PATH"] = tools + os.pathsep + os.environ.get("PATH", "")
+
+
 def load_env(path=None):
     """KEY=value lines from .env into the environment (existing values win)."""
     p = path or (ROOT / ".env")
+    _add_tool_paths()
     if not p.exists():
         return
     for line in p.read_text().splitlines():
@@ -45,9 +55,6 @@ def load_env(path=None):
             continue
         k, v = line.split("=", 1)
         os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
-    tools = os.path.expanduser("~/.clipper/bin")   # ffmpeg for the clipping jobs (mac/enable-clipping.sh)
-    if os.path.isdir(tools) and tools not in os.environ.get("PATH", ""):
-        os.environ["PATH"] = tools + os.pathsep + os.environ.get("PATH", "")
 
 
 def load():

@@ -64,7 +64,8 @@ echo "Copied the bot's latest state from GitHub."
 
 # 5. Self-check: Claude, Groq, rendering, Telegram
 set -a; . ./.env; set +a
-export PATH="$BIN:$PATH"
+export PATH="$(pwd)/.venv/bin:$BIN:$PATH"   # yt-dlp lives with the bot's Python
+command -v yt-dlp >/dev/null || { echo "yt-dlp is missing from .venv. Run: .venv/bin/pip install -r requirements.txt"; exit 1; }
 .venv/bin/python -m clipper preflight
 
 # 6. Turn it on and restart the bot

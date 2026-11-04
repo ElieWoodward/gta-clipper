@@ -1480,4 +1480,9 @@ if _dry is not None:
     os.environ["DRY_RUN"] = _dry
 tg._call = _real_call
 _ml.send, _ml.read_replies = _saved_mail
+_saved_path = os.environ.get("PATH", "")
+os.environ["PATH"] = "/usr/bin:/bin"
+mac.load_env(TMP / "no.env")
+assert os.path.dirname(sys.executable) in os.environ["PATH"].split(os.pathsep)   # yt-dlp etc. are found by name
+os.environ["PATH"] = _saved_path
 print("MAC CLIPPING OK")
