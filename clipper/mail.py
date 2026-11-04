@@ -75,6 +75,21 @@ def _send_telegram(subject, text, attachment, maintype):
             tg.send_video(str(f), subject)
         else:
             tg.send_file(str(f), subject)
+    fields = []
+    if rows and rows[0][0][1].startswith("r:posted:"):   # a posting package: pasteable fields as their own messages
+        import re as _re
+        from .relay import COPY_FIELDS
+        parts = _re.split(r"^=== (.+?) ===$", body, flags=_re.M)
+        keep = [parts[0]]
+        for label, text in zip(parts[1::2], parts[2::2]):
+            match = next((f for f in COPY_FIELDS if f.upper() == label.strip()), None)
+            if match:
+                fields.append((match, text.strip()))
+            elif label.strip() != "STILL IN THE QUEUE":
+                keep.append(f"▸ {label.strip()}\n{text.strip()}\n")
+        order = ", then ".join(f for f, _ in fields)
+        body = "\n".join(keep).strip() + (f"\n\nNext messages, one per field so you can copy each whole: {order}."
+                                          if fields else "")
     chunks, cur = [], f"{subject}\n\n"
     for para in body.split("\n\n"):
         if len(cur) + len(para) > 3800:
@@ -83,7 +98,10 @@ def _send_telegram(subject, text, attachment, maintype):
         cur += para + "\n\n"
     chunks.append(cur)
     for i, c in enumerate(chunks):
-        tg.send(c.strip(), rows if i == len(chunks) - 1 else None)
+        tg.send(c.strip(), rows if i == len(chunks) - 1 and not fields else None)
+    if fields:
+        from .relay import send_fields
+        send_fields(fields, rows)
     log.info("sent to telegram: %s", subject)
     return f"tg:{token}"
 

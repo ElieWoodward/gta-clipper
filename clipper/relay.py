@@ -73,7 +73,26 @@ def _campaign_of(cfg, state, clip):
     return None
 
 
-def _post_text(cfg, state, clip):
+COPY_FIELDS = ("TikTok caption", "YouTube title", "YouTube description")   # each sent as its own message
+
+
+def split_blocks(blocks):
+    """Package blocks -> (info text, [(label, text) to paste]). Each pasteable field becomes its own Telegram message
+    with nothing else in it, because Telegram on a phone only copies whole messages."""
+    info, fields = [], []
+    for label, text in blocks:
+        if label == "Still in the queue":
+            continue
+        if label in COPY_FIELDS:
+            fields.append((label, text.strip()))
+            continue
+        text = text.replace('3. Reply "posted" here once it\'s up (or "skip" if they turn it down).',
+                            "3. Post it. The bot notices on its own once it's up.")
+        info += [f"▸ {label.upper()}", text, ""]
+    return "\n".join(info).strip(), fields
+
+
+def _post_parts(cfg, state, clip):
     from . import clipqueue
     queue_now = [c for c in state["clips"].values() if c.get("status") in ("queued", "approved")]
     try:
@@ -83,19 +102,16 @@ def _post_text(cfg, state, clip):
         pkg = {"subject": f"Post now: {clip.get('hook')}", "blocks": [
             ("TikTok caption", clip.get("sent_caption") or clip.get("caption") or ""),
             ("YouTube title", clip.get("sent_title") or clip.get("title") or "")]}
-    lines = [f"📲 {pkg['subject']}", ""]
-    for label, text in pkg["blocks"]:
-        if label == "Still in the queue":
-            continue
-        lines += [f"▸ {label.upper()}", text, ""]
-    text = "\n".join(lines).replace('3. Reply "posted" here once it\'s up (or "skip" if they turn it down).',
-                                     "3. Post it. The bot notices on its own once it's up.")
-    return text + ("It notices on its own when it shows up on your TikTok/YouTube. "
-                   "(Replying to the email with posted / skip / next still works too.)")
+    info, fields = split_blocks(pkg["blocks"])
+    order = ", then ".join(label for label, _ in fields)
+    info = (f"📲 {pkg['subject']}\n\n{info}\n\nNext messages, one per field so you can copy each whole: {order}.\n"
+            "It notices on its own when it shows up on your TikTok/YouTube.").replace("\n\n\n", "\n\n")
+    return info, fields
 
 
 def relay(st, cfg, state, backoff, last_commit, now=None):
-    """What to send this round: [("post", clip, caption_line, text) | ("text", text) | ("problem", key, what, fix)].
+    """What to send this round: [("post", clip, caption_line, info, fields) | ("text", text) |
+    ("problem", key, what, fix)].
     Updates st["relay"] so nothing is sent twice."""
     now = now or now_utc()
     r = st.setdefault("relay", {})
@@ -110,8 +126,8 @@ def relay(st, cfg, state, backoff, last_commit, now=None):
     for c in sorted(state["clips"].values(), key=lambda c: c.get("emailed_at") or ""):
         if c.get("emailed_at") and c["emailed_at"] >= since and c["id"] not in sent:
             sent.append(c["id"])
-            out.append(("post", c, f"📲 Post now: {c.get('hook', '')} ({c.get('score', '?')}/10)",
-                        _post_text(cfg, state, c)))
+            info, fields = _post_parts(cfg, state, c)
+            out.append(("post", c, f"📲 Post now: {c.get('hook', '')} ({c.get('score', '?')}/10)", info, fields))
     for c in state["clips"].values():
         camp = _campaign_of(cfg, state, c)
         for platform, post in (c.get("posts") or {}).items():
@@ -159,16 +175,24 @@ def send(st, items):
     for item in items:
         try:
             if item[0] == "post":
-                _, clip, caption, text = item
+                _, clip, caption, info, fields = item
                 _send_video(clip, caption)
-                for chunk in _chunks(text):
+                for chunk in _chunks(info):
                     tg.send(chunk)
+                send_fields(fields)
             elif item[0] == "text":
                 tg.send(item[1])
             elif item[0] == "problem":
                 tg.problem(st, item[1], item[2], item[3])
         except Exception as e:
             log.warning("couldn't send a relay message: %s", e)
+
+
+def send_fields(fields, rows=None):
+    """A small label, then the field alone (copy the whole message). rows (buttons) go on the last one."""
+    for i, (label, text) in enumerate(fields):
+        tg.send(f"⬇️ {label}", silent=True)
+        tg.send(text or "(empty)", rows if i == len(fields) - 1 else None, silent=True)
 
 
 def _send_video(clip, caption):

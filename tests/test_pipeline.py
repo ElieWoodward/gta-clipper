@@ -1281,8 +1281,11 @@ _items = relay.relay(_rst, _rcfg, _rstate, {}, _now.isoformat(), now=_now + _td(
 _kinds = sorted(i[0] for i in _items)
 assert _kinds == ["post", "text"], _items
 _post = [i for i in _items if i[0] == "post"][0]
-assert "boy band" in _post[2] and "TIKTOK CAPTION" in _post[3] and "YOUTUBE TITLE" in _post[3], _post[3]
-assert "twitch.tv/Lysium" in _post[3] and 'Reply "posted" here' not in _post[3] and "Still in the queue".upper() not in _post[3]
+assert "boy band" in _post[2] and [f[0] for f in _post[4]] == ["TikTok caption", "YouTube title", "YouTube description"]
+assert "TIKTOK CAPTION" not in _post[3] and "Next messages" in _post[3], _post[3]   # fields aren't in the info message
+assert all("▸" not in f[1] and "===" not in f[1] for f in _post[4])            # each field is only the text to paste
+assert "twitch.tv/Lysium" in _post[4][0][1] and _post[4][1][1].endswith("#shorts")
+assert 'Reply "posted" here' not in _post[3] and "Still in the queue".upper() not in _post[3]
 assert "Benji Ramos clips" in [i for i in _items if i[0] == "text"][0][1]
 assert relay.relay(_rst, _rcfg, _rstate, {}, _now.isoformat(), now=_now + _td(minutes=6)) == []   # nothing twice
 _clip["posts"]["tiktok"] = {"url": "https://www.tiktok.com/@wantedlevelclips8/video/99"}
@@ -1404,6 +1407,16 @@ _mid = _ml.send("Post now: boy band (8/10)", 'blah\n\nReply "posted" once it\'s 
 assert _mid.startswith("tg:") and [c[0] for c in _tgcalls] == ["sendVideo", "sendMessage"], _tgcalls
 _kb = json.loads(_tgcalls[-1][1]["reply_markup"])["inline_keyboard"]
 assert _kb[0][0]["callback_data"] == f"r:posted:{_mid[3:]}" and "Tap Posted" in _tgcalls[-1][1]["text"]
+_tgcalls.clear()
+_body = ("=== TIKTOK CAPTION ===\nfunny caption\n#gta\n\n=== YOUTUBE TITLE ===\nboy band #shorts\n\n"
+         "=== YOUTUBE DESCRIPTION ===\ndesc here\n\n=== WHAT'S IN IT ===\na meeting\n\n"
+         "=== STILL IN THE QUEUE ===\n- other\n\nThe video is attached.")
+_ml.send("Post now: boy band (8/10)", _body)
+_texts = [c[1]["text"] for c in _tgcalls if c[0] == "sendMessage"]
+assert _texts[1:] == ["⬇️ TikTok caption", "funny caption\n#gta", "⬇️ YouTube title", "boy band #shorts",
+                      "⬇️ YouTube description", "desc here"], _texts
+assert "WHAT'S IN IT" in _texts[0] and "funny caption" not in _texts[0] and "other" not in _texts[0]
+assert "reply_markup" in [c for c in _tgcalls if c[0] == "sendMessage"][-1][1]   # buttons on the last field
 _ml.send("Campaign: Benji ($1.50 per 1K)", "fits")
 assert json.loads(_tgcalls[-1][1]["reply_markup"])["inline_keyboard"][0][0]["callback_data"].startswith("r:join:")
 _ml.send("Clip bot problem: x", "y")
