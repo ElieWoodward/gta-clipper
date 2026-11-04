@@ -7106,6 +7106,8 @@
       "context": "",
       "created": "2026-11-03T18:21:08.946648+00:00",
       "duration": 29.2,
+      "email_message_id": "<179381599872.2305.2137828421923949097@gmail.com>",
+      "emailed_at": "2026-11-04T18:13:25.719971+00:00",
       "end": 8890.0,
       "facecam": true,
       "file": "7fc876dedf.mp4",
@@ -7134,6 +7136,8 @@
       "punch_text": "",
       "said": "thinking I'm gonna go for 31 or should I go for 34 hey I know this is your customer listen baby you're like really good at that sure that being said I gave you that really good advice about like drinking and smoking weed so how about we do 34 instead",
       "score": 7,
+      "sent_caption": "bro got greedy and the customer left him on read \ud83d\ude2d\n\nStreamer: youney\n#gta6 #gtarp #gta #funny #fyp #youney",
+      "sent_title": "He got greedy haggling and the customer just walked off \ud83d\udc80 #shorts",
       "speed": 1.3,
       "start": 8852.0,
       "status": "approved",
@@ -11428,6 +11432,13 @@
         "date": "2026-11-04",
         "subject": "Post now: Bro said yes to $10K before checking who's paying \ud83d\udc80 (7/10)",
         "test": false
+      },
+      {
+        "at": "2026-11-04T18:13:25.719971+00:00",
+        "clip": "7fc876dedf",
+        "date": "2026-11-04",
+        "subject": "Post now: When the customer offers 28 and you get ideas \ud83d\ude2d\ud83d\udc80 (7/10)",
+        "test": false
       }
     ],
     "replies_at": "2026-11-04T17:28:31.506405+00:00"
@@ -11446,7 +11457,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-11-04T17:59:07.869225+00:00"
+      "ok": "2026-11-04T18:13:18.096309+00:00"
     }
   },
   "last_run": {
