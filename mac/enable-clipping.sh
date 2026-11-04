@@ -11,12 +11,13 @@ WORK="/Volumes/Work/clipper"
 
 echo "== Moving the clipping onto this Mac =="
 
-# 1. The Work SSD
+# 1. Where clips are made and kept: the Work SSD if it's plugged in, otherwise the Mac's own drive for now
 if [ ! -d /Volumes/Work ]; then
-  echo "The Work SSD isn't plugged in (or isn't named Work). Plug it in, wipe it in Disk Utility as 'Work' (APFS), then run this again."
-  exit 1
+  WORK="$HOME/ClipperWork"
+  echo "No Work SSD plugged in: using $WORK on the Mac's drive for now (move it to the SSD later)."
 fi
 mkdir -p "$WORK"
+echo "Free space: $(df -h "$WORK" | awk 'NR==2{print $4}')   Memory: $(( $(sysctl -n hw.memsize) / 1073741824 )) GB"
 
 # 2. ffmpeg + ffprobe (Intel builds), the emoji font and the caption font
 mkdir -p "$BIN"
@@ -52,7 +53,8 @@ setkey NOTIFY_VIA telegram
 setkey CLIP_STORAGE local
 setkey CLIPPER_WORK "$WORK"
 
-# 4. The live bot's latest memory (clips, campaigns, posting times, spend) from GitHub
+# 4. The live bot's latest memory (clips, campaigns, posting times, spend) from GitHub.
+#    Claude pauses the GitHub runs right before this, so nothing changes there afterwards.
 git fetch -q origin main
 for f in $(git ls-tree --name-only origin/main data/); do
   git show "origin/main:$f" > "$f"

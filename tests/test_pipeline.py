@@ -1453,6 +1453,24 @@ _J.live.done = True
 _J.cur.done = True
 _J.tick({})
 assert _started.count("live") == 2   # the watcher ended (6-hour limit): restarted
+from clipper import weekly as _wk  # noqa: E402
+_real_due, _wk.due = _wk.due, lambda cfg, st=None, now=None: True
+if _J.cur is not None:
+    _J.cur.done = True
+_J.next_daily, _J.next_post, _J.next_process = 0, 1e18, 1e18
+_jst = {"jobs_last": {"analytics": mac.local_now().date().isoformat(), "learn": mac.local_now().date().isoformat()}}
+_J.tick(_jst)
+assert _started[-1] != "weekly"   # the long video stays on GitHub unless MAC_RUNS_WEEKLY=1
+os.environ["MAC_RUNS_WEEKLY"] = "1"
+_J.next_daily = 0
+_J.tick(_jst)
+assert _started[-1] == "weekly", _started
+os.environ.pop("MAC_RUNS_WEEKLY")
+_wk.due = _real_due
+(TMP / "config.yaml").write_text((TMP / "config.yaml").read_text())
+_old_root2, mac.ROOT = mac.ROOT, TMP
+assert "Lysium/Benji Ramos Clips" in mac.bot_campaigns()   # reads its own config when clipping here
+mac.ROOT = _old_root2
 os.environ["CLIPPER_WORK"] = "/Volumes/NoSuchDrive/clipper"
 _ast = {}
 assert _J.drive_ok(_ast) is False and "Work SSD" in json.dumps(_tgcalls[-1])

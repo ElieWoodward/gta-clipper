@@ -96,6 +96,10 @@ def bot_campaigns():
         except Exception:
             p = ROOT / path
             return p.read_text() if p.exists() else ""
+    if clipping_on():   # the clipper runs here now: read its own files
+        def show(path):  # noqa: F811
+            p = ROOT / path
+            return p.read_text() if p.exists() else ""
     names = []
     try:
         cfg = yaml.safe_load(show("config.yaml")) or {}
@@ -430,10 +434,11 @@ class Jobs:
                 last["learn"] = today
                 self.cur = self._start("learn")
             else:
-                try:
+                try:   # the Sunday long video stays on GitHub (its email has a download link; Telegram's limit is 50 MB)
                     from . import weekly
                     from .common import load_config
-                    if weekly.due(load_config()) and last.get("weekly_try") != f"{today}:{lt.hour}":
+                    if os.environ.get("MAC_RUNS_WEEKLY") == "1" and weekly.due(load_config()) and \
+                            last.get("weekly_try") != f"{today}:{lt.hour}":
                         last["weekly_try"] = f"{today}:{lt.hour}"
                         self.cur = self._start("weekly")
                 except Exception as e:
