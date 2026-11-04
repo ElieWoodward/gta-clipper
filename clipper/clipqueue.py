@@ -523,7 +523,8 @@ def refresh_posted(cfg, state):
             log.info("YouTube check failed: %s", e)
     em = state.setdefault("email", {})
     last = em.get("replies_at")
-    due = not last or now_utc() - datetime.fromisoformat(last) >= timedelta(minutes=REPLY_CHECK_MINUTES)
+    due = (not last or now_utc() - datetime.fromisoformat(last) >= timedelta(minutes=REPLY_CHECK_MINUTES)
+           or mail.telegram_mode())   # Telegram taps are read on every run; only Gmail logins need spacing out
     if mail.configured() and due and not mail.down_until():
         em["replies_at"] = now_utc().isoformat()
         try:

@@ -1426,6 +1426,12 @@ _ml.queue_reply("", "pause")
 assert _ml.read_replies() == [(_mid, "posted"), ("", "pause")] and _ml.read_replies() == []
 _ml.check_login()
 assert _tgcalls[-1][0] == "getMe"
+# replies are read on every posting check in Telegram mode (Gmail spaces its logins out to ~hourly)
+from clipper import clipqueue as _cq  # noqa: E402
+_rs = {"clips": {}, "email": {"replies_at": __import__("datetime").datetime.now(_tz.utc).isoformat()}}
+_ml.queue_reply("", "next")
+_cq.refresh_posted({"accounts": {}}, _rs)
+assert _rs["email"].get("send_next") is True, _rs
 # the Mac loop turns a tap into a reply and marks the message
 os.environ["MAC_RUNS_CLIPPER"] = "1"
 mac.handle({}, "tap", f"r:skip:{_mid[3:]}", 7, "📲 Post now")
