@@ -3722,6 +3722,7 @@
       "why": "Character boasts about beating three guys, the stranger calmly says he heard he got beaten and screamed, and he scrambles to deny it."
     },
     "3fbc0a638e": {
+      "asset_deleted": true,
       "asset_id": 708356339,
       "caption": "the way they all turned on him over one word \ud83d\ude2d\ud83d\udc80",
       "context": "",
@@ -3745,10 +3746,31 @@
       "hook_score": 8,
       "id": "3fbc0a638e",
       "issue": 57,
+      "issue_closed": true,
       "layout": "cam+wide",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/40114b61e8/3fbc0a638e.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/3fbc0a638e.mp4",
-      "posts": {},
+      "posts": {
+        "youtube": {
+          "comments": null,
+          "date": "2026-11-04",
+          "history": [
+            [
+              "2026-11-04T20:13:21.847350+00:00",
+              154
+            ]
+          ],
+          "hour": "11:00",
+          "likes": 5,
+          "match": 1.0,
+          "posted_at": "2026-11-04T19:58:30+00:00",
+          "seen_at": "2026-11-04T20:13:21.843545+00:00",
+          "shares": null,
+          "status": "published",
+          "url": "https://www.youtube.com/shorts/Bbq_6jcqou8",
+          "views": 154
+        }
+      },
       "preapproval": false,
       "punch_at": 32.28,
       "punch_text": "She said EACH",
@@ -3758,7 +3780,7 @@
       "sent_title": "He said yes to the $10K wish way too fast \ud83d\udc80 #shorts",
       "speed": 1.3,
       "start": 17170,
-      "status": "approved",
+      "status": "posted",
       "streamer": "Cinna",
       "tags": [
         "funny_line",
@@ -7117,6 +7139,7 @@
       "why": "A threat to a hovering helicopter backfires when the target turns out to be a news van on the ground, and the pilot's reply shuts the threat down."
     },
     "7fc876dedf": {
+      "asset_deleted": true,
       "asset_id": 706624418,
       "caption": "bro got greedy and the customer left him on read \ud83d\ude2d",
       "context": "",
@@ -7141,12 +7164,33 @@
       "hook_score": 8,
       "id": "7fc876dedf",
       "issue": 54,
+      "issue_closed": true,
       "layout": "cam+wide",
       "live": true,
       "live_signal": "chat exploded live (8.3x normal)",
       "local_file": "/home/runner/work/gta-clipper/gta-clipper/work/live_v2918496676_8815/7fc876dedf.mp4",
       "media_url": "https://github.com/ElieWoodward/gta-clipper/releases/download/queue/7fc876dedf.mp4",
-      "posts": {},
+      "posts": {
+        "youtube": {
+          "comments": null,
+          "date": "2026-11-04",
+          "history": [
+            [
+              "2026-11-04T20:13:21.847404+00:00",
+              0
+            ]
+          ],
+          "hour": "12:00",
+          "likes": 0,
+          "match": 1.0,
+          "posted_at": "2026-11-04T20:11:12+00:00",
+          "seen_at": "2026-11-04T20:13:21.844159+00:00",
+          "shares": null,
+          "status": "published",
+          "url": "https://www.youtube.com/shorts/P6gdSxUR96o",
+          "views": 0
+        }
+      },
       "preapproval": false,
       "punch_at": 0,
       "punch_text": "",
@@ -7156,7 +7200,7 @@
       "sent_title": "He got greedy haggling and the customer just walked off \ud83d\udc80 #shorts",
       "speed": 1.3,
       "start": 8852.0,
-      "status": "approved",
+      "status": "posted",
       "streamer": "youney",
       "tags": [
         "fail",
@@ -11485,7 +11529,7 @@
       "last_ok": "2026-10-22T16:47:40.915958+00:00"
     },
     "tiktok_check": {
-      "ok": "2026-11-04T19:58:31.440502+00:00"
+      "ok": "2026-11-04T20:13:21.626514+00:00"
     }
   },
   "last_run": {
