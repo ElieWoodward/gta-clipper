@@ -703,14 +703,18 @@ def cr_dryrun():
     """Practice run on the real account, cancelled before anything is sent: python -m clipper cr_dryrun
     Fills the "Submit link" form on the first approved draft and a draft form on the campaign, then cancels."""
     from . import contentrewards as cr, crflow
-    from .common import WORK, load_config
+    from .common import load_config
     load_env()
     st = load()
     cfg = load_config()
     name = next((x["campaign"] for x in cfg.get("streamers") or [] if x.get("campaign") and x.get("preapproval")), None)
     url = _campaign_url(st, name)
-    clips = sorted((WORK / "store").glob("*.mp4"), key=lambda p: p.stat().st_mtime) if (WORK / "store").exists() else []
-    clips += sorted((WORK / "cr_drafts").glob("*.mp4")) if (WORK / "cr_drafts").exists() else []
+    import tempfile
+    from pathlib import Path
+    test = Path(tempfile.gettempdir()) / "practice_clip.mp4"   # a 3-second blank vertical video, never uploaded
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=black:s=1080x1920:d=3",
+                    "-c:v", "libx264", "-pix_fmt", "yuv420p", str(test)], check=False)
+    clips = [test] if test.exists() else []
     with cr.Site() as s:
         cards = s.approved()
         print(f"Approved drafts on the page: {cards}", flush=True)
@@ -722,9 +726,9 @@ def cr_dryrun():
             print("No approved draft right now, so the link form wasn't tried.", flush=True)
         if url and clips:
             s.submit_draft(url, clips[-1], platforms=crflow.platforms(cfg), dry_run=True)
-            print(f"OK: filled a draft form on {name} with {clips[-1].name} and cancelled it.", flush=True)
+            print(f"OK: filled a draft form on {name} with a blank practice video and cancelled it.", flush=True)
         else:
-            print(f"Skipped the draft form (campaign page known: {bool(url)}, a clip file on the Mac: {bool(clips)}).",
+            print(f"Skipped the draft form (campaign page known: {bool(url)}, practice video made: {bool(clips)}).",
                   flush=True)
     print("Practice run finished. Nothing was submitted.", flush=True)
 
