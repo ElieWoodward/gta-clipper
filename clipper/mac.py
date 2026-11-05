@@ -228,12 +228,21 @@ FIX_CHROME = ("1. Make sure Google Chrome is in the Mac's Applications folder an
 
 
 def check(st):
-    from . import contentrewards as cr
+    from . import contentrewards as cr, crflow
+    entries = crflow.load()
     with cr.Site() as s:
         camps = s.campaigns()
         drafts = s.drafts()
+        cards = s.approved() if any(e.get("status") in ("submitted", "approved", "posted") for e in entries) else []
     msgs = compare(st, camps, drafts, bot_campaigns())
+    waiting = any(e.get("status") == "submitted" for e in entries)
+    newly = crflow.match_approvals(entries, cards) if cards else []
+    if newly:
+        crflow.save(entries)
+    if newly or waiting:   # the bot's own drafts get a full post package instead of the generic "approved" note
+        msgs = [m for m in msgs if not m.startswith("🟢")]
     st["last_sync"] = now_utc().isoformat()
+    st["_approved_now"] = [e["token"] for e in newly]
     return msgs
 
 
@@ -258,6 +267,12 @@ def run_check(st, force=False):
     for m in msgs:
         tg.send(m)
         time.sleep(1)
+    from . import crflow
+    entries = crflow.load()
+    for token in st.pop("_approved_now", []):
+        e = crflow.by_token(entries, token)
+        if e:
+            send_post_package(e)
     if force and not msgs:
         tg.send("Checked Content Rewards: nothing new.\n\n" + summary(st))
 
@@ -274,13 +289,31 @@ def handle(st, kind, data, message_id, text):
             tg.send(f"Couldn't mark it as kept ({str(e)[:150]}). In the Jellyfin app, tap the heart on it instead.")
         return
     if kind == "tap" and data.startswith("r:"):
-        from . import mail
+        from . import mail, crflow
         _, verdict, token = (data.split(":", 2) + ["", ""])[:3]
         mail.queue_reply(f"tg:{token}", verdict)
+        entries = crflow.load()
+        e = crflow.by_token(entries, token)
+        if e and e.get("status") == "approved" and verdict in ("posted", "skip"):
+            if verdict == "posted":
+                e.update(status="posted", posted_at=now_utc().isoformat())
+                crflow.save(entries)
+                tg.edit(message_id, f"{(text or '')[:3500]}\n\n✅ Marked posted")
+                tg.send(f"🔎 Looking for your posts to submit to {e.get('campaign')}. Give it a few minutes. "
+                        "You can also paste the TikTok or YouTube link here and I'll submit it right away.")
+                st["hunt_next"] = 0
+            else:
+                e["status"] = "skipped"
+                crflow.save(entries)
+                tg.edit(message_id, f"{(text or '')[:3500]}\n\n⏭ Skipped")
+            return
         done = {"posted": "✅ Marked posted", "skip": "⏭ Skipped (a replacement comes at the next slot)",
                 "next": "➕ Another clip is on its way", "join": "✅ Joined: its clips go first now. Apply with the "
                 "link above if you haven't yet; I'll tell you when they approve you.", "skip_c": ""}.get(verdict, "Got it")
         tg.edit(message_id, f"{(text or '')[:3500]}\n\n{done}")
+        return
+    if kind == "text" and re.search(r"https?://\S*(tiktok\.com|youtube\.com|youtu\.be)/", data or "", re.I):
+        submit_pasted_link(st, re.search(r"https?://\S+", data).group(0))
         return
     if kind == "text":
         if clipping_on() and low not in ("status", "/status", "check", "/check", "cleanup", "/cleanup",
@@ -336,6 +369,142 @@ def run_cleanup(st):
         else:
             fix = "If this repeats tomorrow, send this message to Claude."
         tg.problem(st, "jellyfin", f"The watched-title clean-up failed: {msg[:250]}", fix)
+
+
+def _campaign_url(st, name):
+    for rec in (st.get("campaigns") or {}).values():
+        if rec.get("url") and same_campaign(rec.get("name"), name):
+            return rec["url"]
+    return None
+
+
+def send_post_package(e, manual=False):
+    """The approved (or hand-submit) post package: video, info, then each field alone, buttons on the last."""
+    from . import crflow, relay
+    info, fields = crflow.post_parts(e, manual=manual)
+    caption = f"📲 Post now: {e.get('hook')}"
+    if os.path.exists(e.get("file") or ""):
+        tg.send_video(e["file"], caption)
+    for chunk in relay._chunks(info):
+        tg.send(chunk)
+    rows = [[("✅ Posted", f"r:posted:{e['token']}"), ("⏭ Skip", f"r:skip:{e['token']}")]]
+    relay.send_fields(fields, rows)
+
+
+def process_drafts(st):
+    """Upload queued campaign clips as Content Rewards drafts (during waking hours, at a person's pace)."""
+    from . import contentrewards as cr, crflow
+    entries = crflow.load()
+    todo = [e for e in entries if e.get("status") == "queued"][:2]
+    for e in todo:
+        url = _campaign_url(st, e.get("campaign"))
+        if not url:
+            e["tries"] = e.get("tries", 0) + 1
+            if e["tries"] >= 3:   # the campaign page isn't known (not joined?): hand it to Elie
+                e["status"] = "manual_draft"
+                tg.send(f"⚠️ I couldn't find the {e.get('campaign')} campaign page on Content Rewards, so this clip "
+                        "needs its draft submitted by hand:")
+                send_post_package(e, manual=True)
+            crflow.save(entries)
+            continue
+        try:
+            with cr.Site() as s:
+                s.submit_draft(url, e["file"], platforms=e.get("platforms") or ("tiktok", "youtube"))
+        except cr.NotLoggedIn:
+            tg.problem(st, "cr_login", "The bot's Chrome window isn't logged in to Content Rewards, so it can't "
+                       "upload campaign drafts.", FIX_LOGIN)
+            return
+        except Exception as ex:
+            e["tries"] = e.get("tries", 0) + 1
+            log.warning("draft upload failed (%s): %s", e["id"], ex)
+            if e["tries"] >= 3:
+                e["status"] = "manual_draft"
+                tg.send(f"⚠️ Uploading the draft to {e.get('campaign')} failed 3 times ({str(ex)[:150]}). "
+                        "Submit this one by hand:")
+                send_post_package(e, manual=True)
+            crflow.save(entries)
+            continue
+        e.update(status="submitted", submitted_at=now_utc().isoformat())
+        crflow.save(entries)
+        tg.send(f"📤 Sent to {e.get('campaign')} for approval: {e.get('hook')}\n\n"
+                "I'll send you the post package as soon as they approve it.", silent=True)
+
+
+def _uploads(platforms_):
+    from . import clipqueue
+    from .common import load_config
+    acct = (load_config().get("accounts") or {})
+    out = {}
+    if "tiktok" in platforms_ and acct.get("tiktok"):
+        try:
+            out["tiktok"] = clipqueue.tiktok_uploads(acct["tiktok"], 10)
+        except Exception as ex:
+            log.info("tiktok read failed: %s", ex)
+    if "youtube" in platforms_ and acct.get("youtube"):
+        try:
+            out["youtube"] = clipqueue.youtube_shorts(acct["youtube"], 10)
+        except Exception as ex:
+            log.info("youtube read failed: %s", ex)
+    return out
+
+
+def _submit(st, e, platform, url):
+    from . import contentrewards as cr
+    try:
+        with cr.Site() as s:
+            s.submit_link(e.get("campaign"), e.get("duration"), url)
+    except Exception as ex:
+        tg.send(f"⚠️ Content Rewards didn't take your {platform} link ({str(ex)[:200]}).\n\nSubmit it yourself: "
+                f"Drafts > Approved > Submit link, and paste:\n{url}")
+        e.setdefault("links", {})[platform] = "failed:" + url
+        return False
+    e.setdefault("links", {})[platform] = url
+    tg.send(f"💰 Submitted your {platform} post to {e.get('campaign')}:\n{url}")
+    return True
+
+
+def _finish_if_done(e):
+    if all(p in (e.get("links") or {}) for p in e.get("platforms") or []):
+        e["status"] = "done"
+
+
+def hunt(st):
+    """Every 2 minutes after Posted: find the new posts and submit their links before the 30-minute cutoff."""
+    from . import crflow
+    entries = crflow.load()
+    active = crflow.hunting(entries)
+    changed = False
+    if active:
+        ups = _uploads({p for e in active for p in e.get("platforms") or []})
+        for e in active:
+            for platform, url in crflow.find_posts(e, ups).items():
+                _submit(st, e, platform, url)
+                changed = True
+            _finish_if_done(e)
+    for e in crflow.expired(entries):
+        missing = [p for p in e.get("platforms") or [] if p not in (e.get("links") or {})]
+        e["status"] = "manual"
+        changed = True
+        tg.send(f"⏰ I couldn't find your {' and '.join(missing)} post for \"{e.get('hook')}\" in time. Paste the "
+                "link here right now and I'll submit it, or do it yourself: Drafts > Approved > Submit link. "
+                "Content Rewards only takes it within 30 minutes of posting.")
+    if changed:
+        crflow.save(entries)
+
+
+def submit_pasted_link(st, url):
+    from . import crflow
+    platform = crflow.platform_of(url)
+    entries = crflow.load()
+    waiting = [e for e in entries if e.get("status") in ("posted", "manual", "approved")
+               and platform in (e.get("platforms") or []) and platform not in (e.get("links") or {})]
+    if not waiting:
+        tg.send("I don't have an approved campaign draft waiting for that link.")
+        return
+    e = sorted(waiting, key=lambda e: e.get("approved_at") or "")[-1]
+    if _submit(st, e, platform, url):
+        _finish_if_done(e)
+    crflow.save(entries)
 
 
 RELAY_EVERY = 3 * 60      # seconds between reads of the GitHub bot's state
@@ -481,6 +650,17 @@ def loop():
                 jobs.tick(st)
             except Exception as e:
                 log.warning("job scheduler hiccup: %s", e)
+            try:
+                if awake():
+                    process_drafts(st)
+                if time.time() >= st.get("hunt_next", 0):
+                    st["hunt_next"] = time.time() + 120
+                    hunt(st)
+            except Exception as e:
+                log.warning("campaign draft step failed: %s", e)
+                tg.problem(st, "crflow", f"The campaign draft step hit an error: {str(e)[:200]}",
+                           "It retries on its own. If this repeats tomorrow, send this message to Claude.")
+            save(st)
         elif now >= nxt_relay:   # posting clips, live links, campaigns and problems from the bot on GitHub
             nxt_relay = now + RELAY_EVERY
             try:
@@ -517,6 +697,36 @@ def once():
     run_check(st, force=True)
     save(st)
     print(summary(st))
+
+
+def cr_dryrun():
+    """Practice run on the real account, cancelled before anything is sent: python -m clipper cr_dryrun
+    Fills the "Submit link" form on the first approved draft and a draft form on the campaign, then cancels."""
+    from . import contentrewards as cr, crflow
+    from .common import WORK, load_config
+    load_env()
+    st = load()
+    cfg = load_config()
+    name = next((x["campaign"] for x in cfg.get("streamers") or [] if x.get("campaign") and x.get("preapproval")), None)
+    url = _campaign_url(st, name)
+    clips = sorted((WORK / "store").glob("*.mp4"), key=lambda p: p.stat().st_mtime) if (WORK / "store").exists() else []
+    clips += sorted((WORK / "cr_drafts").glob("*.mp4")) if (WORK / "cr_drafts").exists() else []
+    with cr.Site() as s:
+        cards = s.approved()
+        print(f"Approved drafts on the page: {cards}", flush=True)
+        if cards:
+            s.submit_link(cards[0]["campaign"], cards[0]["duration"], "https://www.tiktok.com/@practice/video/1",
+                          dry_run=True)
+            print("OK: filled the Submit link form (link + requirements box) and cancelled it.", flush=True)
+        else:
+            print("No approved draft right now, so the link form wasn't tried.", flush=True)
+        if url and clips:
+            s.submit_draft(url, clips[-1], platforms=crflow.platforms(cfg), dry_run=True)
+            print(f"OK: filled a draft form on {name} with {clips[-1].name} and cancelled it.", flush=True)
+        else:
+            print(f"Skipped the draft form (campaign page known: {bool(url)}, a clip file on the Mac: {bool(clips)}).",
+                  flush=True)
+    print("Practice run finished. Nothing was submitted.", flush=True)
 
 
 def tg_test():

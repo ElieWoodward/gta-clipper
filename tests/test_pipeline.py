@@ -1492,3 +1492,120 @@ mac.load_env(TMP / "no.env")
 assert os.path.dirname(sys.executable) in os.environ["PATH"].split(os.pathsep)   # yt-dlp etc. are found by name
 os.environ["PATH"] = _saved_path
 print("MAC CLIPPING OK")
+
+# ---------- 35. Campaign clips on the Mac: draft -> approved package -> Posted -> links submitted ----------
+from clipper import crflow, contentrewards as _cr, jobs as _jobs  # noqa: E402
+_cards_txt = ("Approved\n1\nLysium/Benji Ramos Clips\nCPM\n0/2 posted\n00:00\n/\n00:29\nSubmit link\n"
+              "Lysium/Benji Ramos Clips\nCPM\n1/2 posted\n00:00\n/\n00:41\nSubmit link")
+_cards = _cr.parse_approved_cards(_cards_txt)
+assert _cards == [{"campaign": "Lysium/Benji Ramos Clips", "posted": 0, "of": 2, "duration": 29},
+                  {"campaign": "Lysium/Benji Ramos Clips", "posted": 1, "of": 2, "duration": 41}], _cards
+assert _cr.pick_card(_cards, "Lysium/Benji Ramos Clips", 40.5) == 1 and _cr.pick_card(_cards, "Other", 29) is None
+assert _cr.pick_card(_cards, "Lysium/Benji Ramos Clips", 90) is None and _cr._secs("1:02:03") == 3723
+
+_tgcalls2 = []
+_real_call2 = tg._call
+tg._call = lambda m, data=None, files=None, timeout=30: (_tgcalls2.append((m, data)), {"message_id": len(_tgcalls2)})[1]
+os.environ.update(NOTIFY_VIA="telegram", TELEGRAM_TOKEN="t", TELEGRAM_CHAT_ID="1", MAC_RUNS_CLIPPER="1")
+_dry2 = os.environ.pop("DRY_RUN", None)
+_ccfg = common.load_config()
+_vid = TMP / "camp.mp4"
+_vid.write_bytes(b"x" * 100)
+_cclip = {"id": "camp1", "streamer": "Lysium", "hook": "he started a boy band 💀", "score": 8, "duration": 29.0,
+          "title": "They called a meeting and he said boy band", "caption": "the boy band reveal 😭",
+          "start": 100, "vod_url": "https://www.twitch.tv/videos/1", "why": "meeting derailed", "status": "approved",
+          "posts": {}, "created": common.now_utc().isoformat(), "preapproval": True, "handle": "twitch.tv/Lysium",
+          "local_file": str(_vid), "speed": _jobs.clip_speed(_ccfg)}
+assert crflow.applies(_ccfg, _cclip) and not crflow.applies(_ccfg, dict(_cclip, preapproval=False))
+_cstate = {"clips": {"camp1": _cclip}}
+_sent_mail = []
+_ml.send = lambda *a, **k: _sent_mail.append(a) or "mail"
+_mid = _jobs.send_package(_ccfg, _cstate, _cclip)   # the post job's slot: queued as a draft, nothing sent to Elie
+assert _mid.startswith("tg:") and not _sent_mail and _cclip["emailed_at"] and _cclip["email_message_id"] == _mid
+_q = crflow.load()
+assert len(_q) == 1 and _q[0]["status"] == "queued" and _q[0]["campaign"] == "Lysium/Benji Ramos Clips"
+assert os.path.exists(_q[0]["file"]) and _q[0]["platforms"] == ["tiktok", "youtube"]
+_ml.send = _saved_mail[0]
+
+class _FakeSite:  # noqa: E302
+    drafts_sent, links_sent, cards = [], [], []
+    def __enter__(self): return self  # noqa: E704
+    def __exit__(self, *a): return False  # noqa: E704
+    def submit_draft(self, url, video, platforms=("tiktok", "youtube"), dry_run=False):
+        _FakeSite.drafts_sent.append((url, video, tuple(platforms)))
+        return True
+    def campaigns(self):
+        return [dict(_info, name="Lysium/Benji Ramos Clips", status="approved",
+                     url="https://contentrewards.com/c/campaigns/x")]
+    def drafts(self): return {"counts": {"approved": 1, "posted": 2}}  # noqa: E704
+    def approved(self): return list(_FakeSite.cards)  # noqa: E704
+    def submit_link(self, campaign, duration, url, dry_run=False):
+        _FakeSite.links_sent.append((campaign, duration, url))
+        return True
+_real_site, _cr.Site = _cr.Site, _FakeSite
+_mst = {"campaigns": {"Lysium/Benji Ramos Clips": {"name": "Lysium/Benji Ramos Clips", "approved": True,
+                                                  "url": "https://contentrewards.com/c/campaigns/x"}},
+        "drafts": {"approved": 0, "posted": 2}, "listed_once": True}
+_real_bc, mac.bot_campaigns = mac.bot_campaigns, lambda: ["Lysium/Benji Ramos Clips"]
+mac.process_drafts(_mst)   # 1. uploaded as a draft
+assert _FakeSite.drafts_sent == [("https://contentrewards.com/c/campaigns/x", _q[0]["file"], ("tiktok", "youtube"))]
+assert crflow.load()[0]["status"] == "submitted" and "for approval" in _tgcalls2[-1][1]["text"]
+mac.process_drafts(_mst)
+assert len(_FakeSite.drafts_sent) == 1   # never twice
+_tgcalls2.clear()
+mac.run_check(_mst)   # 2. not approved yet: no package
+assert not [c for c in _tgcalls2 if c[0] == "sendVideo"]
+_FakeSite.cards = _cr.parse_approved_cards(_cards_txt)[:1]
+mac.run_check(_mst)   # approved: the package goes out with Posted / Skip
+_e = crflow.load()[0]
+assert _e["status"] == "approved", _e
+_vids = [c for c in _tgcalls2 if c[0] == "sendVideo"]
+_msgs = [c[1]["text"] for c in _tgcalls2 if c[0] == "sendMessage"]
+assert len(_vids) == 1 and any("approved your draft" in m for m in _msgs), _msgs
+assert "⬇️ TikTok caption" in _msgs and not any(m.startswith("🟢") for m in _msgs)
+assert not any("Submit the attached video as a draft" in m or "CAMPAIGN APPROVAL FIRST" in m for m in _msgs)
+_kb2 = json.loads([c for c in _tgcalls2 if c[0] == "sendMessage"][-1][1]["reply_markup"])["inline_keyboard"]
+assert _kb2[0][0]["callback_data"] == f"r:posted:{_e['token']}"
+_tgcalls2.clear()
+mac.run_check(_mst)
+assert not [c for c in _tgcalls2 if c[0] == "sendVideo"]   # the same approval isn't sent twice
+mac.handle(_mst, "tap", f"r:posted:{_e['token']}", 9, "📲 Post now")   # 3. Posted
+_e = crflow.load()[0]
+assert _e["status"] == "posted" and _mst["hunt_next"] == 0 and _mreal.read_replies() == [(f"tg:{_e['token']}", "posted")]
+_tt_url = "https://www.tiktok.com/@wantedlevelclips8/video/7569000000000000001"
+_now_ts = common.now_utc().timestamp()
+_real_up, mac._uploads = mac._uploads, lambda plats: {
+    "tiktok": [{"text": "old one", "url": "https://www.tiktok.com/@w/video/1", "timestamp": _now_ts - 86400},
+               {"text": "the boy band reveal 😭 Streamer: twitch.tv/Lysium #gta", "url": _tt_url, "timestamp": _now_ts}],
+    "youtube": []}
+mac.hunt(_mst)   # TikTok found and submitted; YouTube not up yet
+_e = crflow.load()[0]
+assert _FakeSite.links_sent == [("Lysium/Benji Ramos Clips", 29.0, _tt_url)] and _e["links"] == {"tiktok": _tt_url}
+assert _e["status"] == "posted" and "Submitted your tiktok post" in _tgcalls2[-1][1]["text"]
+_yt_url = "https://www.youtube.com/shorts/abcdefghijk"
+mac.handle(_mst, "text", f"here {_yt_url}", 10, "")   # pasting the link works too
+_e = crflow.load()[0]
+assert _e["links"]["youtube"] == _yt_url and _e["status"] == "done", _e
+mac.hunt(_mst)
+assert len(_FakeSite.links_sent) == 2   # nothing submitted twice
+# a post that never shows up: after 25 minutes Elie is told to paste it
+_q2 = crflow.load()
+_q2.append(dict(_q2[0], id="camp2", token="tok2", status="posted", links={},
+                posted_at=(common.now_utc() - __import__("datetime").timedelta(minutes=26)).isoformat()))
+crflow.save(_q2)
+mac._uploads = lambda plats: {"tiktok": [], "youtube": []}
+mac.hunt(_mst)
+assert crflow.by_token(crflow.load(), "tok2")["status"] == "manual" and "in time" in _tgcalls2[-1][1]["text"]
+# a campaign whose page isn't known: after 3 tries it's handed over with the manual steps
+crflow.save([dict(_q2[0], id="camp3", token="tok3", status="queued", campaign="Unknown Campaign", tries=2, links={})])
+mac.process_drafts(_mst)
+assert crflow.by_token(crflow.load(), "tok3")["status"] == "manual_draft"
+assert any("submitted by hand" in (c[1] or {}).get("text", "") for c in _tgcalls2 if c[0] == "sendMessage")
+_cr.Site, mac._uploads, mac.bot_campaigns = _real_site, _real_up, _real_bc
+for _k in ("MAC_RUNS_CLIPPER", "NOTIFY_VIA", "TELEGRAM_TOKEN", "TELEGRAM_CHAT_ID"):
+    os.environ.pop(_k, None)
+if _dry2 is not None:
+    os.environ["DRY_RUN"] = _dry2
+tg._call = _real_call2
+crflow.QUEUE.unlink(missing_ok=True)
+print("CAMPAIGN FLOW OK")

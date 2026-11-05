@@ -128,7 +128,8 @@ CMDS = {"process": jobs.process, "post": jobs.post, "analytics": jobs.analytics,
         "mac": lambda: __import__("clipper.mac", fromlist=["loop"]).loop(),
         "mac_once": lambda: __import__("clipper.mac", fromlist=["once"]).once(),
         "cr_login": lambda: __import__("clipper.contentrewards", fromlist=["login_window"]).login_window(),
-        "tg_test": lambda: __import__("clipper.mac", fromlist=["tg_test"]).tg_test()}
+        "tg_test": lambda: __import__("clipper.mac", fromlist=["tg_test"]).tg_test(),
+        "cr_dryrun": lambda: __import__("clipper.mac", fromlist=["cr_dryrun"]).cr_dryrun()}
 
 if __name__ == "__main__":
     if len(sys.argv) != 2 or sys.argv[1] not in CMDS:

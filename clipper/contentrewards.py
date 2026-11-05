@@ -107,6 +107,47 @@ def parse_timeline(text):
     return found
 
 
+def _secs(mmss):
+    m = re.match(r"^(?:(\d+):)?(\d{1,2}):(\d{2})$", (mmss or "").strip())
+    if not m:
+        return None
+    h, mi, se = int(m.group(1) or 0), int(m.group(2)), int(m.group(3))
+    return h * 3600 + mi * 60 + se
+
+
+def parse_approved_cards(text):
+    """The Drafts page's Approved tab -> [{"campaign", "posted", "of", "duration"}], in page order. A card reads:
+    campaign, CPM, "0/2 posted", 00:00, /, 00:29, Submit link."""
+    ls = _lines(text)
+    out = []
+    for i, ln in enumerate(ls):
+        m = re.match(r"^(\d+)/(\d+) posted$", ln)
+        if not m or i < 2:
+            continue
+        dur = None
+        for j in range(i + 1, min(i + 6, len(ls))):
+            if ls[j] == "/" and j + 1 < len(ls):
+                dur = _secs(ls[j + 1])
+                break
+        out.append({"campaign": ls[i - 2], "posted": int(m.group(1)), "of": int(m.group(2)), "duration": dur})
+    return out
+
+
+def pick_card(cards, campaign, duration):
+    """Index of the card that best matches a draft (same campaign, nearest length), or None."""
+    best, best_i = None, None
+    for i, c in enumerate(cards):
+        if campaign and c.get("campaign") and campaign.lower() not in c["campaign"].lower() \
+                and c["campaign"].lower() not in campaign.lower():
+            continue
+        gap = abs((c.get("duration") or 0) - (duration or 0)) if duration and c.get("duration") else 99
+        if best is None or gap < best:
+            best, best_i = gap, i
+    if best_i is None or (duration and best is not None and best > 4):
+        return None
+    return best_i
+
+
 # ---------------------------------------------------------------- the browser
 class Site:
     """with Site() as s: s.campaigns() ... Opens the bot's own Chrome profile (logged in once by Elie)."""
@@ -182,6 +223,48 @@ class Site:
                 self.page.keyboard.press("Escape")
                 self._pause(1, 2)
         return {"counts": counts, "needs_changes": notes}
+
+    def _approved_tab(self):
+        self.go("/c/drafts")
+        self.page.get_by_role("tab", name=re.compile("^Approved")).first.click()
+        self._pause(1.5, 3)
+        return self.page.inner_text("main")
+
+    def approved(self):
+        """The approved drafts waiting for their live links."""
+        return parse_approved_cards(self._approved_tab())
+
+    def submit_link(self, campaign, duration, url, dry_run=False):
+        """Paste a live post link into the matching approved draft's "Submit link" form and send it.
+        Returns True when Content Rewards accepts it; raises with the page's message when it doesn't."""
+        cards = parse_approved_cards(self._approved_tab())
+        i = pick_card(cards, campaign, duration)
+        if i is None:
+            raise RuntimeError(f"no approved draft for {campaign} ({duration}s) on the Drafts page")
+        self.page.get_by_role("button", name="Submit link").nth(i).click()
+        dialog = self.page.get_by_role("dialog", name="Submit clip")
+        box = dialog.get_by_role("textbox", name="Clip link")
+        box.wait_for(timeout=30000)
+        self._pause(1, 2)
+        box.fill(url)
+        self._pause(0.8, 1.6)
+        tick = dialog.get_by_role("checkbox")
+        if tick.count() and not tick.first.is_checked():
+            tick.first.check()
+        self._pause(0.8, 1.6)
+        if dry_run:
+            log.info("[dry run] link form filled for %s; not sending", campaign)
+            self.page.keyboard.press("Escape")
+            return False
+        dialog.get_by_role("button", name="Submit clip").click()
+        try:
+            dialog.wait_for(state="detached", timeout=30000)
+        except Exception:
+            msg = " ".join(dialog.inner_text().split())[:300] if dialog.count() else ""
+            self.page.keyboard.press("Escape")
+            raise RuntimeError(f"Content Rewards didn't accept the link: {msg}")
+        self._pause()
+        return True
 
     def submit_draft(self, campaign_url, video, platforms=("tiktok", "youtube"), dry_run=False):
         """Upload a clip as a draft for the brand's pre-approval. Returns True once the form is sent."""

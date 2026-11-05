@@ -641,6 +641,19 @@ def send_package(cfg, state, clip, test=False):
     if src:
         src = ensure_speed(cfg, state, clip, src, d)   # raises rather than send a clip at the old speed
     pkg = clipqueue.package(cfg, clip, clipqueue.queue(state), state)
+    from . import crflow
+    if src and not test and crflow.applies(cfg, clip):   # Mac: campaign clips go to Content Rewards as a draft first
+        mid = crflow.enqueue(cfg, clip, src, pkg)
+        shutil.rmtree(d, ignore_errors=True)
+        now = now_utc()
+        clip.update(emailed_at=now.isoformat(), email_message_id=mid, sent_caption=pkg["tiktok_caption"],
+                    sent_title=pkg["yt_title"])
+        em = state.setdefault("email", {})
+        em.setdefault("log", []).append({"date": now_local(cfg).date().isoformat(), "at": now.isoformat(),
+                                         "clip": clip["id"], "subject": "[draft] " + pkg["subject"], "test": False})
+        em["log"] = em["log"][-200:]
+        print(f"::notice::campaign clip queued for a Content Rewards draft: {pkg['subject']}", flush=True)
+        return mid
     try:
         if src:
             attach = clipqueue.fit_for_email(src, d / f"{clip['id']}.mp4", mail.ATTACH_LIMIT)
