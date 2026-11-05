@@ -41,6 +41,18 @@ def _add_tool_paths():
     for tools in (os.path.dirname(sys.executable), os.path.expanduser("~/.clipper/bin")):
         if os.path.isdir(tools) and tools not in os.environ.get("PATH", "").split(os.pathsep):
             os.environ["PATH"] = tools + os.pathsep + os.environ.get("PATH", "")
+    # The static ffmpeg build doesn't know where macOS keeps its trusted certificates, so every https stream
+    # (Twitch's live and VOD playlists) failed with "certificate verify failed". OpenSSL reads SSL_CERT_FILE.
+    if not os.environ.get("SSL_CERT_FILE"):
+        bundle = "/etc/ssl/cert.pem" if os.path.exists("/etc/ssl/cert.pem") else None
+        if not bundle:
+            try:
+                import certifi
+                bundle = certifi.where()
+            except ImportError:
+                bundle = None
+        if bundle and sys.platform == "darwin":
+            os.environ["SSL_CERT_FILE"] = bundle
 
 
 def load_env(path=None):
@@ -231,9 +243,16 @@ def summary(st):
     if d:
         lines.append("Drafts: " + ", ".join(f"{k} {v}" for k, v in d.items()))
     if st.get("last_sync"):
-        lines.append(f"Last Content Rewards check: {st['last_sync'][:16].replace('T', ' ')} UTC")
-    ok = (st.get("relay") or {}).get("ok")
-    lines.append(f"Watching the GitHub bot: {'yes, last read ' + ok[11:16] + ' UTC' if ok else 'not yet'}")
+        try:
+            t = datetime.fromisoformat(st["last_sync"]).astimezone(local_now().tzinfo)
+            lines.append(f"Last Content Rewards check: {t:%b %-d, %-I:%M %p}")
+        except (ValueError, TypeError):
+            lines.append(f"Last Content Rewards check: {st['last_sync'][:16].replace('T', ' ')} UTC")
+    if not clipping_on():   # only while the GitHub bot still does the clipping
+        ok = (st.get("relay") or {}).get("ok")
+        lines.append(f"Watching the GitHub bot: {'yes, last read ' + ok[11:16] + ' UTC' if ok else 'not yet'}")
+    else:
+        lines.append("Clipping: on this Mac")
     return "\n".join(lines)
 
 
