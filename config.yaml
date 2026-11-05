@@ -149,6 +149,8 @@ launch:                           # GTA 6 launch day: switches on by itself, not
                                   # then this many of the biggest English GTA 6 streamers
   campaign_emails: 8              # on launch day, email up to this many GTA 6 campaigns, best paying first
   claude_usd_per_day: 4.00        # Claude budget per day from launch day
+  boost_days: 8                   # launch week (Nov 19-26): $4/day instead of the $5/month budget; those days
+                                  # don't count against the month afterwards, so it goes straight back to $5/month
   # Posting times from launch day: only the hours that got the most views (then likes) in the time test.
 
 queue:                            # email mode only

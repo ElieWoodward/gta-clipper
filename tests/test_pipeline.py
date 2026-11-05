@@ -1619,3 +1619,171 @@ if _dry2 is not None:
 tg._call = _real_call2
 crflow.QUEUE.unlink(missing_ok=True)
 print("CAMPAIGN FLOW OK")
+
+# ---------- 36. Tapping Join joins the campaign on Content Rewards; a bio requirement waits for "Added" ----------
+_page = ("Back\nwantedlevelclips1\nXposure\nNYZ Clipping\nPut twitch.tv/imnyzzz in your bio so viewers can find him.\n"
+         "Joined\nLaunched 1 week ago\nSubmit clip\nBudget\n$105 / $1,000")
+_pinfo = _cr.parse_campaign_page(_page)
+assert _pinfo["joined"] and _pinfo["bio"] == ["Put twitch.tv/imnyzzz in your bio so viewers can find him."], _pinfo
+assert _cr.parse_campaign_page("Add link in bio\nlinktr.ee/x\nJoined")["bio"] == ["linktr.ee/x"]
+assert _cr.parse_campaign_page("Join Campaign\nClip his biology streams")["bio"] == []
+_tgcalls3 = []
+_real_call3 = tg._call
+tg._call = lambda m, data=None, files=None, timeout=30: (_tgcalls3.append((m, data)), {"message_id": len(_tgcalls3)})[1]
+os.environ.update(NOTIFY_VIA="telegram", TELEGRAM_TOKEN="t", TELEGRAM_CHAT_ID="1", MAC_RUNS_CLIPPER="1")
+_sf = common.DATA / "state.json"
+_sf_old = _sf.read_text() if _sf.exists() else None
+_sf.write_text(json.dumps({"campaigns": {
+    "c1": {"id": "c1", "name": "NYZ Clipping", "join_url": "https://clippingalpha.com/go/1", "email_message_id": "tg:jt1",
+           "status": "notified"},
+    "c2": {"id": "c2", "name": "Plain One", "join_url": "https://clippingalpha.com/go/2", "email_message_id": "tg:jt2",
+           "status": "notified"},
+    "c3": {"id": "c3", "name": "Whop One", "join_url": "https://clippingalpha.com/go/3", "email_message_id": "tg:jt3",
+           "status": "notified"}}}))
+_mreal.REPLIES.unlink(missing_ok=True)
+
+
+class _JoinSite:  # noqa: E302
+    opened = []
+    def __enter__(self): return self  # noqa: E704
+    def __exit__(self, *a): return False  # noqa: E704
+    def join(self, url):
+        _JoinSite.opened.append(url)
+        if url.endswith("/1"):
+            return dict(_pinfo, url="https://contentrewards.com/c/campaigns/nyz", name="NYZ Clipping", joined=True)
+        if url.endswith("/2"):
+            return dict(_cr.parse_campaign_page("Joined\npre-approval required"), url="https://contentrewards.com/c/campaigns/p",
+                        name="Plain One", joined=True)
+        return {"elsewhere": True, "url": "https://whop.com/x", "joined": False, "bio": []}
+_real_site3, _cr.Site = _cr.Site, _JoinSite  # noqa: E305
+_jst = {}
+mac.handle(_jst, "tap", "r:join:jt1", 5, "Campaign: NYZ Clipping")
+assert mac.joins_load()[0]["status"] == "todo" and not _mreal.read_replies()   # not "joined" until it really is
+assert "Joining it on Content Rewards" in _tgcalls3[-1][1]["text"]
+mac.process_joins(_jst)
+assert _JoinSite.opened == ["https://clippingalpha.com/go/1"] and mac.joins_load()[0]["status"] == "bio_wait"
+_m = _tgcalls3[-1][1]
+assert "twitch.tv/imnyzzz" in _m["text"] and json.loads(_m["reply_markup"])["inline_keyboard"][0][0]["callback_data"] == "cj:added:jt1"
+assert not _mreal.read_replies() and _jst["campaigns"]["NYZ Clipping"]["bio_wait"]
+assert not [x for x in mac.compare(_jst, [dict(_pinfo, name="NYZ Clipping", status="approved")], {}, []) if "isn't putting" in x]
+mac.process_joins(_jst)
+assert len(_JoinSite.opened) == 1   # never joined twice
+mac.handle(_jst, "tap", "cj:added:jt1", 7, "✅ Joined NYZ Clipping")
+assert _mreal.read_replies() == [("tg:jt1", "join")] and not _jst["campaigns"]["NYZ Clipping"]["bio_wait"]
+assert "All set" in _tgcalls3[-1][1]["text"] and mac._campaign_url(_jst, "NYZ Clipping").endswith("/nyz")
+_mreal.REPLIES.unlink(missing_ok=True)
+mac.handle(_jst, "tap", "r:join:jt2", 8, "Campaign: Plain One")   # no bio: joined straight away
+mac.process_joins(_jst)
+assert _mreal.read_replies() == [("tg:jt2", "join")] and "approval first" in _tgcalls3[-1][1]["text"]
+assert mac._campaign_url({}, "Plain One") == "https://contentrewards.com/c/campaigns/p"
+_mreal.REPLIES.unlink(missing_ok=True)
+mac.handle(_jst, "tap", "r:join:jt3", 9, "Campaign: Whop One")   # another board: link + "Joined" button
+mac.process_joins(_jst)
+assert "isn't on Content Rewards" in _tgcalls3[-1][1]["text"] and not _mreal.read_replies()
+mac.handle(_jst, "tap", "cj:done:jt3", 10, "x")
+assert _mreal.read_replies() == [("tg:jt3", "join")]
+_mreal.REPLIES.unlink(missing_ok=True)
+_cr.Site = _real_site3
+mac.JOINS.unlink(missing_ok=True)
+if _sf_old is None:
+    _sf.unlink(missing_ok=True)
+else:
+    _sf.write_text(_sf_old)
+for _k in ("MAC_RUNS_CLIPPER", "NOTIFY_VIA", "TELEGRAM_TOKEN", "TELEGRAM_CHAT_ID"):
+    os.environ.pop(_k, None)
+tg._call = _real_call3
+print("CAMPAIGN JOIN OK")
+
+# ---------- 37. Monday earnings report, one-tap fix for "needs changes", launch-week budget ----------
+_earn_txt = ("Earnings\nwantedlevelclips1\nLifetime earned\n$0.00\nWithdraw\n$0.00\nToday\n$0.00\nThis week\n$0.00\n"
+             "This month\n$0.00\nBalance\nAll time\nQueued\n(2)\nStill accumulating: $3.51\nLysium/Benji Ramos Clips\nCPM\n"
+             "$1.88\nPays Nov 14\nAccumulating\nLysium/Benji Ramos Clips\nCPM\n$1.63\nPays Nov 14\nAccumulating\n"
+             "Arriving\n(0)\nTotal: $0.00\nNo payouts on the way\nReceived\n(1)\nTotal: $12.40")
+_earn = _cr.parse_earnings(_earn_txt)
+assert _earn["queued"] == 3.51 and _earn["received"] == 12.40 and _earn["balance"] == 0.0 and len(_earn["items"]) == 2
+assert _earn["items"][0] == {"section": "queued", "campaign": "Lysium/Benji Ramos Clips", "amount": 1.88,
+                             "pays": "Nov 14", "state": "Accumulating"}
+_et = mac.earnings_text(_earn, last=10.0, claude=1.234, budget=5.0)
+assert "$15.91 so far (+$5.91 since last Monday)" in _et and "$3.51 from 2 clips" in _et and "Nov 14" in _et, _et
+assert "$1.23 of $5.00" in _et
+
+_tgcalls4 = []
+_real_call4 = tg._call
+tg._call = lambda m, data=None, files=None, timeout=30: (_tgcalls4.append((m, data)), {"message_id": len(_tgcalls4)})[1]
+os.environ.update(NOTIFY_VIA="telegram", TELEGRAM_TOKEN="t", TELEGRAM_CHAT_ID="1", MAC_RUNS_CLIPPER="1")
+_fst = {"campaigns": {}, "listed_once": True, "drafts": {}}
+_note = {"who": "Brand reviewer", "when": "Nov 3, 6:48 AM", "note": "start it 5 seconds later", "campaign": "Lysium/Benji Ramos Clips",
+         "card": "Lysium | 0:29"}
+_fm = mac.compare(_fst, [], {"counts": {}, "needs_changes": [_note]}, [])
+assert len(_fm) == 1 and "5 seconds later" in _fm[0] and _fm[0].rows[0][0][1].startswith("fx:")
+_fkey = _fm[0].rows[0][0][1][3:]
+crflow.save([{"id": "fixclip", "token": "ftok", "campaign": "Lysium/Benji Ramos Clips", "status": "submitted",
+              "submitted_at": "2026-11-03T10:00:00+00:00", "platforms": ["tiktok", "youtube"], "links": {}}])
+
+
+class _FakeJobs:  # noqa: E302
+    started = []
+    running = False
+    def busy(self): return _FakeJobs.running  # noqa: E704
+    def _start(self, job):
+        _FakeJobs.started.append(job)
+        _FakeJobs.running = True
+        return object()
+mac.handle(_fst, "tap", f"fx:{_fkey}", 3, _fm[0])  # noqa: E305
+assert _fst["fixes"][_fkey]["status"] == "todo" and "Working on it" in _tgcalls4[-1][1]["text"]
+_fj = _FakeJobs()
+mac.process_fixes(_fst, _fj)
+from clipper import fixer as _fixer  # noqa: E402
+_job = json.loads(_fixer.JOB.read_text())
+assert _FakeJobs.started == ["revise"] and _job["clip_id"] == "fixclip" and _job["token"] == "ftok"
+assert _fst["fixes"][_fkey]["status"] == "running"
+mac.process_fixes(_fst, _fj)
+assert _FakeJobs.started == ["revise"]   # not started twice
+_fixer.JOB.write_text(json.dumps(dict(_job, status="ready", file=str(_vid))))
+mac.process_fixes(_fst, _fj)
+assert _fst["fixes"][_fkey]["status"] == "ready" and _fst["fixes"][_fkey]["file"] == str(_vid)
+# what Claude's answer does to the cut (trims clamped, never shorter than 8s)
+_p = _fixer.apply({"start": 100, "end": 130, "hook": "old", "title": "t", "caption": "c"},
+                  {"start_shift": 5, "end_shift": -50, "hook": "new hook"})
+assert _p["start"] == 105 and _p["end"] == 110 and _p["hook"] == "new hook" and _p["title"] == "t"
+_p = _fixer.apply({"start": 100, "end": 112, "hook": "h"}, {"start_shift": 10})
+assert (_p["start"], _p["end"]) == (100, 112)
+
+
+class _RevSite:  # noqa: E302
+    sent = []
+    def __enter__(self): return self  # noqa: E704
+    def __exit__(self, *a): return False  # noqa: E704
+    def upload_revision(self, campaign, video): _RevSite.sent.append((campaign, video)); return True  # noqa: E704,E702
+_real_site4, _cr.Site = _cr.Site, _RevSite  # noqa: E305
+mac.handle(_fst, "tap", f"fxs:{_fkey}", 4, "Send it?")
+mac.process_fixes(_fst, _fj)
+assert _RevSite.sent == [("Lysium/Benji Ramos Clips", str(_vid))] and _fst["fixes"][_fkey]["status"] == "sent"
+assert "Revision sent" in _tgcalls4[-1][1]["text"]
+mac.handle(_fst, "tap", f"fxs:{_fkey}", 4, "Send it?")
+mac.process_fixes(_fst, _fj)
+assert len(_RevSite.sent) == 1   # never sent twice
+_cr.Site = _real_site4
+_fixer.JOB.unlink(missing_ok=True)
+crflow.QUEUE.unlink(missing_ok=True)
+for _k in ("MAC_RUNS_CLIPPER", "NOTIFY_VIA", "TELEGRAM_TOKEN", "TELEGRAM_CHAT_ID"):
+    os.environ.pop(_k, None)
+tg._call = _real_call4
+
+# launch week: $4/day instead of the monthly budget, and those days don't eat next month's budget
+_today = common.now_utc().date()
+_lcfg = {"limits": {"claude_usd_per_day": 1.0, "claude_usd_per_month": 5.0, "claude_usd_day_max": 0.5,
+                    "boost_dates": [_today.isoformat()], "claude_usd_boost_per_day": 4.0}}
+_lst = {"spend": {_today.isoformat(): 1.0}}
+assert abs(highlights.budget_left(_lcfg, _lst) - 3.0) < 0.01
+_yday = (_today - __import__("datetime").timedelta(days=1)).isoformat()
+_lcfg["limits"]["boost_dates"] = [_yday]
+_lst = {"spend": {_yday: 20.0, _today.isoformat(): 0.1}}
+assert abs(highlights.budget_left(_lcfg, _lst) - 0.4) < 0.01   # back to normal: day max 0.50 minus 0.10 spent
+_lcfg["limits"]["boost_dates"] = []
+assert highlights.budget_left(_lcfg, _lst) < 0                  # without the exemption the month would be gone
+_l2 = {"launch": {"enabled": True, "date": "2026-11-19", "boost_days": 8, "claude_usd_per_day": 4.0}, "limits": {}}
+from clipper import launch as _launch  # noqa: E402
+_launch.apply(_l2, {})
+assert _l2["limits"]["boost_dates"][0] == "2026-11-19" and _l2["limits"]["boost_dates"][-1] == "2026-11-26"
+print("EARNINGS FIX BUDGET OK")

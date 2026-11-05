@@ -270,19 +270,26 @@ def budget_left(cfg, state):
     Two limits, whichever is tighter: the daily cap (limits.claude_usd_per_day) and the monthly budget
     (limits.claude_usd_per_month over the last 30 days, with no single day allowed more than
     limits.claude_usd_day_max, so one busy day can't use up the month)."""
-    from .common import spend_last_days, spend_today
+    from .common import spend_last_days, spend_today, now_utc
+    from datetime import timedelta as _td
     lim = (cfg.get("limits") or {})
     prices = lim.get("price_per_mtok")
     if prices:
         PRICE_PER_MTOK.update(prices)
     today = spend_today(state)
+    boost = set(lim.get("boost_dates") or [])
+    if now_utc().date().isoformat() in boost:   # GTA 6 launch week: its own daily cap, no monthly budget
+        return float(lim.get("claude_usd_boost_per_day", lim.get("claude_usd_per_day", 4.0))) - today
     left = float("inf")
     cap = lim.get("claude_usd_per_day")
     if cap is not None:
         left = float(cap) - today
     month = lim.get("claude_usd_per_month")
     if month is not None:
-        left = min(left, float(month) - spend_last_days(state, 30))
+        start = (now_utc().date() - _td(days=29)).isoformat()
+        boosted = sum(v for key in ("spend", "spend_live") for d, v in (state.get(key) or {}).items()
+                      if d in boost and d >= start)
+        left = min(left, float(month) - (spend_last_days(state, 30) - boosted))
         day_max = lim.get("claude_usd_day_max")
         if day_max is not None:
             left = min(left, float(day_max) - today)

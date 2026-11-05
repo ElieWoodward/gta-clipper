@@ -19,7 +19,7 @@ from .common import log, now_utc
 
 DEFAULTS = {"enabled": True, "date": "2026-11-19", "remind_days_before": 7, "remind_hour": 9,
             "multiplier": 3, "email_multiplier": 2, "auto_post": True, "watch_top": 4, "claude_usd_per_day": 4.0,
-            "clip_top": 6, "campaign_emails": 8,
+            "boost_days": 8, "clip_top": 6, "campaign_emails": 8,
             "games": ["Grand Theft Auto VI", "Grand Theft Auto 6"]}
 
 
@@ -68,6 +68,10 @@ def apply(cfg, state=None):
     cfg["_launch"] = {"on": launched(cfg, state), "auto": False, "multiplier": 1}
     lim = cfg.setdefault("limits", {})
     lim["claude_usd_per_day"] = daily_cap(cfg)
+    if s["enabled"]:   # launch week: the $5/month budget steps aside (and those days don't count against it later)
+        ld = launch_date(cfg, state)
+        lim["boost_dates"] = [(ld + timedelta(days=i)).isoformat() for i in range(int(s.get("boost_days") or 0))]
+        lim["claude_usd_boost_per_day"] = float(s["claude_usd_per_day"])
     if not cfg["_launch"]["on"]:
         return cfg
     lim["claude_usd_per_day"] = max(float(lim["claude_usd_per_day"]), float(s["claude_usd_per_day"]))

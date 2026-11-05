@@ -107,7 +107,15 @@ def _repo():
     return require_env("GITHUB_REPOSITORY")
 
 
+def gh_on():
+    """GitHub issues are the dashboard on GitHub Actions. On the Mac (no GITHUB_TOKEN) Telegram is, so every
+    gh_* call quietly does nothing there instead of stopping a clip halfway."""
+    return bool(os.environ.get("GITHUB_TOKEN") and os.environ.get("GITHUB_REPOSITORY"))
+
+
 def gh_issue(title, body, labels):
+    if not gh_on():
+        return None
     r = requests.post(f"{GH}/repos/{_repo()}/issues", headers=_gh(),
                       json={"title": title[:250], "body": body, "labels": labels}, timeout=30)
     r.raise_for_status()
@@ -115,21 +123,29 @@ def gh_issue(title, body, labels):
 
 
 def gh_update(number, **fields):
+    if not gh_on() or not number:
+        return
     r = requests.patch(f"{GH}/repos/{_repo()}/issues/{number}", headers=_gh(), json=fields, timeout=30)
     r.raise_for_status()
 
 
 def gh_comment(number, body):
+    if not gh_on() or not number:
+        return
     requests.post(f"{GH}/repos/{_repo()}/issues/{number}/comments", headers=_gh(), json={"body": body}, timeout=30)
 
 
 def gh_get(number):
+    if not gh_on() or not number:
+        return {}
     r = requests.get(f"{GH}/repos/{_repo()}/issues/{number}", headers=_gh(), timeout=30)
     r.raise_for_status()
     return r.json()
 
 
 def gh_find_open(label):
+    if not gh_on():
+        return []
     r = requests.get(f"{GH}/repos/{_repo()}/issues", headers=_gh(),
                      params={"labels": label, "state": "open", "per_page": 100}, timeout=30)
     r.raise_for_status()

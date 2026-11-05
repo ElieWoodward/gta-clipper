@@ -122,6 +122,17 @@ def bot_campaigns():
 
 
 # ------------------------------------------------------------- comparing checks and building messages
+class Msg(str):
+    """A message text that carries Telegram buttons (still a plain string everywhere else)."""
+    rows = None
+
+
+def _with_buttons(text, rows):
+    m = Msg(text)
+    m.rows = rows
+    return m
+
+
 def compare(st, camps, drafts, prioritized):
     """Return the Telegram messages for what changed since the last check, and update st in place."""
     msgs = []
@@ -150,7 +161,8 @@ def compare(st, camps, drafts, prioritized):
             rec["bio_told"] = rec["bio"]
         if rec["ended"] and not old.get("ended"):
             msgs.append(_ended_text(name, rec, book))
-        if rec["approved"] and not rec["ended"] and not any(same_campaign(name, p) for p in prioritized):
+        if (rec["approved"] and not rec["ended"] and not rec.get("bio_wait")
+                and not any(same_campaign(name, p) for p in prioritized)):
             if old.get("priority_warned") != now_utc().date().isoformat():
                 msgs.append(f"⚠️ You're in {name}, but the clipper isn't putting its streamer's clips first.\n\n"
                             "How to fix it: send Claude this message: \"add the campaign "
@@ -185,9 +197,16 @@ def compare(st, camps, drafts, prioritized):
         if key in seen:
             continue
         seen.append(key)
-        msgs.append(f"✂️ A draft{(' for ' + n['campaign']) if n.get('campaign') else ''} needs changes.\n\n"
-                    f"Reviewer ({n.get('who')}, {n.get('when')}): {n.get('note')}\n\n"
-                    "Fix the clip and use Upload revision on Content Rewards (Drafts > Needs changes).")
+        text = (f"✂️ A draft{(' for ' + n['campaign']) if n.get('campaign') else ''} needs changes.\n\n"
+                f"Reviewer ({n.get('who')}, {n.get('when')}): {n.get('note')}\n\n")
+        if clipping_on():
+            st.setdefault("fixes", {})[key] = {"key": key, "campaign": n.get("campaign"), "note": n.get("note"),
+                                               "status": "new", "at": now_utc().isoformat()}
+            msgs.append(_with_buttons(text + "Tap ✂️ Fix it and I'll change the clip to match the note and show it to "
+                                      "you before sending. Or fix it yourself: Drafts > Needs changes > Upload revision.",
+                                      [[("✂️ Fix it", f"fx:{key}")]]))
+        else:
+            msgs.append(text + "Fix the clip and use Upload revision on Content Rewards (Drafts > Needs changes).")
     del seen[:-200]
     return msgs
 
@@ -265,7 +284,7 @@ def run_check(st, force=False):
                        "message to Claude and it will look at the cause.")
         return
     for m in msgs:
-        tg.send(m)
+        tg.send(m, getattr(m, "rows", None))
         time.sleep(1)
     from . import crflow
     entries = crflow.load()
@@ -288,9 +307,31 @@ def handle(st, kind, data, message_id, text):
         except Exception as e:
             tg.send(f"Couldn't mark it as kept ({str(e)[:150]}). In the Jellyfin app, tap the heart on it instead.")
         return
+    if kind == "tap" and re.match(r"^fx[sm]?:", data or ""):
+        what, key = data.split(":", 1)
+        fix = (st.get("fixes") or {}).get(key)
+        if not fix:
+            tg.edit(message_id, f"{(text or '')[:3500]}\n\n(That fix is no longer open.)")
+            return
+        if what == "fx" and fix.get("status") in ("new", "failed", "cant"):
+            fix["status"] = "todo"
+            tg.edit(message_id, f"{(text or '')[:3500]}\n\n✂️ Working on it. I'll send you the new version first.")
+        elif what == "fxs" and fix.get("status") == "ready":
+            fix["status"] = "upload"
+            tg.edit(message_id, f"{(text or '')[:3500]}\n\n📤 Sending it…")
+        elif what == "fxm":
+            fix["status"] = "manual"
+            tg.edit(message_id, f"{(text or '')[:3500]}\n\n✋ OK, it's yours: Drafts > Needs changes > Upload revision.")
+        return
+    if kind == "tap" and data.startswith("cj:"):
+        _, what, token = (data.split(":", 2) + ["", ""])[:3]
+        finish_join(st, token, message_id, text)
+        return
     if kind == "tap" and data.startswith("r:"):
         from . import mail, crflow
         _, verdict, token = (data.split(":", 2) + ["", ""])[:3]
+        if verdict == "join" and clipping_on() and start_join(st, token, message_id, text):
+            return
         mail.queue_reply(f"tg:{token}", verdict)
         entries = crflow.load()
         e = crflow.by_token(entries, token)
@@ -317,6 +358,7 @@ def handle(st, kind, data, message_id, text):
         return
     if kind == "text":
         if clipping_on() and low not in ("status", "/status", "check", "/check", "cleanup", "/cleanup",
+                                         "earnings", "/earnings", "money",
                                          "/start", "start", "help", "/help"):
             from . import mail
             verdict = mail.reply_verdict(data or "")
@@ -331,13 +373,17 @@ def handle(st, kind, data, message_id, text):
         elif low in ("check", "/check"):
             tg.send("Checking Content Rewards now…", silent=True)
             run_check(st, force=True)
+        elif low in ("earnings", "/earnings", "money"):
+            tg.send("Reading the Earnings page…", silent=True)
+            run_earnings(st, force=True)
         elif low in ("cleanup", "/cleanup"):
             st.pop("jf_key_asked", None)
             run_cleanup(st)
             tg.send("Clean-up done.", silent=True)
         elif low in ("/start", "start", "help", "/help"):
             tg.send("I'm the Wanted Level clip bot. I'll message you about campaigns, your bio, drafts and problems.\n"
-                    "Text \"status\" for a summary or \"check\" to look at Content Rewards right now.")
+                    "Text \"status\" for a summary, \"check\" to look at Content Rewards right now, or \"earnings\" for "
+                    "what you've made.")
 
 
 FIX_JF_KEY = ("1. On the Mac, open http://localhost:8096 and log in.\n"
@@ -371,10 +417,252 @@ def run_cleanup(st):
         tg.problem(st, "jellyfin", f"The watched-title clean-up failed: {msg[:250]}", fix)
 
 
+# ------------------------------------------------------------- one-tap fix for "needs changes"
+def process_fixes(st, jobs):
+    """Run the fixes Elie tapped: start the revise job, pick up its result, upload the revision when he says so."""
+    from . import crflow, fixer
+    fixes = st.get("fixes") or {}
+    for key, fix in list(fixes.items()):
+        status = fix.get("status")
+        if status == "todo":
+            if jobs is None or jobs.busy():
+                continue   # one job at a time (they share the clip state)
+            entries = crflow.load()
+            cands = [e for e in entries if e.get("status") == "submitted"
+                     and (not fix.get("campaign") or same_campaign(e.get("campaign"), fix["campaign"]))]
+            if not cands:
+                fix["status"] = "cant"
+                tg.send("✋ I couldn't tell which of my uploads that note is about, so this one needs fixing by hand: "
+                        "Drafts > Needs changes > Upload revision.")
+                continue
+            e = sorted(cands, key=lambda x: x.get("submitted_at") or "")[0]
+            fixer.JOB.write_text(json.dumps({"key": key, "clip_id": e["id"], "token": e["token"], "note": fix["note"],
+                                             "campaign": e.get("campaign"), "status": "running"}))
+            fix.update(status="running", token=e["token"], started=now_utc().isoformat())
+            jobs.cur = jobs._start("revise")
+        elif status == "running":
+            try:
+                job = json.loads(fixer.JOB.read_text())
+            except (OSError, ValueError):
+                job = {}
+            if job.get("key") == key and job.get("status") in ("ready", "cant", "failed"):
+                fix["status"] = job["status"]
+                fix["file"] = job.get("file")
+            elif jobs is not None and not jobs.busy():   # the job ended without a result: it crashed
+                fix["status"] = "failed"
+                tg.send("⚠️ Making the fixed clip failed. Tap ✂️ Fix it again to retry, or fix it by hand: "
+                        "Drafts > Needs changes > Upload revision. (Details are in the Mac's logs/revise.log.)")
+        elif status == "upload":
+            from . import contentrewards as cr
+            try:
+                with cr.Site() as s:
+                    s.upload_revision(fix.get("campaign"), fix["file"])
+            except cr.NotLoggedIn:
+                tg.problem(st, "cr_login", "The bot's Chrome window isn't logged in to Content Rewards, so it couldn't "
+                           "send the revision.", FIX_LOGIN)
+                return
+            except Exception as ex:
+                fix["status"] = "manual"
+                if os.path.exists(fix.get("file") or ""):
+                    tg.send_video(fix["file"], "✂️ The fixed clip")
+                tg.send(f"⚠️ Content Rewards didn't take the revision ({str(ex)[:150]}). Upload the video above "
+                        "yourself: Drafts > Needs changes > See revisions > Upload revision.")
+                continue
+            fix["status"] = "sent"
+            tg.send(f"📤 Revision sent to {fix.get('campaign')}. I'll send the post package once they approve it.")
+    if len(fixes) > 50:
+        for k in sorted(fixes, key=lambda k: fixes[k].get("at", ""))[:-50]:
+            fixes.pop(k)
+
+
+# ------------------------------------------------------------- Monday earnings report
+def earnings_text(e, last=None, claude=None, budget=None):
+    total = round((e.get("queued") or 0) + (e.get("arriving") or 0) + (e.get("received") or 0), 2)
+    lines = [f"💵 Earnings: ${total:.2f} so far"]
+    if last is not None:
+        diff = total - last
+        lines[0] += f" ({'+' if diff >= 0 else '-'}${abs(diff):.2f} since last Monday)"
+    by = {}
+    for it in e.get("items") or []:
+        by.setdefault(it["campaign"], [0.0, 0])
+        by[it["campaign"]][0] += it.get("amount") or 0
+        by[it["campaign"]][1] += 1
+    for name, (amt, n) in sorted(by.items(), key=lambda kv: -kv[1][0]):
+        lines.append(f"• {name}: ${amt:.2f} from {n} clip{'s' if n != 1 else ''}")
+    lines.append("")
+    lines.append(f"Still counting views: ${e.get('queued') or 0:.2f}")
+    lines.append(f"Approved, on the way: ${e.get('arriving') or 0:.2f}")
+    lines.append(f"Paid to you: ${e.get('received') or 0:.2f}  |  Balance to withdraw: ${e.get('balance') or 0:.2f}")
+    dates = [it["pays"] for it in e.get("items") or [] if it.get("pays") and it["section"] in ("queued", "arriving")]
+    if dates:
+        lines.append(f"Next payout date: {dates[0]}")
+    if claude is not None:
+        lines.append("")
+        lines.append(f"Claude API, last 30 days: ${claude:.2f}" + (f" of ${budget:.2f}" if budget else ""))
+    return "\n".join(lines)
+
+
+def run_earnings(st, force=False):
+    """Monday 9 AM+ (or the "earnings" text): read Content Rewards' Earnings page and send the report."""
+    from . import contentrewards as cr
+    from .common import load_config, spend_last_days
+    week = local_now().strftime("%G-W%V")
+    if not force and (local_now().weekday() != 0 or local_now().hour < 9 or st.get("earn_week") == week):
+        return
+    try:
+        with cr.Site() as s:
+            e = s.earnings()
+    except cr.NotLoggedIn:
+        tg.problem(st, "cr_login", "The bot's Chrome window isn't logged in to Content Rewards, so it couldn't read "
+                   "your earnings.", FIX_LOGIN)
+        return
+    except Exception as ex:
+        log.warning("earnings read failed: %s", ex)
+        if force:
+            tg.send(f"Couldn't read the Earnings page ({str(ex)[:150]}). I'll try again next Monday.")
+        return
+    try:
+        main = json.loads((DATA / "state.json").read_text())
+        claude = spend_last_days(main, 30)
+    except Exception:
+        claude = None
+    budget = ((load_config().get("limits") or {}).get("claude_usd_per_month"))
+    total = round((e.get("queued") or 0) + (e.get("arriving") or 0) + (e.get("received") or 0), 2)
+    tg.send(earnings_text(e, (st.get("earn_last") or {}).get("total"), claude, budget))
+    if not force:
+        st["earn_week"] = week
+    st["earn_last"] = {"total": total, "at": now_utc().isoformat()}
+
+
+# ------------------------------------------------------------- joining a campaign when Elie taps Join
+JOINS = DATA / "cr_joins.json"
+
+
+def joins_load():
+    try:
+        return json.loads(JOINS.read_text())
+    except (OSError, ValueError):
+        return []
+
+
+def joins_save(items):
+    JOINS.parent.mkdir(parents=True, exist_ok=True)
+    tmp = JOINS.with_suffix(".tmp")
+    tmp.write_text(json.dumps(items[-100:], indent=2))
+    tmp.replace(JOINS)
+
+
+def _clipper_campaign(token):
+    """The clipper's record of the campaign whose Telegram message carried this token."""
+    try:
+        state = json.loads((DATA / "state.json").read_text())
+    except (OSError, ValueError):
+        return None
+    return next((r for r in (state.get("campaigns") or {}).values()
+                 if r.get("email_message_id") == f"tg:{token}"), None)
+
+
+def start_join(st, token, message_id, text):
+    """Join tapped: queue the join for the loop (it opens Chrome, so it isn't done inside the tap). False if the
+    campaign isn't known, so the old "mark it joined" behaviour runs instead."""
+    rec = _clipper_campaign(token)
+    if not rec or not (rec.get("join_url") or rec.get("url")):
+        return False
+    items = [j for j in joins_load() if j.get("token") != token]
+    items.append({"token": token, "name": rec.get("name"), "link": rec.get("join_url") or rec.get("url"),
+                  "status": "todo", "tries": 0, "message_id": message_id, "at": now_utc().isoformat()})
+    joins_save(items)
+    tg.edit(message_id, f"{(text or '')[:3500]}\n\n⏳ Joining it on Content Rewards now…")
+    return True
+
+
+def _mark_joined(token):
+    from . import mail
+    mail.queue_reply(f"tg:{token}", "join")   # the clipper puts this streamer's clips first from its next run
+
+
+def process_joins(st):
+    """Join queued campaigns on Content Rewards. If the campaign needs something in Elie's bio, he gets the text and
+    an "✅ Added" button; the clipper only starts treating it as joined once he taps it."""
+    from . import contentrewards as cr
+    items = joins_load()
+    todo = [j for j in items if j.get("status") == "todo"]
+    if not todo:
+        return
+    for j in todo[:2]:
+        try:
+            with cr.Site() as s:
+                res = s.join(j["link"])
+        except cr.NotLoggedIn:
+            tg.problem(st, "cr_login", "The bot's Chrome window isn't logged in to Content Rewards, so it couldn't "
+                       "join the campaign you tapped.", FIX_LOGIN)
+            return
+        except Exception as ex:
+            j["tries"] = j.get("tries", 0) + 1
+            log.warning("join failed (%s): %s", j.get("name"), ex)
+            if j["tries"] >= 2:
+                j["status"] = "manual"
+                tg.send(f"⚠️ I couldn't join {j.get('name')} by myself ({str(ex)[:150]}).\n\n"
+                        f"1. Open {j['link']}\n2. Click Join Campaign.\n3. Tap ✅ Joined below.",
+                        [[("✅ Joined", f"cj:done:{j['token']}")]])
+            joins_save(items)
+            continue
+        j["cr_url"], j["cr_name"] = res.get("url"), res.get("name") or j.get("name")
+        if res.get("elsewhere"):
+            j["status"] = "manual"
+            tg.send(f"🔗 {j.get('name')} isn't on Content Rewards, so I can't join it for you.\n\n"
+                    f"1. Open {res.get('url')}\n2. Join it there (sign in with the channel Gmail).\n"
+                    "3. Tap ✅ Joined below.", [[("✅ Joined", f"cj:done:{j['token']}")]])
+        elif not res.get("joined"):
+            j["status"] = "manual"
+            tg.send(f"📝 {j.get('name')} asked for more than a Join click, so I stopped without sending anything. "
+                    f"It said: {res.get('form')}\n\n1. Open {res.get('url')}\n2. Click Join Campaign and fill it in.\n"
+                    "3. Tap ✅ Joined below.", [[("✅ Joined", f"cj:done:{j['token']}")]])
+        else:
+            bio = res.get("bio") or []
+            book = st.setdefault("campaigns", {})
+            name = j["cr_name"]
+            book[name] = dict(book.get(name) or {}, name=name, url=res.get("url"), approved=True, bio=bio,
+                              bio_told=bio, bio_wait=bool(bio), status="joined", ended=False,
+                              seen=now_utc().isoformat())
+            extra = ("\n\nIts clips go to the brand for approval first. I upload them as drafts and send you the "
+                     "post package once they're approved." if res.get("preapproval") else "")
+            if bio:
+                j["status"] = "bio_wait"
+                tg.send(f"✅ Joined {name} on Content Rewards.\n\nOne thing before its clips count: put this in your "
+                        "TikTok and YouTube bios:\n" + "\n".join(bio) +
+                        "\n\nTap ✅ Added once it's in both, and I'll start putting its clips first." + extra,
+                        [[("✅ Added", f"cj:added:{j['token']}")]])
+            else:
+                j["status"] = "done"
+                _mark_joined(j["token"])
+                tg.send(f"✅ Joined {name} on Content Rewards. Its clips go to the front of the queue now.\n"
+                        f"{res.get('url')}{extra}")
+        joins_save(items)
+
+
+def finish_join(st, token, message_id, text):
+    """✅ Added (bio done) or ✅ Joined (he joined by hand): the campaign counts as joined from now on."""
+    items = joins_load()
+    j = next((x for x in items if x.get("token") == token), None)
+    _mark_joined(token)
+    if j:
+        j["status"] = "done"
+        joins_save(items)
+        rec = (st.get("campaigns") or {}).get(j.get("cr_name") or "")
+        if rec:
+            rec["bio_wait"] = False
+    name = (j or {}).get("cr_name") or (j or {}).get("name") or "the campaign"
+    tg.edit(message_id, f"{(text or '')[:3500]}\n\n✅ All set: {name}'s clips go to the front of the queue now.")
+
+
 def _campaign_url(st, name):
     for rec in (st.get("campaigns") or {}).values():
         if rec.get("url") and same_campaign(rec.get("name"), name):
             return rec["url"]
+    for j in joins_load():
+        if j.get("cr_url") and (same_campaign(j.get("cr_name"), name) or same_campaign(j.get("name"), name)):
+            return j["cr_url"]
     return None
 
 
@@ -651,6 +939,14 @@ def loop():
             except Exception as e:
                 log.warning("job scheduler hiccup: %s", e)
             try:
+                process_fixes(st, jobs)
+            except Exception as e:
+                log.warning("fix step failed: %s", e)
+            try:
+                process_joins(st)
+            except Exception as e:
+                log.warning("campaign join step failed: %s", e)
+            try:
                 if awake():
                     process_drafts(st)
                 if time.time() >= st.get("hunt_next", 0):
@@ -668,6 +964,11 @@ def loop():
             except Exception as e:
                 log.warning("relay round failed: %s", e)
             save(st)
+        if awake():
+            try:
+                run_earnings(st)
+            except Exception as e:
+                log.warning("earnings report failed: %s", e)
         if now >= nxt and awake():
             run_check(st)
             save(st)

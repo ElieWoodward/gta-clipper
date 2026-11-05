@@ -54,6 +54,10 @@ def parse_campaign_page(text):
     for i, ln in enumerate(ls):
         if re.match(r"^Add (a )?link in (your )?bio$", ln, re.I) and i + 1 < len(ls):
             info["bio"].append(ls[i + 1])
+    for ln in ls:   # the brief can ask for it in its own words ("put @imnyzzz in your bio")
+        if (re.search(r"\b(in|to|on) (your |the )?(profile )?bio\b", ln, re.I) and len(ln) <= 300
+                and not re.match(r"^Add (a )?link in (your )?bio$", ln, re.I) and not any(ln == b or b in ln for b in info["bio"])):
+            info["bio"].append(ln)
     if "Content requirements" in ls:
         start = ls.index("Content requirements") + 1
         for ln in ls[start:start + 12]:
@@ -105,6 +109,40 @@ def parse_timeline(text):
                 note.append(nxt)
             found = {"who": who, "when": when, "note": " ".join(note).strip()}
     return found
+
+
+def _dollars(s):
+    m = re.search(r"\$([\d,]+(?:\.\d+)?)", s or "")
+    return float(m.group(1).replace(",", "")) if m else None
+
+
+def parse_earnings(text):
+    """The Earnings page (with Queued/Arriving/Received opened) -> totals plus one row per paid clip:
+    {"lifetime", "today", "week", "month", "balance", "queued", "arriving", "received",
+     "items": [{"section", "campaign", "amount", "pays", "state"}]}."""
+    ls = _lines(text)
+    out = {"items": []}
+    for i, ln in enumerate(ls):
+        if ln == "Lifetime earned" and i + 1 < len(ls):
+            out["lifetime"] = _dollars(ls[i + 1])
+        if ln in ("Today", "This week", "This month", "Balance") and i and _dollars(ls[i - 1]) is not None:
+            out[{"Today": "today", "This week": "week", "This month": "month", "Balance": "balance"}[ln]] = \
+                _dollars(ls[i - 1])
+    section = None
+    for i, ln in enumerate(ls):
+        if ln in ("Queued", "Arriving", "Received"):
+            section = ln.lower()
+            out.setdefault(section, 0.0)
+            continue
+        if section and re.match(r"^(Still accumulating|Total):", ln):
+            out[section] = _dollars(ln) or 0.0
+            continue
+        if section and re.fullmatch(r"\$[\d,]+(\.\d+)?", ln) and i >= 2:
+            nxt = ls[i + 1] if i + 1 < len(ls) else ""
+            state = ls[i + 2] if nxt.startswith("Pays") and i + 2 < len(ls) else ""
+            out["items"].append({"section": section, "campaign": ls[i - 2], "amount": _dollars(ln),
+                                 "pays": nxt[5:].strip() if nxt.startswith("Pays") else "", "state": state})
+    return out
 
 
 def _secs(mmss):
@@ -199,6 +237,48 @@ class Site:
             out.append(c)
         return out
 
+    def join(self, url):
+        """Open a campaign (a ClippingAlpha /go/ link redirects to it) and click Join Campaign.
+        Content Rewards joins on that one click (checked Nov 2026: no form). Returns the page details plus
+        url, name, joined, and either elsewhere=True (the link isn't a Content Rewards campaign) or form=<text>
+        (a popup asked for more than the click; it's closed and nothing in it is sent)."""
+        self.page.goto(url, wait_until="domcontentloaded", timeout=60000)
+        try:
+            self.page.wait_for_url(re.compile(r"contentrewards\.com/c/campaigns/"), timeout=20000)
+        except Exception:
+            pass
+        try:
+            self.page.wait_for_load_state("networkidle", timeout=30000)
+        except Exception:
+            pass
+        self._pause()
+        if "contentrewards.com" not in self.page.url:
+            return {"elsewhere": True, "url": self.page.url, "joined": False, "bio": []}
+        if "/login" in self.page.url:
+            raise NotLoggedIn("Content Rewards isn't logged in on the bot's Chrome window")
+        name = re.sub(r"\s*\|\s*Content Rewards\s*$", "", self.page.title() or "").strip()
+        info = parse_campaign_page(self.page.inner_text("main"))
+        if not info["joined"]:
+            btn = self.page.locator("button:visible", has_text=re.compile(r"^\s*Join Campaign\s*$"))
+            if not btn.count():
+                raise RuntimeError("the campaign page has no Join Campaign button")
+            btn.first.click()
+            try:
+                self.page.get_by_text("Joined", exact=True).first.wait_for(timeout=20000)
+            except Exception:
+                dlg = self.page.locator('[role="dialog"]')
+                form = " ".join(dlg.last.inner_text().split())[:600] if dlg.count() else ""
+                try:
+                    self.page.screenshot(path=str(Path.home() / "Desktop" / "join_popup.png"))
+                except Exception:
+                    pass
+                self.page.keyboard.press("Escape")
+                return dict(info, url=self.page.url, name=name, joined=False,
+                            form=form or "the Join button didn't finish joining")
+            self._pause()
+            info = parse_campaign_page(self.page.inner_text("main"))
+        return dict(info, url=self.page.url, name=name, joined=True)
+
     def campaign(self, url):
         return dict(parse_campaign_page(self.go(url)), url=url)
 
@@ -223,6 +303,63 @@ class Site:
                 self.page.keyboard.press("Escape")
                 self._pause(1, 2)
         return {"counts": counts, "needs_changes": notes}
+
+    def earnings(self):
+        """parse_earnings() of the Earnings page, with each section opened so every paid clip is listed."""
+        self.go("/c/earnings")
+        try:
+            self.page.get_by_text(re.compile(r"^\$[\d,.]+$")).first.wait_for(timeout=20000)
+        except Exception:
+            pass
+        self.page.wait_for_timeout(3000)
+        for name in ("Queued", "Arriving", "Received"):   # open a section only if it has clips not shown yet
+            text = self.page.inner_text("main")
+            m = re.search(rf"^{name}\s*\n\s*\((\d+)\)", text, re.M)
+            shown = sum(1 for it in parse_earnings(text)["items"] if it["section"] == name.lower())
+            if m and int(m.group(1)) > shown:
+                try:
+                    self.page.get_by_text(name, exact=True).first.click()
+                    self._pause(1, 2)
+                except Exception:
+                    pass
+        return parse_earnings(self.page.inner_text("main"))
+
+    def upload_revision(self, campaign, video):
+        """Drafts > Needs changes: open the draft for this campaign, Upload revision, attach the new video, send.
+        Raises (and sends nothing) if any step doesn't look as expected; the caller then hands it to Elie."""
+        self.go("/c/drafts")
+        self.page.get_by_role("tab", name=re.compile("^Needs changes")).first.click()
+        self._pause(1.5, 3)
+        cards = self.page.get_by_role("button", name=re.compile("^See revisions$"))
+        pick = None
+        for i in range(min(cards.count(), 10)):
+            box = cards.nth(i).locator("xpath=ancestor::div[.//video][1]")
+            text = box.inner_text(timeout=5000) if box.count() else ""
+            if not campaign or campaign.lower()[:20] in text.lower():
+                pick = i
+                break
+        if pick is None:
+            raise RuntimeError(f"no draft for {campaign} under Needs changes")
+        cards.nth(pick).click()
+        self._pause(1.5, 3)
+        self.page.get_by_role("button", name=re.compile(r"^Upload revision$", re.I)).last.click()
+        self._pause(1.5, 3)
+        files = self.page.locator("input[type=file]")
+        if not files.count():
+            raise RuntimeError("the revision form has no file box")
+        files.last.set_input_files(str(video))
+        self.page.wait_for_timeout(5000)
+        send = self.page.locator('[role="dialog"] button:visible',
+                                 has_text=re.compile(r"^\s*(Submit|Send|Upload)(?! revision\s*$)", re.I)).last
+        send.wait_for(timeout=60000)
+        for _ in range(120):   # disabled until the upload finishes
+            if send.is_enabled():
+                break
+            time.sleep(2)
+        send.click()
+        self.page.wait_for_timeout(8000)
+        self._pause()
+        return True
 
     def _approved_tab(self):
         self.go("/c/drafts")

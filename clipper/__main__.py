@@ -124,6 +124,7 @@ CMDS = {"process": jobs.process, "post": jobs.post, "analytics": jobs.analytics,
         "accounts": lambda: print(services.blotato_accounts()), "probe": probe, "preflight": jobs.preflight_only, "live": _live, "campaigns": _campaigns, "check_streamers": check_streamers,
         "launch_check": _launch_check, "weekly": lambda: __import__("clipper.weekly", fromlist=["job"]).job(),
         "rerender": jobs.rerender,
+        "revise": lambda: __import__("clipper.fixer", fromlist=["revise"]).revise(),
         # the Mac: always-on Telegram + Content Rewards loop, a one-off check, logging the bot's Chrome in, a test
         "mac": lambda: __import__("clipper.mac", fromlist=["loop"]).loop(),
         "mac_once": lambda: __import__("clipper.mac", fromlist=["once"]).once(),
