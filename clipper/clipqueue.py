@@ -468,6 +468,10 @@ def claim_email(cfg, state, clip, platform):
     url = (clip.get("posts", {}).get(platform) or {}).get("url")
     if not rec or not url or clip.setdefault("claim_sent", {}).get(platform) or not mail.configured():
         return
+    from . import crflow
+    if crflow.applies(cfg, clip) and any(e.get("id") == clip.get("id") for e in crflow.load()):
+        clip["claim_sent"][platform] = "mac submits it"   # the Mac submits this link itself (crflow)
+        return
     text = "\n".join([f"Your {platform} post of \"{clip['hook']}\" is live. Submit it to get paid:", "",
                       f"1. Open the campaign: {rec.get('join_url') or rec['url']}",
                       "2. Tap Submit (or Add submission).", f"3. Paste this link: {url}", "",

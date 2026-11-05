@@ -1601,6 +1601,16 @@ crflow.save([dict(_q2[0], id="camp3", token="tok3", status="queued", campaign="U
 mac.process_drafts(_mst)
 assert crflow.by_token(crflow.load(), "tok3")["status"] == "manual_draft"
 assert any("submitted by hand" in (c[1] or {}).get("text", "") for c in _tgcalls2 if c[0] == "sendMessage")
+# the old "Claim" reminder stays quiet for clips the Mac submits itself
+from clipper import clipqueue as _cq2, campaigns as _camps  # noqa: E402
+_real_cf = _camps.campaign_for
+_camps.campaign_for = lambda state, streamer, joined_only=False: {"name": "Lysium/Benji Ramos Clips", "url": "u"}
+_tgcalls2.clear()
+_cclip2 = dict(_cclip, posts={"tiktok": {"url": _tt_url}})
+crflow.save([dict(_q2[0], id="camp1", token="t1", status="done")])
+_cq2.claim_email(_ccfg, {"clips": {}}, _cclip2, "tiktok")
+assert not _tgcalls2 and _cclip2["claim_sent"]["tiktok"] == "mac submits it"
+_camps.campaign_for = _real_cf
 _cr.Site, mac._uploads, mac.bot_campaigns = _real_site, _real_up, _real_bc
 for _k in ("MAC_RUNS_CLIPPER", "NOTIFY_VIA", "TELEGRAM_TOKEN", "TELEGRAM_CHAT_ID"):
     os.environ.pop(_k, None)
