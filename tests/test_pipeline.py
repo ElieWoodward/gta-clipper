@@ -671,6 +671,8 @@ print("WEEKLY STATS OK")
 from clipper import timing  # noqa: E402
 from zoneinfo import ZoneInfo  # noqa: E402
 tz = cfg.get("timezone", "UTC")
+_cfg_real = cfg   # the rotation and winner tests run without a favorite time, on TikTok numbers
+cfg = dict(cfg, posting=dict(cfg["posting"], time_test=dict(cfg["posting"]["time_test"], favorite="", platform="tiktok")))
 p = {"posted_at": "2026-10-10T18:00:00+00:00", "history": [["2026-10-10T19:00:00+00:00", 100], ["2026-10-10T22:00:00+00:00", 400]]}
 assert abs(timing.views_at(p, 3) - 300) < 1e-6           # interpolated between 1h (100) and 4h (400)
 assert timing.views_at(dict(p, history=[["2026-10-10T19:00:00+00:00", 100]]), 3) is None   # too early to tell
@@ -698,6 +700,13 @@ assert timing.plan(cfg, st, "2026-10-26", 1, tz) == ["20:00"]
 assert timing.report(cfg, st, tz)[0].startswith("- 20:00")
 # ramp: two emails a day from day 3
 assert any(r["from_day"] == 3 and r["per_day"] == 2 for r in cfg["posting"]["ramp"])
+cfg = _cfg_real
+# the favorite time (11:00) gets a slot every day; the rest keep testing; results come from YouTube views
+assert timing.settings(cfg)["platform"] == "youtube"
+for _day in ("2026-11-06", "2026-11-07"):
+    _pl = timing.plan(cfg, {"clips": {}}, _day, 3, tz)
+    assert "11:00" in _pl and len(_pl) == 3, _pl
+assert timing.plan(cfg, {"clips": {}}, "2026-11-06", 1, tz) == ["11:00"]
 print("TIMING OK")
 
 # ---------- 15. half-price batch judging: submit, wait, finish on a later run ----------
@@ -917,7 +926,8 @@ _ztz = ZoneInfo(cfg["timezone"])
 def _post_at(hh, views):
     t0 = _dt(2026, 10, 20, hh, 5, tzinfo=_ztz).astimezone(_tz.utc)
     hist = [[(t0 + timedelta(hours=4)).isoformat(), views]]
-    return {"posts": {"tiktok": {"posted_at": t0.isoformat(), "history": hist, "views": views, "likes": views // 20}}}
+    return {"posts": {timing.settings(cfg)["platform"]: {"posted_at": t0.isoformat(), "history": hist, "views": views,
+                                                          "likes": views // 20}}}
 _st = {"clips": {f"c{i}": _post_at(hh, v) for i, (hh, v) in enumerate([(18, 900), (18, 1100), (10, 200), (10, 300),
                                                                        (14, 500), (14, 400)])}}
 _best = timing.plan(cfg, _st, "2030-01-01", 3, cfg["timezone"])

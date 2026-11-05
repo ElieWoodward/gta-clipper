@@ -2,7 +2,7 @@
 
 Each day's posting times are picked from a list of candidate times. Times that haven't been tried enough go first;
 once every time has a few results, most slots use the best times and one slot keeps testing. A post's result is its
-TikTok views a few hours after it went up (measured from the view history the hourly check records), so a clip that
+views a few hours after it went up (on time_test.platform) (measured from the view history the hourly check records), so a clip that
 was posted at 18:05 counts for the 18:00 candidate no matter when its email went out.
 """
 import statistics
@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from .common import now_utc
 
 DEFAULTS = {"enabled": True, "candidates": ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00", "20:00", "22:00"],
-            "measure_hours": 3, "min_samples": 2, "min_gap_hours": 3, "platform": "tiktok"}
+            "measure_hours": 3, "min_samples": 2, "min_gap_hours": 3, "platform": "tiktok", "favorite": ""}
 
 
 def settings(cfg):
@@ -127,6 +127,11 @@ def plan(cfg, state, day, n, tz):
                       key=lambda c: (len(res[c]), (cands.index(c) - offset) % len(cands)))
     ranked = sorted([c for c in cands if c not in untested], key=lambda c: -statistics.median(res[c]))
     chosen = list(book.get(day, []))
+    fav = s.get("favorite")
+    if fav and not chosen:   # the time Elie picked gets a slot every day; the other slots keep testing
+        chosen.append(fav)
+        if fav not in cands:
+            cands = cands + [fav]
     if untested:
         order = untested + ranked
     else:
