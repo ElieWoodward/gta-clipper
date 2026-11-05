@@ -68,7 +68,7 @@ def queue(state):
     dead = set() if state.get("tiktok_paused") else dead_on_tiktok(state)   # YouTube-only days: no TikTok penalty
     q = [c for c in state["clips"].values() if c.get("status") == "approved"]
     def is_paid(c):
-        return (c.get("streamer") or "").lower() in paid
+        return (c.get("streamer") or "").lower() in paid or bool(c.get("campaign"))
     def rank(c):
         name = (c.get("streamer") or "").lower()
         return c["score"] - (2 if name in dead and not is_paid(c) else 0)
@@ -120,7 +120,7 @@ def pick_for_email(state):
     paid = {(r.get("twitch_login") or "").lower() for r in (state.get("campaigns") or {}).values()
             if r.get("status") == "joined"}
     for c in waiting:   # a paid-campaign clip goes out first, even if something newer came in
-        if (c.get("streamer") or "").lower() in paid:
+        if (c.get("streamer") or "").lower() in paid or c.get("campaign"):
             return c
     last = last_emailed(state)
     if last:

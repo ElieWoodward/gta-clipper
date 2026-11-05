@@ -40,8 +40,12 @@ CLIP_POLL_SECONDS = 90
 TEST_MINUTES = 10
 
 
-def _settings(cfg):
-    return dict(LIVE_DEFAULTS, **(cfg.get("live") or {}))
+def _settings(cfg, streamer=None):
+    """Live settings; a campaign streamer gets live.campaign on top (more moments, since those clips pay)."""
+    s = dict(LIVE_DEFAULTS, **{k: v for k, v in (cfg.get("live") or {}).items() if k != "campaign"})
+    if (streamer or {}).get("campaign"):
+        s.update((cfg.get("live") or {}).get("campaign") or {})
+    return s
 
 
 # ------------------------------------------------------------------ is anyone live?
@@ -462,6 +466,7 @@ def watch():
                 git_sync("live: sync")   # pick up posts, expiries and spend from the other jobs
             was = allowed
             allowed = test or jobs.claude_allowed(cfg, load_state(), "; still watching chat for free", quiet=not was)
+            paid_ok = allowed or jobs.campaign_allowed(cfg, load_state())
             for st in streamers:
                 login = st["channel"]
                 info = live_info(login)
@@ -480,7 +485,7 @@ def watch():
                     chat = Chat(login)
                     chat.start()
                     watching[login] = {"vod": vod, "chat": chat, "seen": None, "last_t": -1e9, "made": 0,
-                                       "best": None, "next_clips": 0}
+                                       "best": None, "next_clips": 0, "s": _settings(cfg, st)}
                     print(f"::notice::watching {st['name']} live: {info['title'][:80]} ({info['game']})", flush=True)
                 elif not on_gta and login in watching:
                     gone = watching.pop(login)
@@ -494,10 +499,12 @@ def watch():
                 return
         for login, w in watching.items():
             vod = w["vod"]
+            ws = w.get("s") or s
+            ok = paid_ok if jobs.is_campaign(vod["streamer"]) else allowed
             offset_now = now - vod["created_ts"]
             msgs = list(w["chat"].msgs)
             # 1. chat explosion
-            r = chat_spike(msgs, now, s["chat_ratio"], s["chat_min_per_sec"])
+            r = chat_spike(msgs, now, ws["chat_ratio"], ws["chat_min_per_sec"])
             if test:
                 lvl = chat_spike(msgs, now, level_only=True)
                 if lvl and (w["best"] is None or lvl > w["best"][0]):
@@ -506,7 +513,7 @@ def watch():
                 t = offset_now - 7 - twitch.CHAT_DELAY
                 if w["best"] is None or r > w["best"][0]:
                     w["best"] = (r, t)
-                _flag(w, pending, login, t, f"chat exploded live ({r:.1f}x normal)", s, now, allowed)
+                _flag(w, pending, login, t, f"chat exploded live ({r:.1f}x normal)", ws, now, ok)
             # 2. viewers clipping the same moment
             if now >= w["next_clips"]:
                 w["next_clips"] = now + CLIP_POLL_SECONDS
@@ -522,9 +529,9 @@ def watch():
                     new = [c for c in clips if (round(c["offset"]), c["title"]) not in w["seen"]
                            and c["offset"] > offset_now - 900]
                     w["seen"] |= keys
-                    hit = viewer_clip_cluster(new, s["min_viewer_clips"])
+                    hit = viewer_clip_cluster(new, ws["min_viewer_clips"])
                     if hit:
-                        _flag(w, pending, login, hit[0], f"{hit[1]} viewers clipped this live", s, now, allowed)
+                        _flag(w, pending, login, hit[0], f"{hit[1]} viewers clipped this live", ws, now, ok)
         if test and time.time() > deadline - 300:
             for login, w in watching.items():   # test: no big moment yet, so take the liveliest one seen
                 if w["made"] == 0 and w["best"]:
@@ -553,9 +560,13 @@ def _worker(cfg, pending, watching, busy, ended=None):
             if not w:
                 continue
             state = load_state()
-            if not jobs.claude_allowed(cfg, state, "; skipping a flagged moment"):
+            if jobs.is_campaign(w["vod"]["streamer"]):
+                if not jobs.campaign_allowed(cfg, state):
+                    continue
+            elif not jobs.claude_allowed(cfg, state, "; skipping a flagged moment"):
                 continue
-            clip = make_live_clip(cfg, state, w["vod"], t, label, list(w["chat"].msgs))
+            clip = make_live_clip(jobs.for_stream(cfg, w["vod"]["streamer"]), state, w["vod"], t, label,
+                                  list(w["chat"].msgs))
             if clip:
                 maybe_post_now(cfg, state, clip)
                 git_sync(f"live clip: {clip['hook'][:60]}")

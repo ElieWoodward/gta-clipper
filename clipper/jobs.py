@@ -45,6 +45,27 @@ def _posting_ready(cfg=None):
     return False
 
 
+def is_campaign(streamer):
+    return bool((streamer or {}).get("campaign"))
+
+
+def for_stream(cfg, streamer):
+    """Campaign streams pay per view, so they get their own settings (clip.campaign: a lower score bar and more
+    clips per stream). A streamer's own min_score wins over both."""
+    if not is_campaign(streamer):
+        return cfg
+    clip = dict(cfg["clip"])
+    clip.update({k: v for k, v in (cfg["clip"].get("campaign") or {}).items()})
+    if streamer.get("min_score") is not None:
+        clip["min_score"] = streamer["min_score"]
+    return dict(cfg, clip=clip)
+
+
+def campaign_allowed(cfg, state):
+    """Campaign clips earn money, so a full queue doesn't stop them; only the Claude budget does."""
+    return bool(TEST_SOURCE) or highlights.budget_left(cfg, state) > 0
+
+
 def open_room(cfg, state):
     """Queue room left after the clips that streams already handed to half-price judging will probably add."""
     from . import batch
@@ -90,8 +111,13 @@ def process():
             except Exception as e:
                 log.warning("posting check inside process failed: %s", e)
             state = load_state()
-        if not claude_allowed(cfg, state):
-            return
+        if not claude_allowed(cfg, state, quiet=True):
+            paid = [x for x in cfg.get("streamers", []) if is_campaign(x) and x.get("enabled", True)]
+            if not paid or not campaign_allowed(cfg, state):
+                claude_allowed(cfg, state)   # prints why
+                return
+            # the queue is full, but campaign streams pay per view: keep looking at those only
+            cfg = dict(cfg, streamers=paid, manual_urls=[])
     else:
         cap = 3 * max(r["per_day"] for r in cfg["posting"]["ramp"]) * 2
         if len(_queued(state)) >= cap and not FORCE:
@@ -101,11 +127,16 @@ def process():
     live_now = []
     if vods:
         _preflight_if_due(cfg, state, vods[0])   # stop before downloading if anything is broken
+    vods = sorted(vods, key=lambda v: not is_campaign(v["streamer"]))   # paid streams first
     for vod in vods:
-        if clipqueue.email_mode(cfg) and not claude_allowed(cfg, state, "; leaving the rest of the streams for later"):
-            break
+        if is_campaign(vod["streamer"]):
+            if not campaign_allowed(cfg, state):
+                print("::notice::today's Claude budget is used up; campaign streams wait for tomorrow", flush=True)
+                break
+        elif clipqueue.email_mode(cfg) and not claude_allowed(cfg, state, "; leaving the rest of the streams for later"):
+            continue
         try:
-            _process_vod(cfg, state, vod)
+            _process_vod(for_stream(cfg, vod["streamer"]), state, vod)
         except fetch.StillLive:
             log.info("%s is still live; will pick it up after the stream ends", vod["id"])
             live_now.append(vod["streamer"]["name"])
@@ -146,7 +177,7 @@ def _process_vod(cfg, state, vod, client=None):
     try:
         wav = fetch.download_audio(vod, d)
         limit = None
-        if clipqueue.email_mode(cfg) and not TEST_SOURCE:
+        if clipqueue.email_mode(cfg) and not TEST_SOURCE and not is_campaign(vod["streamer"]):
             limit = max(1, open_room(cfg, state))   # only as many as the queue has room for
         from . import batch
         if batch.enabled(cfg) and not TEST_SOURCE and not DRY_RUN:
@@ -183,8 +214,10 @@ def finish_batches(cfg, state, client=None):
         return
     import anthropic
     client = client or anthropic.Anthropic()
+    base = cfg
     for rec in recs:
         vod = rec["vod"]
+        cfg = for_stream(base, vod.get("streamer"))
         try:
             status, data = batch.result(client, cfg, rec)
         except Exception as e:
@@ -218,7 +251,7 @@ def _make_from_picks(cfg, state, vod, picks, words):
     try:
         bar = cfg["clip"]["min_score"]
         for p in picks:
-            if clipqueue.email_mode(cfg) and clipqueue.room(cfg, state) <= 0:
+            if clipqueue.email_mode(cfg) and clipqueue.room(cfg, state) <= 0 and not is_campaign(vod.get("streamer")):
                 break
             if cfg["review"]["mode"] == "auto" and int(p["score"]) < bar:
                 continue
@@ -418,6 +451,7 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         "facecam": bool(facecam), "layout": "cam+" + layout if facecam else layout, "framing": look["why"],
         "said": " ".join(w["w"] for w in words if p["start"] <= w["s"] < p["end"])[:600], "file": out.name,
         "context": p.get("context", ""), "handle": st.get("handle"), "preapproval": bool(st.get("preapproval")),
+        "campaign": st.get("campaign") or None,
         "created": now_utc().isoformat(), "posts": {}, "issue": None, "local_file": str(out), "asset_id": asset_id,
     }
     auto = cfg["review"]["mode"] == "auto"
@@ -784,6 +818,12 @@ def email_post(cfg):
     q = clipqueue.queue(state)
     log.info("queue %d, emails due today %d, sent %d", len(q), due, sent)
     em = state.setdefault("email", {})
+    from . import crflow
+    for c in [c for c in clipqueue.queue(state) if not c.get("emailed_at") and crflow.applies(cfg, c)]:
+        # a pre-approval campaign clip goes up as a draft as soon as it's made: approval takes hours, and it's
+        # posted when approved, so it doesn't use (or wait for) a posting slot
+        c["extra"] = True
+        deliver(cfg, state, c)
     if em.pop("send_next", False):   # you replied "next": one more clip now, on top of the day's count
         clip = clipqueue.pick_for_email(state)
         if clip:

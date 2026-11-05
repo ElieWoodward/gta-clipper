@@ -74,6 +74,11 @@ clip:
   max_candidates: 70
   transcribe_minutes: 50          # audio sent for transcription per stream; keeps long streams fast and inside Groq's hourly limit
   min_score: 7                    # Claude score (1-10) needed to post automatically
+  campaign:                       # streamers with a paid campaign get paid per view, so: lower bar, more clips.
+    min_score: 6                  # a full queue never stops these; only the Claude budget does. Pre-approval
+    clips_per_hour: 3             # campaigns (Lysium) still have the brand check every clip, so weak ones just
+    min_per_vod: 5                # get turned down there. A streamer's own min_score: wins over this.
+    candidates_per_hour: 8
   commentary: false               # true adds rotating context lines under the hook (off: the hook stays alone)
 
 signals:
@@ -127,6 +132,10 @@ live:
   max_per_stream: 6
   post_now_score: 8               # live clips scoring this or more post right away instead of waiting for a slot
   extra_posts_per_day: 1          # live posts allowed on top of the daily ramp
+  campaign:                       # paid campaign streamers: catch more live moments
+    chat_ratio: 2.5
+    cooldown_minutes: 5
+    max_per_stream: 10
 
 weekly:                           # long YouTube video every Sunday: "GTA RP MOST VIEWED Twitch Clips of The Week! #N"
   enabled: true                   # (becomes "GTA 6 ..." from launch day, starting again at #1)

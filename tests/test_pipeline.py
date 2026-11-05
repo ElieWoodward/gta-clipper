@@ -364,11 +364,12 @@ fake_clip("b", 9, 3, "the way he said I don't speak brexit brother 💀", faceca
 fake_clip("c", 8, 1, "he crashed into the only tree in the city 😭")
 fake_clip("old", 10, 20, "this one will be too old to post")
 assert len(clipqueue.queue(st)) == 5 and clipqueue.room(cfg, st) == 0
-# full queue: no Claude work, and the process job doesn't even list streams
+# full queue: no Claude work for free streams (the process job only lists paid campaign streams)
 assert not jobs.claude_allowed(cfg, st)
 common.save_state(st)
 _orig_list = fetch.list_new_vods
-fetch.list_new_vods = lambda *a, **k: (_ for _ in ()).throw(AssertionError("process should not look for streams"))
+_listed = []
+fetch.list_new_vods = lambda c, *a, **k: (_listed.append([x["name"] for x in c["streamers"]]), [])[1]
 os.environ.pop("FORCE")
 jobs.FORCE = False
 _ep, _ep_calls = jobs.email_post, []
@@ -376,6 +377,9 @@ jobs.email_post = lambda cfg: _ep_calls.append(1)
 jobs.process()
 jobs.email_post = _ep
 assert _ep_calls == [1], "the stream check also runs the posting check"
+# a full queue only stops free streams: paid campaign streamers are still checked
+assert _listed == [[x["name"] for x in cfg["streamers"] if x.get("campaign") and x.get("enabled", True)]] or \
+    (_listed == [] and not any(x.get("campaign") for x in cfg["streamers"])), _listed
 fetch.list_new_vods = _orig_list
 # expiry frees a slot
 st = common.load_state()
@@ -1790,3 +1794,22 @@ from clipper import launch as _launch  # noqa: E402
 _launch.apply(_l2, {})
 assert _l2["limits"]["boost_dates"][0] == "2026-11-19" and _l2["limits"]["boost_dates"][-1] == "2026-11-26"
 print("EARNINGS FIX BUDGET OK")
+
+# ---------- 38. Campaign streams: lower bar, more clips, never blocked by a full queue; drafts go up right away ----------
+_ccfg = common.load_config()
+_lys = next(x for x in _ccfg["streamers"] if x.get("campaign"))
+_plain = next(x for x in _ccfg["streamers"] if not x.get("campaign"))
+assert jobs.for_stream(_ccfg, _plain) is _ccfg
+_cc = jobs.for_stream(_ccfg, _lys)["clip"]
+assert _cc["min_score"] == 6 and _cc["clips_per_hour"] == 3 and _cc["min_per_vod"] == 5 and _ccfg["clip"]["min_score"] == 7
+assert highlights.clip_budget(jobs.for_stream(_ccfg, _lys), 2 * 3600)[0] == 6
+assert highlights.clip_budget(_ccfg, 2 * 3600)[0] == 4
+assert jobs.for_stream(_ccfg, dict(_lys, min_score=5))["clip"]["min_score"] == 5
+from clipper import live as _live  # noqa: E402
+assert _live._settings(_ccfg, _lys)["chat_ratio"] == 2.5 and _live._settings(_ccfg, _plain)["chat_ratio"] == 3.0
+assert "campaign" not in _live._settings(_ccfg)
+_qst = {"clips": {"a": {"id": "a", "status": "approved", "streamer": "Burn", "score": 9, "created": "2026-11-05T10:00:00+00:00"},
+                  "b": {"id": "b", "status": "approved", "streamer": "Lysium", "score": 6, "campaign": "Lysium/Benji Ramos Clips",
+                        "created": "2026-11-05T09:00:00+00:00"}}}
+assert clipqueue.pick_for_email(_qst)["id"] == "b" and clipqueue.queue(_qst)[0]["id"] == "b"
+print("CAMPAIGN MAX OK")
