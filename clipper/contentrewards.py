@@ -267,30 +267,40 @@ class Site:
         return True
 
     def submit_draft(self, campaign_url, video, platforms=("tiktok", "youtube"), dry_run=False):
-        """Upload a clip as a draft for the brand's pre-approval. Returns True once the form is sent."""
+        """Upload a clip as a draft for the brand's pre-approval. Returns True once the form is sent.
+        Every click stays inside the "Submit a draft" popup: the campaign page behind it has its own TikTok and
+        YouTube labels, and clicking those hits the popup's dark backdrop instead."""
         self.go(campaign_url)
         self.page.get_by_role("button", name="Submit clip").first.click()
-        self.page.get_by_text("Submit a draft to").wait_for(timeout=30000)
+        form = self.page.locator('[role="dialog"]').filter(has_text="Submit a draft to").last
+        form.wait_for(timeout=30000)
         self._pause(1, 2)
         for p in platforms:
-            row = self.page.get_by_text(re.compile(rf"^{p}$", re.I))
-            if row.count():
-                row.first.click()
-                self._pause(0.5, 1.5)
-        self.page.locator("input[type=file]").first.set_input_files(str(video))
+            row = form.get_by_text(re.compile(rf"^{p}$", re.I))
+            if not row.count():
+                raise RuntimeError(f"the draft form has no {p} account to pick")
+            row.first.click()
+            self._pause(0.5, 1.5)
+        form.locator("input[type=file]").first.set_input_files(str(video))
         self.page.wait_for_timeout(5000)
-        send = self.page.get_by_role("button", name="Submit draft for review")
+        send = form.get_by_role("button", name="Submit draft for review")
         send.wait_for(timeout=120000)
         if dry_run:
+            shot = Path.home() / "Desktop" / "practice_draft_form.png"
+            try:
+                self.page.screenshot(path=str(shot))
+                print(f"Screenshot of the filled form: {shot}", flush=True)
+            except Exception:
+                pass
             log.info("[dry run] draft form filled for %s; not sending", campaign_url)
-            self.page.get_by_role("button", name="Cancel").click()
+            form.get_by_role("button", name="Cancel").click()
             return False
         for _ in range(120):   # the button stays disabled until the upload finishes
             if send.is_enabled():
                 break
             time.sleep(2)
         send.click()
-        self.page.get_by_text("Submit a draft to").wait_for(state="detached", timeout=120000)
+        form.wait_for(state="detached", timeout=120000)
         self._pause()
         return True
 
