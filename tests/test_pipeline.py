@@ -1745,7 +1745,10 @@ assert _fst["fixes"][_fkey]["status"] == "ready" and _fst["fixes"][_fkey]["file"
 # what Claude's answer does to the cut (trims clamped, never shorter than 8s)
 _p = _fixer.apply({"start": 100, "end": 130, "hook": "old", "title": "t", "caption": "c"},
                   {"start_shift": 5, "end_shift": -50, "hook": "new hook"})
-assert _p["start"] == 105 and _p["end"] == 110 and _p["hook"] == "new hook" and _p["title"] == "t"
+assert (_p["start"], _p["end"]) == (100, 130) and _p["hook"] == "new hook" and _p["title"] == "t"   # too short: cut kept
+_p = _fixer.apply({"start": 100, "end": 130, "hook": "old", "title": "t", "caption": "c"},
+                  {"start_shift": 5, "end_shift": -15, "hook": "new hook"})
+assert _p["start"] == 105 and _p["end"] == 115 and _p["hook"] == "new hook" and _p["title"] == "t"
 _p = _fixer.apply({"start": 100, "end": 112, "hook": "h"}, {"start_shift": 10})
 assert (_p["start"], _p["end"]) == (100, 112)
 
