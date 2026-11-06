@@ -211,7 +211,7 @@ def compare(st, camps, drafts, prioritized):
         seen.append(key)
         text = (f"✂️ A draft{(' for ' + n['campaign']) if n.get('campaign') else ''} needs changes.\n\n"
                 f"Reviewer ({n.get('who')}, {n.get('when')}): {n.get('note')}\n\n")
-        if clipping_on():
+        if clipping_on() and not n.get("unread"):
             st.setdefault("fixes", {})[key] = {"key": key, "campaign": n.get("campaign"), "note": n.get("note"),
                                                "status": "new", "at": now_utc().isoformat()}
             msgs.append(_with_buttons(text + "Tap ✂️ Fix it and I'll change the clip to match the note and show it to "

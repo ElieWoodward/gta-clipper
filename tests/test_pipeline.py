@@ -1880,4 +1880,8 @@ assert len(list((TMP / "bk_dest" / "bot-daily").iterdir())) == 7
 for _k in ("BACKUP_DIR", "SERVARR_DIR", "JELLYFIN_DIR", "ADGUARD_CONF"):
     os.environ.pop(_k, None)
 assert _bk.dest() is None or str(_bk.dest()).startswith("/Volumes/")   # no Work SSD here: nothing to back up to
+_un = mac.compare({"campaigns": {}, "listed_once": True, "drafts": {}}, [],
+                  {"counts": {"needs changes": 1}, "needs_changes": [{"who": "the reviewer", "when": "recently", "note": "(open it)",
+                                                                       "card": "unread-1", "unread": True}]}, [])
+assert len(_un) == 1 and not getattr(_un[0], "rows", None)   # a note we couldn't read gets no Fix it button
 print("BACKUP OK")

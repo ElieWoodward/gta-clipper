@@ -217,6 +217,7 @@ class Site:
         self._pause()
         if "/login" in self.page.url or self.page.get_by_role("link", name=re.compile("^log ?in$", re.I)).count():
             raise NotLoggedIn("Content Rewards isn't logged in on the bot's Chrome window")
+        self.dismiss_popups()
         return self.page.inner_text("main") if self.page.locator("main").count() else self.page.inner_text("body")
 
     def campaigns(self):
@@ -282,27 +283,72 @@ class Site:
     def campaign(self, url):
         return dict(parse_campaign_page(self.go(url)), url=url)
 
+    POPUP_CLOSE = re.compile(r"^(Not now|Maybe later|No thanks|Got it|Dismiss|Skip|Close)$", re.I)
+
+    def dismiss_popups(self):
+        """Close announcement popups ("Support is here", what's new...) that cover the page and block every click.
+        Only buttons that close something are pressed; nothing is opened or sent."""
+        for _ in range(3):
+            dlg = self.page.locator('[role="dialog"]:visible, [role="alertdialog"]:visible')
+            if not dlg.count():
+                return
+            btn = dlg.last.get_by_role("button", name=self.POPUP_CLOSE)
+            try:
+                if btn.count():
+                    log.info("closing a Content Rewards popup: %s", " ".join(dlg.last.inner_text().split())[:80])
+                    btn.first.click(timeout=5000)
+                else:
+                    self.page.keyboard.press("Escape")
+            except Exception:
+                self.page.keyboard.press("Escape")
+            self._pause(0.8, 1.5)
+
+    def _open_tab(self, name):
+        """Click a Drafts tab. Its accessible name can carry an icon or the count ("Needs changes 1"), so match
+        loosely, then fall back to the visible text."""
+        pat = re.compile(rf"\b{re.escape(name)}\b", re.I)
+        for loc in (self.page.get_by_role("tab", name=pat), self.page.get_by_role("button", name=pat),
+                    self.page.get_by_text(name, exact=True)):
+            try:
+                if loc.count():
+                    loc.first.click(timeout=10000)
+                    self._pause(1.5, 3)
+                    return True
+            except Exception:
+                continue
+        raise RuntimeError(f"couldn't find the {name!r} tab on the Drafts page")
+
     def drafts(self):
         """Draft counts per tab, plus the newest reviewer note for each draft that needs changes."""
         counts = parse_draft_counts(self.go("/c/drafts"))
         notes = []
         if counts.get("needs changes"):
-            self.page.get_by_role("tab", name=re.compile("^Needs changes")).first.click()
-            self._pause(1.5, 3)
-            cards = self.page.get_by_role("button", name=re.compile("^See revisions$"))
-            for i in range(min(cards.count(), 10)):
-                card_text = cards.nth(i).locator("xpath=ancestor::div[.//video][1]").inner_text(timeout=5000) \
-                    if cards.nth(i).locator("xpath=ancestor::div[.//video][1]").count() else ""
-                cards.nth(i).click()
-                self._pause(1.5, 3)
-                t = parse_timeline(self.page.inner_text("body"))
-                if t:
-                    t["campaign"] = _lines(card_text)[0] if card_text else ""
-                    t["card"] = " | ".join(_lines(card_text)[:3])
-                    notes.append(t)
-                self.page.keyboard.press("Escape")
-                self._pause(1, 2)
+            try:
+                notes = self._needs_changes_notes()
+            except Exception as e:   # the counts still go out, with a plain "go look" note
+                log.warning("couldn't read the reviewer notes: %s", e)
+                notes = [{"who": "the reviewer", "when": "recently", "campaign": "",
+                          "note": "(I couldn't read the note itself. Open Drafts > Needs changes on Content Rewards.)",
+                          "card": f"unread-{counts['needs changes']}", "unread": True}]
         return {"counts": counts, "needs_changes": notes}
+
+    def _needs_changes_notes(self):
+        notes = []
+        self._open_tab("Needs changes")
+        cards = self.page.get_by_role("button", name=re.compile("^See revisions$"))
+        for i in range(min(cards.count(), 10)):
+            card_text = cards.nth(i).locator("xpath=ancestor::div[.//video][1]").inner_text(timeout=5000) \
+                if cards.nth(i).locator("xpath=ancestor::div[.//video][1]").count() else ""
+            cards.nth(i).click()
+            self._pause(1.5, 3)
+            t = parse_timeline(self.page.inner_text("body"))
+            if t:
+                t["campaign"] = _lines(card_text)[0] if card_text else ""
+                t["card"] = " | ".join(_lines(card_text)[:3])
+                notes.append(t)
+            self.page.keyboard.press("Escape")
+            self._pause(1, 2)
+        return notes
 
     def earnings(self):
         """parse_earnings() of the Earnings page, with each section opened so every paid clip is listed."""
@@ -328,8 +374,7 @@ class Site:
         """Drafts > Needs changes: open the draft for this campaign, Upload revision, attach the new video, send.
         Raises (and sends nothing) if any step doesn't look as expected; the caller then hands it to Elie."""
         self.go("/c/drafts")
-        self.page.get_by_role("tab", name=re.compile("^Needs changes")).first.click()
-        self._pause(1.5, 3)
+        self._open_tab("Needs changes")
         cards = self.page.get_by_role("button", name=re.compile("^See revisions$"))
         pick = None
         for i in range(min(cards.count(), 10)):
@@ -342,29 +387,35 @@ class Site:
             raise RuntimeError(f"no draft for {campaign} under Needs changes")
         cards.nth(pick).click()
         self._pause(1.5, 3)
-        self.page.get_by_role("button", name=re.compile(r"^Upload revision$", re.I)).last.click()
-        self._pause(1.5, 3)
-        files = self.page.locator("input[type=file]")
-        if not files.count():
-            raise RuntimeError("the revision form has no file box")
-        files.last.set_input_files(str(video))
+        def newest():
+            return max([int(n) for n in re.findall(r"Revision (\d+)", self.page.inner_text("body"))] or [0])
+        before = newest()
+        btn = self.page.get_by_role("button", name=re.compile(r"^Upload revision$", re.I)).filter(visible=True)
+        if not btn.count():
+            raise RuntimeError("the draft's timeline has no Upload revision button")
+        # the button opens a file picker (checked Nov 2026); catch it so no Mac dialog opens, and hand it the video
+        with self.page.expect_file_chooser(timeout=15000) as fc:
+            btn.first.click()
+        fc.value.set_files(str(video))
         self.page.wait_for_timeout(5000)
-        send = self.page.locator('[role="dialog"] button:visible',
-                                 has_text=re.compile(r"^\s*(Submit|Send|Upload)(?! revision\s*$)", re.I)).last
-        send.wait_for(timeout=60000)
-        for _ in range(120):   # disabled until the upload finishes
-            if send.is_enabled():
-                break
+        send = self.page.locator("button:visible", has_text=re.compile(r"^\s*(Submit|Send)( revision| for review)?\s*$", re.I))
+        if send.count():   # some versions ask to confirm; wait for the upload to finish first
+            for _ in range(120):
+                if send.last.is_enabled():
+                    break
+                time.sleep(2)
+            send.last.click()
+        for _ in range(90):   # done when the timeline shows a new revision or the draft leaves Needs changes
+            body = self.page.inner_text("body")
+            if newest() > before or re.search(r"Revision submitted|Pending review", body, re.I):
+                self._pause()
+                return True
             time.sleep(2)
-        send.click()
-        self.page.wait_for_timeout(8000)
-        self._pause()
-        return True
+        raise RuntimeError("the revision didn't show up on the draft after 3 minutes")
 
     def _approved_tab(self):
         self.go("/c/drafts")
-        self.page.get_by_role("tab", name=re.compile("^Approved")).first.click()
-        self._pause(1.5, 3)
+        self._open_tab("Approved")
         return self.page.inner_text("main")
 
     def approved(self):
