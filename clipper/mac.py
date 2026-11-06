@@ -248,6 +248,13 @@ def summary(st):
             lines.append(f"Last Content Rewards check: {t:%b %-d, %-I:%M %p}")
         except (ValueError, TypeError):
             lines.append(f"Last Content Rewards check: {st['last_sync'][:16].replace('T', ' ')} UTC")
+    b = st.get("backup") or {}
+    if b.get("at"):
+        try:
+            bt = datetime.fromisoformat(b["at"]).astimezone(local_now().tzinfo)
+            lines.append(f"Last backup: {bt:%b %-d, %-I:%M %p}" + ("" if b.get("ok") else " (failed)"))
+        except (ValueError, TypeError):
+            pass
     if not clipping_on():   # only while the GitHub bot still does the clipping
         ok = (st.get("relay") or {}).get("ok")
         lines.append(f"Watching the GitHub bot: {'yes, last read ' + ok[11:16] + ' UTC' if ok else 'not yet'}")
@@ -376,7 +383,7 @@ def handle(st, kind, data, message_id, text):
         submit_pasted_link(st, re.search(r"https?://\S+", data).group(0))
         return
     if kind == "text":
-        if clipping_on() and low not in ("status", "/status", "check", "/check", "cleanup", "/cleanup",
+        if clipping_on() and low not in ("status", "/status", "check", "/check", "cleanup", "/cleanup", "backup", "/backup",
                                          "earnings", "/earnings", "money",
                                          "/start", "start", "help", "/help"):
             from . import mail
@@ -395,6 +402,12 @@ def handle(st, kind, data, message_id, text):
         elif low in ("earnings", "/earnings", "money"):
             tg.send("Reading the Earnings page…", silent=True)
             run_earnings(st, force=True)
+        elif low in ("backup", "/backup"):
+            r = run_backup(st)
+            if r["ok"]:
+                tg.send(f"💾 Backed up {r['size_mb']} MB to the Work SSD: {', '.join(r['copied'])}."
+                        + (f"\nNot found (skipped): {', '.join(r['missing'])}" if r["missing"] else "")
+                        + (f"\nNotes: {'; '.join(r['problems'])}" if r["problems"] else ""))
         elif low in ("cleanup", "/cleanup"):
             st.pop("jf_key_asked", None)
             run_cleanup(st)
@@ -410,6 +423,18 @@ FIX_JF_KEY = ("1. On the Mac, open http://localhost:8096 and log in.\n"
               "3. Copy the key. In Terminal paste: open -e ~/projects/gta-clipper/.env\n"
               "4. Add a new line: JELLYFIN_API_KEY=the-key  then save. The bot picks it up within a day "
               "(or text it \"cleanup\" after restarting it).")
+
+
+def run_backup(st):
+    """Nightly (3 AM+): copy the things that can't be rebuilt onto the Work SSD. Quiet unless it fails."""
+    from . import backup
+    r = backup.run()
+    st["backup"] = {"at": now_utc().isoformat(), "ok": r["ok"], "size_mb": r.get("size_mb"), "missing": r["missing"]}
+    if not r["ok"]:
+        tg.problem(st, "backup", f"Last night's backup didn't finish ({'; '.join(r['problems'])[:200]}).",
+                   "1. Check the Work SSD is plugged in (it shows as Work in Finder).\n"
+                   "2. Text \"backup\" to the bot to try again.")
+    return r
 
 
 def run_cleanup(st):
@@ -1003,6 +1028,13 @@ def loop():
             run_check(st)
             save(st)
             nxt = time.time() + (EVERY_MIN + random.uniform(0, 8)) * 60
+        if local_now().hour >= 3 and st.get("backup_day") != local_now().date().isoformat():   # nightly, 3 AM+
+            st["backup_day"] = local_now().date().isoformat()
+            try:
+                run_backup(st)
+            except Exception as e:
+                log.warning("backup step failed: %s", e)
+            save(st)
         if local_now().hour >= 10 and st.get("jf_day") != local_now().date().isoformat():   # once a day, 10 AM+
             st["jf_day"] = local_now().date().isoformat()
             run_cleanup(st)

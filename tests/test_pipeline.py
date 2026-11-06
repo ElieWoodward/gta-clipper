@@ -1845,3 +1845,39 @@ _fst6 = {"clips": {k: v for k, v in _fst5["clips"].items()}}
 _fst6["clips"].update({f"t{_d}": _yt(_d, 10, 330) for _d in range(1, 4)})
 assert _tm.favorite(_ccfg, _fst6, _tz5) == "11:00"
 print("CAMPAIGN MAX OK")
+
+# ---------- 39. Nightly backup to the Work SSD: settings and the bot's memory, never media ----------
+from clipper import backup as _bk  # noqa: E402
+_bh = TMP / "bk_home"
+(_bh / "servarr" / "radarr").mkdir(parents=True, exist_ok=True)
+(_bh / "servarr" / "radarr" / "radarr.db").write_text("db")
+(_bh / "servarr" / "radarr" / "MediaCover").mkdir(exist_ok=True)
+(_bh / "servarr" / "radarr" / "MediaCover" / "poster.jpg").write_text("x" * 100)
+(_bh / "servarr" / "data" / "media" / "movies").mkdir(parents=True, exist_ok=True)
+(_bh / "servarr" / "data" / "media" / "movies" / "Film.mkv").write_text("big")
+(_bh / "servarr" / "compose.yaml").write_text("services: {}")
+(_bh / "jellyfin" / "data").mkdir(parents=True, exist_ok=True)
+(_bh / "jellyfin" / "data" / "jellyfin.db").write_text("users")
+(_bh / "jellyfin" / "metadata").mkdir(exist_ok=True)
+(_bh / "jellyfin" / "metadata" / "art.jpg").write_text("art")
+(_bh / "jellyfin" / "log").mkdir(exist_ok=True)
+(_bh / "jellyfin" / "log" / "x.log").write_text("log")
+os.environ.update(BACKUP_DIR=str(TMP / "bk_dest"), SERVARR_DIR=str(_bh / "servarr"), JELLYFIN_DIR=str(_bh / "jellyfin"),
+                  ADGUARD_CONF=str(_bh / "nope.yaml"))
+(common.DATA / "state.json").exists() or (common.DATA / "state.json").write_text("{}")
+_r = _bk.run()
+_L = TMP / "bk_dest" / "latest"
+assert _r["ok"] and "bot/data" in _r["copied"] and "adguard/AdGuardHome.yaml" in _r["missing"], _r
+assert (_L / "servarr" / "radarr" / "radarr.db").exists() and (_L / "servarr" / "compose.yaml").exists()
+assert not (_L / "servarr" / "data").exists() and not (_L / "servarr" / "radarr" / "MediaCover").exists()   # no media
+assert (_L / "jellyfin" / "data" / "jellyfin.db").exists()                                                  # users kept
+assert not (_L / "jellyfin" / "metadata").exists() and not (_L / "jellyfin" / "log").exists()
+assert (_L / "bot" / "data" / "state.json").exists() and (TMP / "bk_dest" / "RESTORE.txt").exists()
+from datetime import datetime as _bdt  # noqa: E402
+for _i in range(10):   # only the last 7 days of the bot's memory are kept
+    _bk.run(now=_bdt(2026, 11, 1 + _i, 3, 0))
+assert len(list((TMP / "bk_dest" / "bot-daily").iterdir())) == 7
+for _k in ("BACKUP_DIR", "SERVARR_DIR", "JELLYFIN_DIR", "ADGUARD_CONF"):
+    os.environ.pop(_k, None)
+assert _bk.dest() is None or str(_bk.dest()).startswith("/Volumes/")   # no Work SSD here: nothing to back up to
+print("BACKUP OK")
