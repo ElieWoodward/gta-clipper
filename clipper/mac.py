@@ -495,7 +495,7 @@ def process_fixes(st, jobs):
 
 
 # ------------------------------------------------------------- Monday earnings report
-def earnings_text(e, last=None, claude=None, budget=None):
+def earnings_text(e, last=None, claude=None, budget=None, times=None):
     total = round((e.get("queued") or 0) + (e.get("arriving") or 0) + (e.get("received") or 0), 2)
     lines = [f"💵 Earnings: ${total:.2f} so far"]
     if last is not None:
@@ -518,6 +518,9 @@ def earnings_text(e, last=None, claude=None, budget=None):
     if claude is not None:
         lines.append("")
         lines.append(f"Claude API, last 30 days: ${claude:.2f}" + (f" of ${budget:.2f}" if budget else ""))
+    if times:
+        lines.append("")
+        lines += times
     return "\n".join(lines)
 
 
@@ -540,14 +543,22 @@ def run_earnings(st, force=False):
         if force:
             tg.send(f"Couldn't read the Earnings page ({str(ex)[:150]}). I'll try again next Monday.")
         return
+    times = None
     try:
         main = json.loads((DATA / "state.json").read_text())
         claude = spend_last_days(main, 30)
+        from . import timing
+        cfg = load_config()
+        tz = cfg.get("timezone", "America/Los_Angeles")
+        fav = (main.get("timing_favorite") or {}).get("time") or timing.settings(cfg).get("favorite")
+        times = ([f"🕐 Posting times (YouTube views {timing.settings(cfg)['measure_hours']}h after posting):"] +
+                 [ln.lstrip("- ") for ln in timing.report(cfg, main, tz)] +
+                 ([f"Daily slot: {fav} (moves by itself if another time clearly beats it)"] if fav else []))
     except Exception:
         claude = None
     budget = ((load_config().get("limits") or {}).get("claude_usd_per_month"))
     total = round((e.get("queued") or 0) + (e.get("arriving") or 0) + (e.get("received") or 0), 2)
-    tg.send(earnings_text(e, (st.get("earn_last") or {}).get("total"), claude, budget))
+    tg.send(earnings_text(e, (st.get("earn_last") or {}).get("total"), claude, budget, times))
     if not force:
         st["earn_week"] = week
     st["earn_last"] = {"total": total, "at": now_utc().isoformat()}

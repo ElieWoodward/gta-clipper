@@ -77,7 +77,9 @@ def queue(state):
 
 
 def room(cfg, state):
-    return settings(cfg)["max_size"] - len(queue(state))
+    """Free places in the queue. Campaign drafts already sent for the brand's approval don't take a place: they can
+    wait days for review, and they'd otherwise stop every other stream from being clipped."""
+    return settings(cfg)["max_size"] - sum(1 for c in queue(state) if not (c.get("preapproval") and c.get("emailed_at")))
 
 
 def expire(cfg, state, now=None):

@@ -60,6 +60,12 @@ def _get(url):
     return r.text
 
 
+def clean_name(name):
+    """A campaign's name without the card text that sometimes runs into it ("... Post on TikTok, ... CPM $1.50")."""
+    cut = re.split(r"\s+(?:Post on\b|Platforms\b|\$[\d.]+ per\b|LASTS\b)", name or "")[0].strip()
+    return cut or (name or "").strip()
+
+
 def parse_card(text, href):
     rate = re.search(r"\$([\d.]+) per 1K views", text)
     left = re.search(r"\$([\d.,]+K?) of \$([\d.,]+K?) left", text)
@@ -67,7 +73,7 @@ def parse_card(text, href):
     head = text.split("Platforms")[0]
     m = list(re.finditer(r"(?:LOW|FAIR|SOLID|ALPHA|SCORING)\s*\d*\s*", head))
     name = head[m[-1].end():].strip() if m else re.sub(r"^Board:\s*\S+(\s+Rewards)?\s*", "", head).strip()
-    name = name or head[-80:].strip()
+    name = clean_name(name or head[-80:].strip())
     return {"id": href.strip("/").replace("campaigns/", "").replace("/", "__"), "url": BASE + href, "name": name[:120],
             "rate": float(rate.group(1)) if rate else None, "left": left.group(1) if left else None,
             "budget": left.group(2) if left else None, "platforms": plats.group(1).strip() if plats else "",
@@ -378,7 +384,7 @@ def joined_streamers(state):
     for rec in recs:
         if rec.get("status") in ACTIVE and rec.get("auto_clip") and rec.get("twitch_login"):
             out.append({"name": rec["twitch_login"], "platform": "twitch", "channel": rec["twitch_login"],
-                        "enabled": True, "campaign": rec["name"], "campaign_id": rec["id"],
+                        "enabled": True, "campaign": clean_name(rec["name"]), "campaign_id": rec["id"],
                         "campaign_joined": rec.get("status") == "joined"})
     return out
 

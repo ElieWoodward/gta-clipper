@@ -46,7 +46,10 @@ def _posting_ready(cfg=None):
 
 
 def is_campaign(streamer):
-    return bool((streamer or {}).get("campaign"))
+    """A campaign that pays now: one in config.yaml, or one Elie joined. Campaigns he's only been told about are
+    clipped (so clips are ready if he joins) but get the normal settings."""
+    st = streamer or {}
+    return bool(st.get("campaign")) and st.get("campaign_joined", True) is not False
 
 
 def for_stream(cfg, streamer):
@@ -133,7 +136,9 @@ def process():
             if not campaign_allowed(cfg, state):
                 print("::notice::today's Claude budget is used up; campaign streams wait for tomorrow", flush=True)
                 break
-        elif clipqueue.email_mode(cfg) and not claude_allowed(cfg, state, "; leaving the rest of the streams for later"):
+        elif clipqueue.email_mode(cfg) and not claude_allowed(cfg, state, "; leaving the rest of the streams for later",
+                                                               quiet=bool(state.get("_told_full"))):
+            state["_told_full"] = True   # say it once per run
             continue
         try:
             _process_vod(for_stream(cfg, vod["streamer"]), state, vod)
@@ -153,6 +158,7 @@ def process():
         state["processed_vods"].append(vod["id"])
         state["processed_vods"] = state["processed_vods"][-500:]
         save_state(state)
+    state.pop("_told_full", None)
     # one line on the run page: what the stream check saw (why there may be no new clips)
     print(f"::notice::stream check: {len(vods)} new GTA stream(s) found"
           + (f"; still live, waiting for the end: {', '.join(live_now)}" if live_now else "")
@@ -451,7 +457,7 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         "facecam": bool(facecam), "layout": "cam+" + layout if facecam else layout, "framing": look["why"],
         "said": " ".join(w["w"] for w in words if p["start"] <= w["s"] < p["end"])[:600], "file": out.name,
         "context": p.get("context", ""), "handle": st.get("handle"), "preapproval": bool(st.get("preapproval")),
-        "campaign": st.get("campaign") or None,
+        "campaign": st.get("campaign") if is_campaign(st) else None,
         "created": now_utc().isoformat(), "posts": {}, "issue": None, "local_file": str(out), "asset_id": asset_id,
     }
     auto = cfg["review"]["mode"] == "auto"

@@ -30,7 +30,11 @@ def load_config():
         mine = {(s.get("channel") or s.get("name") or "").lower(): s for s in cfg.get("streamers") or []}
         for s in joined_streamers(state):
             if s["channel"] in mine:   # already clipped: just note the campaign so it gets priority
-                mine[s["channel"]].update(campaign=s["campaign"], campaign_joined=s["campaign_joined"], enabled=True)
+                own = mine[s["channel"]]
+                if own.get("campaign"):   # config.yaml already names the campaign (and that means joined): keep it
+                    own.update(campaign_id=s.get("campaign_id"), enabled=True)
+                else:
+                    own.update(campaign=s["campaign"], campaign_joined=s["campaign_joined"], enabled=True)
             else:
                 cfg.setdefault("streamers", []).append(s)
     except Exception as e:

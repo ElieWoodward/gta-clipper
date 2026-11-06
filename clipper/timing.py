@@ -96,6 +96,45 @@ def best_times(cfg, state, n, tz, hours=range(7, 24)):
     return sorted(cands[:n])
 
 
+SWITCH_SAMPLES = 3     # posts each time needs before the daily favorite can move to it
+SWITCH_MARGIN = 1.2    # and it has to beat the current favorite's median by this much
+
+
+def favorite(cfg, state, tz):
+    """The time that gets a slot every day. Starts at time_test.favorite and moves by itself to a time that has
+    clearly done better on enough posts (state["timing_favorite"] remembers the move; notes go to the logs)."""
+    s = settings(cfg)
+    base = s.get("favorite") or ""
+    if not base:
+        return ""
+    rec = state.setdefault("timing_favorite", {})
+    if rec.get("start") != base:   # Elie changed it in config.yaml: start over from his pick
+        rec.clear()
+        rec.update(start=base, time=base)
+    cur = rec.get("time") or base
+    res = results(cfg, state, tz)
+    cur_v = res.get(cur) or []
+    if len(cur_v) < SWITCH_SAMPLES:
+        return cur
+    best = max((c for c in res if len(res[c]) >= SWITCH_SAMPLES), key=lambda c: statistics.median(res[c]))
+    if best != cur and statistics.median(res[best]) >= SWITCH_MARGIN * max(1.0, statistics.median(cur_v)):
+        rec.setdefault("moves", []).append({"from": cur, "to": best, "at": now_utc().isoformat(),
+                                            "views": [round(statistics.median(cur_v)), round(statistics.median(res[best]))]})
+        rec["moves"] = rec["moves"][-10:]
+        rec["time"] = best
+        print(f"::notice::daily posting time moved from {cur} to {best}: {statistics.median(res[best]):,.0f} vs "
+              f"{statistics.median(cur_v):,.0f} median views after {s['measure_hours']}h", flush=True)
+        try:
+            from . import tg
+            tg.send(f"🕐 Your daily posting time moved from {cur} to {best}: posts at {best} got "
+                    f"{statistics.median(res[best]):,.0f} YouTube views in their first {s['measure_hours']} hours, vs "
+                    f"{statistics.median(cur_v):,.0f} at {cur}. The other slots keep testing.", silent=True)
+        except Exception:
+            pass
+        return best
+    return cur
+
+
 def _spaced(chosen, cand, gap):
     return all(min(abs(_minutes(cand) - _minutes(x)), 1440 - abs(_minutes(cand) - _minutes(x))) >= gap * 60
                for x in chosen)
@@ -127,7 +166,7 @@ def plan(cfg, state, day, n, tz):
                       key=lambda c: (len(res[c]), (cands.index(c) - offset) % len(cands)))
     ranked = sorted([c for c in cands if c not in untested], key=lambda c: -statistics.median(res[c]))
     chosen = list(book.get(day, []))
-    fav = s.get("favorite")
+    fav = favorite(cfg, state, tz)
     if fav and not chosen:   # the time Elie picked gets a slot every day; the other slots keep testing
         chosen.append(fav)
         if fav not in cands:

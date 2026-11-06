@@ -1822,4 +1822,26 @@ _qst = {"clips": {"a": {"id": "a", "status": "approved", "streamer": "Burn", "sc
                   "b": {"id": "b", "status": "approved", "streamer": "Lysium", "score": 6, "campaign": "Lysium/Benji Ramos Clips",
                         "created": "2026-11-05T09:00:00+00:00"}}}
 assert clipqueue.pick_for_email(_qst)["id"] == "b" and clipqueue.queue(_qst)[0]["id"] == "b"
+assert not jobs.is_campaign({"campaign": "X", "campaign_joined": False}) and jobs.is_campaign(_lys)
+from clipper import campaigns as _cmp3  # noqa: E402
+assert _cmp3.clean_name("Lysium/Benji Ramos Clips Post on TikTok, Instagram, YouTube, X CLIPPING CPM $1.50") == \
+    "Lysium/Benji Ramos Clips"
+_qst["clips"]["b"].update(preapproval=True, emailed_at="2026-11-05T10:00:00+00:00")
+assert clipqueue.room(_ccfg, _qst) == clipqueue.settings(_ccfg)["max_size"] - 1   # a draft out for approval doesn't count
+# the daily posting time moves by itself once another time clearly beats it
+from clipper import timing as _tm  # noqa: E402
+_tz5 = _ccfg["timezone"]
+def _yt(day, hh, views):  # noqa: E302
+    t0 = _dt(2026, 10, day, hh, 2, tzinfo=ZoneInfo(_tz5)).astimezone(_tz.utc)
+    return {"posts": {"youtube": {"posted_at": t0.isoformat(), "history": [[(t0 + timedelta(hours=4)).isoformat(), views]]}}}
+_fst5 = {"clips": {}}
+for _d in range(1, 4):  # noqa: E305
+    _fst5["clips"][f"e{_d}"] = _yt(_d, 11, 300)
+    _fst5["clips"][f"t{_d}"] = _yt(_d, 10, 900)
+assert _tm.favorite(_ccfg, _fst5, _tz5) == "10:00" and _fst5["timing_favorite"]["moves"][-1]["from"] == "11:00"
+assert "10:00" in _tm.plan(_ccfg, _fst5, "2026-11-20", 2, _tz5)
+_fst5["clips"]["t1"] = _yt(1, 10, 320)   # a close race doesn't move it back and forth
+_fst6 = {"clips": {k: v for k, v in _fst5["clips"].items()}}
+_fst6["clips"].update({f"t{_d}": _yt(_d, 10, 330) for _d in range(1, 4)})
+assert _tm.favorite(_ccfg, _fst6, _tz5) == "11:00"
 print("CAMPAIGN MAX OK")
