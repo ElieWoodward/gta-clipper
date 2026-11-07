@@ -811,24 +811,60 @@ def _finish_if_done(e):
         e["status"] = "done"
 
 
+def _pick_platform(e, label):
+    from .clipqueue import similarity
+    from .contentrewards import parse_pick_label
+    t = parse_pick_label(label)["text"]
+    yt = similarity(e.get("title", ""), t)
+    tt = similarity(e.get("caption", ""), t)
+    left = [p for p in e.get("platforms") or [] if p not in (e.get("links") or {})]
+    want = "youtube" if yt > tt else "tiktok"
+    return want if want in left else (left[0] if left else want)
+
+
 def hunt(st):
-    """Every 2 minutes after Posted: find the new posts and submit their links before the 30-minute cutoff."""
-    from . import crflow
+    """Every 2 minutes after Posted: submit the new posts before the 30-minute cutoff. First from Content Rewards'
+    own list of your recent posts (it shows only the ones still inside the window); if that finds nothing, by
+    reading your TikTok/YouTube pages for the links."""
+    from . import crflow, contentrewards as cr
     entries = crflow.load()
     active = crflow.hunting(entries)
     changed = False
     if active:
-        ups = _uploads({p for e in active for p in e.get("platforms") or []})
-        for e in active:
-            for platform, url in crflow.find_posts(e, ups).items():
-                _submit(st, e, platform, url)
-                changed = True
-            _finish_if_done(e)
+        try:
+            with cr.Site() as s:
+                for e in active:
+                    for _ in range(len(e.get("platforms") or [])):
+                        if all(p in (e.get("links") or {}) for p in e.get("platforms") or []):
+                            break
+                        label = s.submit_pick(e.get("campaign"), e.get("duration"),
+                                              [e.get("caption"), e.get("title"), e.get("hook")])
+                        if not label:
+                            break
+                        platform = _pick_platform(e, label)
+                        e.setdefault("links", {})[platform] = "picked:" + label[:120]
+                        changed = True
+                        tg.send(f"💰 Submitted your {platform} post to {e.get('campaign')}: "
+                                f"\"{cr.parse_pick_label(label)['text'][:80]}\"")
+                    _finish_if_done(e)
+        except cr.NotLoggedIn:
+            tg.problem(st, "cr_login", "The bot's Chrome window isn't logged in to Content Rewards, so it couldn't "
+                       "submit your post.", FIX_LOGIN)
+        except Exception as ex:
+            log.warning("submitting from the post list failed: %s", ex)
+        still = [e for e in active if e.get("status") == "posted"]
+        if still:
+            ups = _uploads({p for e in still for p in e.get("platforms") or []})
+            for e in still:
+                for platform, url in crflow.find_posts(e, ups).items():
+                    _submit(st, e, platform, url)
+                    changed = True
+                _finish_if_done(e)
     for e in crflow.expired(entries):
         missing = [p for p in e.get("platforms") or [] if p not in (e.get("links") or {})]
         e["status"] = "manual"
         changed = True
-        tg.send(f"⏰ I couldn't find your {' and '.join(missing)} post for \"{e.get('hook')}\" in time. Paste the "
+        tg.send(f"⏰ I couldn't submit your {' and '.join(missing)} post for \"{e.get('hook')}\" in time. Paste the "
                 "link here right now and I'll submit it, or do it yourself: Drafts > Approved > Submit link. "
                 "Content Rewards only takes it within 30 minutes of posting.")
     if changed:
@@ -1085,6 +1121,9 @@ def cr_dryrun():
             s.submit_link(cards[0]["campaign"], cards[0]["duration"], "https://www.tiktok.com/@practice/video/1",
                           dry_run=True)
             print("OK: filled the Submit link form (link + requirements box) and cancelled it.", flush=True)
+            labels = s.pick_labels(cards[0]["campaign"], cards[0]["duration"])
+            print(f"Posts the form offers right now: {labels or 'none (nothing posted in the last 30 minutes)'}",
+                  flush=True)
         else:
             print("No approved draft right now, so the link form wasn't tried.", flush=True)
         if url and clips:

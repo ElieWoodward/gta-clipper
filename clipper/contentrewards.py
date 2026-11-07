@@ -186,6 +186,27 @@ def pick_card(cards, campaign, duration):
     return best_i
 
 
+def parse_pick_label(label):
+    """One post in the "Submit clip" form's list (Nov 2026). Its label reads
+    "<caption>, @handle, Posted 1 min ago, 28 min left" -> {"text", "handle", "posted", "left"}."""
+    m = re.match(r"^(.*), @([\w.]+), Posted (.+?), (\d+) min left\s*$", label or "", re.S)
+    if not m:
+        return {"text": (label or "").strip(), "handle": "", "posted": "", "left": None}
+    return {"text": m.group(1).strip(), "handle": m.group(2), "posted": m.group(3), "left": int(m.group(4))}
+
+
+def best_pick(labels, texts, threshold=0.55):
+    """Index of the listed post that matches our caption/title/hook best, or None if none is close enough."""
+    from .clipqueue import similarity
+    best, best_i = 0.0, None
+    for i, lab in enumerate(labels):
+        t = parse_pick_label(lab)["text"]
+        score = max([similarity(x, t) for x in texts if x] or [0.0])
+        if score > best:
+            best, best_i = score, i
+    return best_i if best >= threshold else None
+
+
 # ---------------------------------------------------------------- the browser
 class Site:
     """with Site() as s: s.campaigns() ... Opens the bot's own Chrome profile (logged in once by Elie)."""
@@ -422,26 +443,41 @@ class Site:
         """The approved drafts waiting for their live links."""
         return parse_approved_cards(self._approved_tab())
 
-    def submit_link(self, campaign, duration, url, dry_run=False):
-        """Paste a live post link into the matching approved draft's "Submit link" form and send it.
-        Returns True when Content Rewards accepts it; raises with the page's message when it doesn't."""
+    def _open_submit(self, campaign, duration):
+        """Approved tab -> the matching draft's "Submit clip" form."""
         cards = parse_approved_cards(self._approved_tab())
         i = pick_card(cards, campaign, duration)
         if i is None:
             raise RuntimeError(f"no approved draft for {campaign} ({duration}s) on the Drafts page")
         self.page.get_by_role("button", name="Submit link").nth(i).click()
         dialog = self.page.get_by_role("dialog", name="Submit clip")
-        box = dialog.get_by_role("textbox", name="Clip link")
-        box.wait_for(timeout=30000)
+        dialog.wait_for(timeout=30000)
         self._pause(1, 2)
-        box.fill(url)
-        self._pause(0.8, 1.6)
-        tick = dialog.get_by_role("checkbox")
-        if tick.count() and not tick.first.is_checked():
-            tick.first.check()
+        return dialog
+
+    def _choose(self, dialog, keep):
+        """The form lists your recent posts as toggle buttons and pre-selects one. Leave only `keep` selected
+        (None: none, so the pasted link is what gets sent)."""
+        cards = dialog.locator("button[aria-pressed]")
+        for i in range(cards.count()):
+            on = cards.nth(i).get_attribute("aria-pressed") == "true"
+            if on != (i == keep):
+                cards.nth(i).click()
+                self._pause(0.4, 0.9)
+
+    def _send(self, dialog, dry_run=False):
+        """Tick "I've read the requirements" and press Submit clip. The real checkbox is hidden behind a styled one,
+        so its label is clicked."""
+        cb = dialog.locator("input[type=checkbox]")
+        if cb.count() and not cb.first.is_checked():
+            try:
+                dialog.get_by_text(re.compile(r"read the requirements", re.I)).first.click(timeout=5000)
+            except Exception:
+                pass
+            if not cb.first.is_checked():
+                cb.first.check(force=True)
         self._pause(0.8, 1.6)
         if dry_run:
-            log.info("[dry run] link form filled for %s; not sending", campaign)
             self.page.keyboard.press("Escape")
             return False
         dialog.get_by_role("button", name="Submit clip").click()
@@ -450,9 +486,45 @@ class Site:
         except Exception:
             msg = " ".join(dialog.inner_text().split())[:300] if dialog.count() else ""
             self.page.keyboard.press("Escape")
-            raise RuntimeError(f"Content Rewards didn't accept the link: {msg}")
+            raise RuntimeError(f"Content Rewards didn't accept it: {msg}")
         self._pause()
         return True
+
+    def pick_labels(self, campaign, duration):
+        """The posts the form offers right now (only ones still inside the 30-minute window)."""
+        dialog = self._open_submit(campaign, duration)
+        cards = dialog.locator("button[aria-pressed]")
+        labels = [cards.nth(i).get_attribute("aria-label") or "" for i in range(cards.count())]
+        self.page.keyboard.press("Escape")
+        return labels
+
+    def submit_pick(self, campaign, duration, texts, dry_run=False):
+        """Submit the listed post that matches our caption/title. Returns its label, or None if none matches yet."""
+        dialog = self._open_submit(campaign, duration)
+        cards = dialog.locator("button[aria-pressed]")
+        labels = [cards.nth(i).get_attribute("aria-label") or "" for i in range(cards.count())]
+        i = best_pick(labels, texts)
+        if i is None:
+            self.page.keyboard.press("Escape")
+            return None
+        self._choose(dialog, i)
+        if dry_run:
+            log.info("[dry run] would submit %r", labels[i][:80])
+        self._send(dialog, dry_run)
+        return labels[i]
+
+    def submit_link(self, campaign, duration, url, dry_run=False):
+        """Paste a live post link into the matching approved draft's form and send it.
+        Returns True when Content Rewards accepts it; raises with the page's message when it doesn't."""
+        dialog = self._open_submit(campaign, duration)
+        self._choose(dialog, None)
+        box = dialog.get_by_role("textbox", name="Clip link")
+        box.wait_for(timeout=30000)
+        box.fill(url)
+        self._pause(0.8, 1.6)
+        if dry_run:
+            log.info("[dry run] link form filled for %s; not sending", campaign)
+        return self._send(dialog, dry_run)
 
     def submit_draft(self, campaign_url, video, platforms=("tiktok", "youtube"), dry_run=False):
         """Upload a clip as a draft for the brand's pre-approval. Returns True once the form is sent.

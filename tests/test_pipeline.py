@@ -1556,6 +1556,12 @@ class _FakeSite:  # noqa: E302
     def submit_link(self, campaign, duration, url, dry_run=False):
         _FakeSite.links_sent.append((campaign, duration, url))
         return True
+    picks = []   # what Content Rewards' "Submit clip" list offers (empty: fall back to reading TikTok/YouTube)
+    def submit_pick(self, campaign, duration, texts, dry_run=False):
+        i = _cr.best_pick(_FakeSite.picks, texts)
+        if i is None:
+            return None
+        return _FakeSite.picks.pop(i)
 _real_site, _cr.Site = _cr.Site, _FakeSite
 _mst = {"campaigns": {"Lysium/Benji Ramos Clips": {"name": "Lysium/Benji Ramos Clips", "approved": True,
                                                   "url": "https://contentrewards.com/c/campaigns/x"}},
@@ -1610,6 +1616,27 @@ crflow.save(_q2)
 mac._uploads = lambda plats: {"tiktok": [], "youtube": []}
 mac.hunt(_mst)
 assert crflow.by_token(crflow.load(), "tok2")["status"] == "manual" and "in time" in _tgcalls2[-1][1]["text"]
+# Content Rewards now lists your recent posts in the Submit form: the bot picks the matching one(s) from there
+_lab = "He got asked one question and went full locked-in mode 💀 #shorts, @wantedlevelclips8, Posted 1 min ago, 28 min left"
+assert _cr.parse_pick_label(_lab) == {"text": "He got asked one question and went full locked-in mode 💀 #shorts",
+                                      "handle": "wantedlevelclips8", "posted": "1 min ago", "left": 28}
+_labs = ["old thing nobody cares about, @wantedlevelclips8, Posted 2 min ago, 27 min left", _lab]
+assert _cr.best_pick(_labs, ["He got asked one question and went full locked-in mode 💀"]) == 1
+assert _cr.best_pick(_labs, ["completely different words here"]) is None
+_q3 = crflow.load()
+_q3.append(dict(_q3[0], id="camp9", token="tok9", status="posted", links={}, platforms=["tiktok", "youtube"],
+                title="He got asked one question and went full locked-in mode 💀",
+                caption="bro said are you pressing me young man 😭 Streamer: twitch.tv/Lysium #gta6",
+                posted_at=common.now_utc().isoformat()))
+crflow.save(_q3)
+_FakeSite.picks = [_lab, "bro said are you pressing me young man 😭 Streamer: twitch.tv/Lysium #gta6 #gtarp, @wantedlevelclips8, "
+                         "Posted 1 min ago, 28 min left"]
+_n_links = len(_FakeSite.links_sent)
+mac.hunt(_mst)
+_e9 = crflow.by_token(crflow.load(), "tok9")
+assert _e9["status"] == "done" and set(_e9["links"]) == {"tiktok", "youtube"}, _e9
+assert _e9["links"]["youtube"].startswith("picked:He got asked") and len(_FakeSite.links_sent) == _n_links
+assert "Submitted your" in _tgcalls2[-1][1]["text"]
 # a campaign whose page isn't known: after 3 tries it's handed over with the manual steps
 crflow.save([dict(_q2[0], id="camp3", token="tok3", status="queued", campaign="Unknown Campaign", tries=2, links={})])
 mac.process_drafts(_mst)
