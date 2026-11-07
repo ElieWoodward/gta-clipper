@@ -1637,6 +1637,31 @@ _e9 = crflow.by_token(crflow.load(), "tok9")
 assert _e9["status"] == "done" and set(_e9["links"]) == {"tiktok", "youtube"}, _e9
 assert _e9["links"]["youtube"].startswith("picked:He got asked") and len(_FakeSite.links_sent) == _n_links
 assert "Submitted your" in _tgcalls2[-1][1]["text"]
+# at most 3 campaign clips a day: drafts sent for approval and post packages, best score first
+_tgcalls2.clear()
+_now_iso = common.now_utc().isoformat()
+_base = {k: v for k, v in dict(_q2[0], links={}, campaign="Lysium/Benji Ramos Clips").items()
+         if k not in ("submitted_at", "approved_at", "posted_at", "packaged_at")}
+crflow.save([dict(_base, id=f"d{i}", token=f"dt{i}", status="queued", score=s_, queued_at=_now_iso, file=str(_vid))
+             for i, s_ in enumerate([6, 9, 7, 8, 6.5])])
+_FakeSite.drafts_sent.clear()
+for _ in range(3):
+    mac.process_drafts(_mst)
+assert len(_FakeSite.drafts_sent) == 3, _FakeSite.drafts_sent
+_sub = sorted(e["score"] for e in crflow.load() if e["status"] == "submitted")
+assert _sub == [7, 8, 9], _sub                      # the three best went
+_old_q = crflow.load()
+_old_q.append(dict(_base, id="stale", token="st0", status="queued", score=10, file=str(TMP / "stale.mp4"),
+                   queued_at=(common.now_utc() - __import__("datetime").timedelta(days=4)).isoformat()))
+crflow.save(_old_q)
+mac.process_drafts(_mst)
+assert crflow.by_token(crflow.load(), "st0")["status"] == "dropped" and len(_FakeSite.drafts_sent) == 3
+_ap = [dict(_base, id=f"a{i}", token=f"at{i}", status="approved", score=s_, approved_at=_now_iso) for i, s_ in enumerate([6, 9, 7, 8])]
+crflow.save(_ap)
+_mst["pkg_migrated"] = True
+assert mac.send_packages_due(_mst) == 3
+assert sorted(e["score"] for e in crflow.load() if e.get("packaged_at")) == [7, 8, 9]
+assert mac.send_packages_due(_mst) == 0             # the 4th waits for tomorrow
 # a campaign whose page isn't known: after 3 tries it's handed over with the manual steps
 crflow.save([dict(_q2[0], id="camp3", token="tok3", status="queued", campaign="Unknown Campaign", tries=2, links={})])
 mac.process_drafts(_mst)

@@ -70,6 +70,7 @@ def enqueue(cfg, clip, src, pkg):
     entries = [e for e in load() if e.get("id") != clip["id"]]
     entries.append({"id": clip["id"], "token": token, "file": str(dest), "campaign": campaign_name(cfg, clip),
                     "duration": clip.get("duration"), "hook": clip.get("hook"), "subject": pkg["subject"],
+                    "score": clip.get("score"),
                     "caption": clip.get("caption") or "", "title": clip.get("title") or "",
                     "blocks": pkg["blocks"], "platforms": platforms(cfg), "status": "queued",
                     "queued_at": now_utc().isoformat(), "tries": 0, "links": {}})
@@ -112,6 +113,15 @@ def match_approvals(entries, cards):
         e["status"], e["approved_at"] = "approved", now_utc().isoformat()
         newly.append(e)
     return newly
+
+
+def per_day(cfg):
+    """Most clips per campaign per day (drafts sent for approval, and post packages sent to Elie)."""
+    return int(((cfg.get("clip") or {}).get("campaign") or {}).get("max_per_day") or 3)
+
+
+def best_first(entries):
+    return sorted(entries, key=lambda e: (-(e.get("score") or 0), e.get("queued_at") or ""))
 
 
 def by_token(entries, token):

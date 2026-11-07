@@ -21,7 +21,7 @@ import re
 import subprocess
 import time
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import yaml
 
@@ -312,12 +312,8 @@ def run_check(st, force=False):
     for m in msgs:
         tg.send(m, getattr(m, "rows", None))
         time.sleep(1)
-    from . import crflow
-    entries = crflow.load()
-    for token in st.pop("_approved_now", []):
-        e = crflow.by_token(entries, token)
-        if e:
-            send_post_package(e)
+    st.pop("_approved_now", None)
+    send_packages_due(st)
     if force and not msgs:
         tg.send("Checked Content Rewards: nothing new.\n\n" + summary(st))
 
@@ -734,12 +730,71 @@ def send_post_package(e, manual=False):
     relay.send_fields(fields, rows)
 
 
-def process_drafts(st):
-    """Upload queued campaign clips as Content Rewards drafts (during waking hours, at a person's pace)."""
-    from . import contentrewards as cr, crflow
+STALE_DAYS = 3   # a campaign clip that waited this long for a daily place is dropped
+
+
+def _local_day(iso):
+    try:
+        return datetime.fromisoformat(iso).astimezone(local_now().tzinfo).date().isoformat()
+    except (TypeError, ValueError):
+        return ""
+
+
+def _today_count(entries, campaign, field):
+    today = local_now().date().isoformat()
+    return sum(1 for e in entries if same_campaign(e.get("campaign"), campaign) and _local_day(e.get(field)) == today
+               and e.get("status") not in ("queued", "dropped"))
+
+
+def send_packages_due(st):
+    """Post packages for approved drafts: at most clip.campaign.max_per_day per campaign per day, best score
+    first; the rest wait for tomorrow."""
+    from . import crflow
+    from .common import load_config
     entries = crflow.load()
-    todo = [e for e in entries if e.get("status") == "queued"][:2]
-    for e in todo:
+    if not st.get("pkg_migrated"):   # approvals from before the daily limit were already sent
+        old = (now_utc() - timedelta(minutes=10)).isoformat()
+        for e in entries:
+            if e.get("status") in ("approved", "posted", "done", "manual") and not e.get("packaged_at") \
+                    and (e.get("approved_at") or "") < old:
+                e["packaged_at"] = e.get("approved_at") or now_utc().isoformat()
+        st["pkg_migrated"] = True
+        crflow.save(entries)
+    cap = crflow.per_day(load_config())
+    sent = 0
+    for e in crflow.best_first([e for e in entries if e.get("status") == "approved" and not e.get("packaged_at")]):
+        if _today_count(entries, e.get("campaign"), "packaged_at") >= cap:
+            continue
+        e["packaged_at"] = now_utc().isoformat()
+        crflow.save(entries)
+        send_post_package(e)
+        sent += 1
+    return sent
+
+
+def process_drafts(st):
+    """Upload queued campaign clips as Content Rewards drafts (during waking hours, at a person's pace), at most
+    clip.campaign.max_per_day per campaign per day, best score first."""
+    from . import contentrewards as cr, crflow
+    from .common import load_config
+    cap = crflow.per_day(load_config())
+    entries = crflow.load()
+    cutoff = (now_utc() - timedelta(days=STALE_DAYS)).isoformat()
+    stale = [e for e in entries if e.get("status") == "queued" and (e.get("queued_at") or "") < cutoff]
+    for e in stale:   # never got a daily place; newer, better clips took them
+        e["status"] = "dropped"
+        try:
+            os.remove(e["file"])
+        except (OSError, KeyError):
+            pass
+    if stale:
+        crflow.save(entries)
+    todo = []
+    for e in crflow.best_first([e for e in entries if e.get("status") == "queued"]):
+        if _today_count(entries, e.get("campaign"), "submitted_at") + \
+                sum(1 for t in todo if same_campaign(t.get("campaign"), e.get("campaign"))) < cap:
+            todo.append(e)
+    for e in todo[:2]:
         url = _campaign_url(st, e.get("campaign"))
         if not url:
             e["tries"] = e.get("tries", 0) + 1

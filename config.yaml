@@ -79,6 +79,8 @@ clip:
     clips_per_hour: 3             # campaigns (Lysium) still have the brand check every clip, so weak ones just
     min_per_vod: 5                # get turned down there. A streamer's own min_score: wins over this.
     candidates_per_hour: 8
+    max_per_day: 3                # most clips per campaign per day: drafts sent for approval and post packages
+                                  # sent to you. The best-scoring go first; the rest wait (dropped after 3 days).
   commentary: false               # true adds rotating context lines under the hook (off: the hook stays alone)
 
 signals:
