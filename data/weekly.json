@@ -1,11 +1,11 @@
 {
  "series": {
   "GTA RP": {
-   "episode": 1,
-   "last": "2026-11-01"
+   "episode": 2,
+   "last": "2026-11-08"
   }
  },
- "last_made": "2026-11-01T18:08:00+00:00",
+ "last_made": "2026-11-08T21:18:38.034575+00:00",
  "episodes": [
   {
    "series": "GTA RP",
@@ -14,6 +14,93 @@
    "made": "2026-11-01T18:08:00+00:00",
    "asset": "weekly_gtarp_1.mp4",
    "clips": []
+  },
+  {
+   "series": "GTA RP",
+   "episode": 2,
+   "title": "GTA RP MOST VIEWED Twitch Clips of The Week! #2",
+   "made": "2026-11-08T21:18:38.034575+00:00",
+   "asset": "weekly_gtarp_2.mp4",
+   "clips": [
+    {
+     "rank": 1,
+     "name": "xQc",
+     "title": "MISSILE",
+     "views": 13868
+    },
+    {
+     "rank": 2,
+     "name": "Crystalst",
+     "title": "finally a W",
+     "views": 9806
+    },
+    {
+     "rank": 3,
+     "name": "LadyDima",
+     "title": "Cops want her in jail",
+     "views": 7204
+    },
+    {
+     "rank": 4,
+     "name": "xQc",
+     "title": "Brick boys hit the first Paleto of NPV",
+     "views": 6642
+    },
+    {
+     "rank": 5,
+     "name": "Crystalst",
+     "title": "Dumb and dumber preparing for their $2k heist at the pawnshop across the street",
+     "views": 6585
+    },
+    {
+     "rank": 6,
+     "name": "charli",
+     "title": "Dee Mented introduced her girlfriend to John Dub",
+     "views": 6553
+    },
+    {
+     "rank": 7,
+     "name": "Jerma985",
+     "title": "The Final Moments of Gil Washington",
+     "views": 6439
+    },
+    {
+     "rank": 8,
+     "name": "Crystalst",
+     "title": "Swan aura farm",
+     "views": 5762
+    },
+    {
+     "rank": 9,
+     "name": "Burn",
+     "title": "Burn gets burnt to death.",
+     "views": 5339
+    },
+    {
+     "rank": 10,
+     "name": "Crystalst",
+     "title": "when you dont listen to the PLACE command",
+     "views": 5078
+    },
+    {
+     "rank": 11,
+     "name": "Crystalst",
+     "title": "Brick Bois Comms",
+     "views": 5001
+    },
+    {
+     "rank": 12,
+     "name": "charli",
+     "title": "Dee Mented successfully completed her first ever hack during the Fleeca Bank Robbery",
+     "views": 4596
+    },
+    {
+     "rank": 13,
+     "name": "Burn",
+     "title": "The Outcome of Frank and Carmella's Wedding",
+     "views": 4470
+    }
+   ]
   }
  ]
 }
