@@ -811,7 +811,7 @@ def resend_approved(st):
         e["packaged_at"] = now   # watch for these posts for the next day
     crflow.save(entries)
     for e in todo:
-        send_post_package(e, st=st)
+        send_post_package(e)   # full packages: you choose when each goes up (no burst of YouTube posts via Blotato)
         time.sleep(1)
     return len(todo)
 
