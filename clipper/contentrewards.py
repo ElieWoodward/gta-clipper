@@ -187,6 +187,24 @@ def pick_card(cards, campaign, duration):
     return best_i
 
 
+DRAFT_ID = re.compile(r"submission-draft/([0-9a-f-]{36})/")
+
+# Each "Submit link" button's card on the Approved tab: its video (the uploaded draft, whose address carries the
+# draft's id) and its text ("0/2 posted", length). Same order as the buttons.
+CARDS_JS = """async () => {
+  const bs = [...document.querySelectorAll('main button')].filter(b => (b.innerText || '').trim() === 'Submit link');
+  for (const b of bs) { b.scrollIntoView({block: 'center'}); await new Promise(r => setTimeout(r, 500)); }
+  window.scrollTo(0, 0);   // cards further down only load their video once scrolled into view
+  return bs.map(b => {
+    let c = b;
+    for (let k = 0; k < 12 && c && !c.querySelector('video'); k++) c = c.parentElement;
+    const v = c && c.querySelector('video');
+    const src = v ? (v.currentSrc || v.src || ((v.querySelector('source') || {}).src) || '') : '';
+    return {src: src, text: c ? c.innerText : ''};
+  });
+}"""
+
+
 def parse_pick_label(label):
     """One post in the "Submit clip" form's list (Nov 2026). Its label reads
     "<caption>, @handle, Posted 1 min ago, 28 min left" -> {"text", "handle", "posted", "left"}."""
@@ -446,12 +464,45 @@ class Site:
         """The approved drafts waiting for their live links."""
         return parse_approved_cards(self._approved_tab())
 
-    def _open_submit(self, campaign, duration):
-        """Approved tab -> the matching draft's "Submit clip" form."""
-        cards = parse_approved_cards(self._approved_tab())
-        i = pick_card(cards, campaign, duration)
-        if i is None:
-            raise RuntimeError(f"no approved draft for {campaign} ({duration}s) on the Drafts page")
+    def remote_size(self, url):
+        """Bytes of a draft's video on Content Rewards (asks for one byte and reads the total)."""
+        try:
+            r = self.page.request.get(url, headers={"Range": "bytes=0-0"}, timeout=30000)
+            m = re.search(r"/(\d+)\s*$", r.headers.get("content-range", ""))
+            return int(m.group(1)) if m else (int(r.headers.get("content-length") or 0) or None)
+        except Exception as e:
+            log.info("couldn't read a draft video's size: %s", e)
+            return None
+
+    def approved_drafts(self, sizes=True):
+        """Every card on the Approved tab, in button order: {"index", "id", "size", "campaign", "posted", "of",
+        "duration"}. "id" is Content Rewards' own draft id (from its video's address); "size" is that video's
+        bytes, which equals the file the bot uploaded, so a draft is matched to its clip exactly."""
+        self._approved_tab()
+        self.page.wait_for_timeout(1500)
+        out = []
+        for i, r in enumerate(self.page.evaluate(CARDS_JS)):
+            m = DRAFT_ID.search(r.get("src") or "")
+            parsed = parse_approved_cards(r.get("text") or "")
+            out.append(dict(parsed[0] if parsed else {}, index=i, id=m.group(1) if m else None,
+                            size=self.remote_size(r["src"]) if sizes and r.get("src") else None))
+        return out
+
+    def _open_submit(self, campaign, duration, draft_id=None):
+        """Approved tab -> that draft's "Submit clip" form. With draft_id (the normal case) the card is picked by
+        Content Rewards' own id. Without it, only when there's a single approved card for the campaign: with
+        several, guessing by length attached posts to the wrong drafts (Nov 2026)."""
+        if draft_id:
+            cards = self.approved_drafts(sizes=False)
+            i = next((c["index"] for c in cards if c.get("id") == draft_id), None)
+            if i is None:
+                raise RuntimeError("that draft isn't under Approved any more (already posted on every account?)")
+        else:
+            cards = parse_approved_cards(self._approved_tab())
+            mine = [k for k, c in enumerate(cards) if pick_card([c], campaign, None) is not None]
+            if len(mine) != 1:
+                raise RuntimeError(f"can't tell which of the {len(mine)} approved {campaign} drafts this is")
+            i = mine[0]
         self.page.get_by_role("button", name="Submit link").nth(i).click()
         dialog = self.page.get_by_role("dialog", name="Submit clip")
         dialog.wait_for(timeout=30000)
@@ -493,17 +544,17 @@ class Site:
         self._pause()
         return True
 
-    def pick_labels(self, campaign, duration):
+    def pick_labels(self, campaign, duration, draft_id=None):
         """The posts the form offers right now (only ones still inside the 30-minute window)."""
-        dialog = self._open_submit(campaign, duration)
+        dialog = self._open_submit(campaign, duration, draft_id)
         cards = dialog.locator("button[aria-pressed]")
         labels = [cards.nth(i).get_attribute("aria-label") or "" for i in range(cards.count())]
         self.page.keyboard.press("Escape")
         return labels
 
-    def submit_pick(self, campaign, duration, texts, dry_run=False):
+    def submit_pick(self, campaign, duration, texts, dry_run=False, draft_id=None):
         """Submit the listed post that matches our caption/title. Returns its label, or None if none matches yet."""
-        dialog = self._open_submit(campaign, duration)
+        dialog = self._open_submit(campaign, duration, draft_id)
         cards = dialog.locator("button[aria-pressed]")
         labels = [cards.nth(i).get_attribute("aria-label") or "" for i in range(cards.count())]
         i = best_pick(labels, texts)
@@ -516,10 +567,10 @@ class Site:
         self._send(dialog, dry_run)
         return labels[i]
 
-    def submit_link(self, campaign, duration, url, dry_run=False):
+    def submit_link(self, campaign, duration, url, dry_run=False, draft_id=None):
         """Paste a live post link into the matching approved draft's form and send it.
         Returns True when Content Rewards accepts it; raises with the page's message when it doesn't."""
-        dialog = self._open_submit(campaign, duration)
+        dialog = self._open_submit(campaign, duration, draft_id)
         self._choose(dialog, None)
         box = dialog.get_by_role("textbox", name="Clip link")
         box.wait_for(timeout=30000)

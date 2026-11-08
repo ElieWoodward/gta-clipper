@@ -1553,11 +1553,11 @@ class _FakeSite:  # noqa: E302
                      url="https://contentrewards.com/c/campaigns/x")]
     def drafts(self): return {"counts": {"approved": 1, "posted": 2}}  # noqa: E704
     def approved(self): return list(_FakeSite.cards)  # noqa: E704
-    def submit_link(self, campaign, duration, url, dry_run=False):
+    def submit_link(self, campaign, duration, url, dry_run=False, draft_id=None):
         _FakeSite.links_sent.append((campaign, duration, url))
         return True
     picks = []   # what Content Rewards' "Submit clip" list offers (empty: fall back to reading TikTok/YouTube)
-    def submit_pick(self, campaign, duration, texts, dry_run=False):
+    def submit_pick(self, campaign, duration, texts, dry_run=False, draft_id=None):
         i = _cr.best_pick(_FakeSite.picks, texts)
         if i is None:
             return None
@@ -1709,6 +1709,7 @@ _real_sub6, mac._submit = mac._submit, lambda st, e, platform, url: (_links6.app
                                                                    e.setdefault("links", {}).__setitem__(platform, url))
 _real_tgsv, tg.send_video = tg.send_video, lambda *a, **k: None
 _e6 = dict(_base, id="cy", token="cy1", status="approved", approved_at=_now_iso, file=str(_vid), platforms=["tiktok", "youtube"],
+           draft_id="d-cy",
            blocks=[("TikTok caption", "bro froze"), ("YouTube title", "He froze #shorts"), ("YouTube description", "desc")])
 crflow.save([_e6])
 _tgcalls2.clear()
@@ -1754,7 +1755,9 @@ _yt7 = []
 _real_ay7, mac._auto_youtube = mac._auto_youtube, lambda st, e: (_yt7.append(e["token"]), True)[1]
 _real_ap7, jobs.auto_platforms = jobs.auto_platforms, lambda cfg: ["youtube"]
 crflow.save([dict(_base, id=f"y{i}", token=f"yt{i}", status="approved", approved_at=_now_iso, file=str(_vid), score=sc,
-                  platforms=["tiktok", "youtube"], links={}) for i, sc in enumerate([6, 9, 7])])
+                  platforms=["tiktok", "youtube"], links={}, draft_id=f"d{i}") for i, sc in enumerate([6, 9, 7])]
+            + [dict(_base, id="y9", token="yt9", status="approved", file=str(_vid), score=10, links={},
+                    platforms=["tiktok", "youtube"])])   # no draft id: never posted (its link couldn't be matched)
 _tgcalls2.clear()
 mac.handle(_mst, "text", "youtube", 21, "")
 assert any("Posting 3 approved clips on YouTube" in (c[1] or {}).get("text", "") for c in _tgcalls2 if c[0] == "sendMessage")
@@ -1770,6 +1773,19 @@ crflow.save(_ql)
 mac.process_youtube_queue(_mst)
 assert _yt7 == ["yt1", "yt2"], _yt7
 mac._auto_youtube, jobs.auto_platforms = _real_ay7, _real_ap7
+# drafts are tied to clips by Content Rewards' own id, learned from the video's exact size
+_fa = TMP / "fa.mp4"; _fa.write_bytes(b"a" * 1000)  # noqa: E702
+_fb = TMP / "fb.mp4"; _fb.write_bytes(b"b" * 2000)  # noqa: E702
+_ents = [dict(_base, id="m1", token="m1", status="submitted", file=str(_fa), links={}),
+         dict(_base, id="m2", token="m2", status="approved", file=str(_fb), links={})]
+_cards = [{"id": "11111111-1111-1111-1111-111111111111", "size": 2000, "posted": 1, "of": 2, "duration": 23},
+          {"id": "22222222-2222-2222-2222-222222222222", "size": 1000, "posted": 0, "of": 2, "duration": 23},
+          {"id": "33333333-3333-3333-3333-333333333333", "size": 5555, "posted": 0, "of": 2, "duration": 23}]
+_new, _odd = crflow.match_drafts(_ents, _cards)
+assert _ents[0]["draft_id"].startswith("2222") and _ents[1]["draft_id"].startswith("1111")   # same length, told apart
+assert [e["token"] for e in _new] == ["m1"] and [e["token"] for e in _odd] == ["m2"]   # m2 shows a post we didn't send
+_new, _odd = crflow.match_drafts(_ents, _cards)
+assert not _new                                          # ids remembered; nothing approved twice
 # a campaign whose page isn't known: after 3 tries it's handed over with the manual steps
 crflow.save([dict(_q2[0], id="camp3", token="tok3", status="queued", campaign="Unknown Campaign", tries=2, links={})])
 mac.process_drafts(_mst)

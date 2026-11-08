@@ -78,7 +78,7 @@ def enqueue(cfg, clip, src, pkg):
     entries = [e for e in load() if e.get("id") != clip["id"]]
     entries.append({"id": clip["id"], "token": token, "file": str(dest), "campaign": campaign_name(cfg, clip),
                     "duration": length, "hook": clip.get("hook"), "subject": pkg["subject"],
-                    "score": clip.get("score"),
+                    "score": clip.get("score"), "size": os.path.getsize(dest) if dest.exists() else None,
                     "caption": clip.get("caption") or "", "title": clip.get("title") or "",
                     "blocks": pkg["blocks"], "platforms": platforms(cfg), "status": "queued",
                     "queued_at": now_utc().isoformat(), "tries": 0, "links": {}})
@@ -162,6 +162,39 @@ def claimed_today(cfg, entries=None):
 
 def best_first(entries):
     return sorted(entries, key=lambda e: (-(e.get("score") or 0), e.get("queued_at") or ""))
+
+
+def file_size(e):
+    try:
+        return os.path.getsize(e["file"])
+    except (OSError, KeyError, TypeError):
+        return e.get("size")
+
+
+def match_drafts(entries, cards):
+    """Tie the Approved cards to our clips by Content Rewards' draft id, learning the id the first time from the
+    video's exact size (the file we uploaded). Marks newly approved clips and syncs how many accounts each draft
+    has been posted on. Returns (newly approved, mismatches): mismatches are drafts showing more posts than links
+    we know of, i.e. something was attached to them by mistake or by hand."""
+    newly, odd = [], []
+    for c in cards:
+        if not c.get("id"):
+            continue
+        e = next((x for x in entries if x.get("draft_id") == c["id"]), None)
+        if e is None and c.get("size"):
+            e = next((x for x in entries if not x.get("draft_id") and file_size(x) == c["size"]), None)
+            if e is not None:
+                e["draft_id"] = c["id"]
+        if e is None:
+            continue
+        e["cr_posted"] = [c.get("posted", 0), c.get("of", 0)]
+        known = len([v for v in (e.get("links") or {}).values() if v and not str(v).startswith("failed:")])
+        if c.get("posted", 0) > known:
+            odd.append(e)
+        if e.get("status") in ("submitted", "manual_draft", "manual"):
+            e["status"], e["approved_at"] = "approved", e.get("approved_at") or now_utc().isoformat()
+            newly.append(e)
+    return newly, odd
 
 
 def by_token(entries, token):

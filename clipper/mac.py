@@ -279,12 +279,32 @@ def check(st):
     with cr.Site() as s:
         camps = s.campaigns()
         drafts = s.drafts()
-        cards = s.approved() if any(e.get("status") in ("submitted", "approved", "posted") for e in entries) else []
+        busy = any(e.get("status") in ("submitted", "approved", "posted", "manual_draft", "manual") for e in entries)
+        by_id = hasattr(s, "approved_drafts")
+        cards = (s.approved_drafts() if by_id else s.approved()) if busy else []
     msgs = compare(st, camps, drafts, bot_campaigns())
     waiting = any(e.get("status") == "submitted" for e in entries)
-    newly = crflow.match_approvals(entries, cards) if cards else []
-    if newly:
-        crflow.save(entries)
+    if by_id:
+        newly, odd = crflow.match_drafts(entries, cards)
+        live = {c["id"] for c in cards if c.get("id")}
+        for e in entries:   # its draft left Approved: posted on every account (or withdrawn); stop watching it
+            if e.get("draft_id") and e["draft_id"] not in live and e.get("status") in ("approved", "posted"):
+                e["status"] = "done"
+        warned = set(st.setdefault("odd_drafts", []))
+        for e in odd:
+            if e["draft_id"] not in warned:
+                warned.add(e["draft_id"])
+                msgs.append(f"⚠️ Content Rewards shows {e['cr_posted'][0]} post(s) on the draft \"{e.get('hook')}\", "
+                            f"but I only submitted {len(e.get('links') or {})} for it. Something was attached to it "
+                            "by mistake (or by hand). Check it under Drafts > Approved; if a post on it isn't this "
+                            "clip, message Content Rewards support (Support in the left menu) to remove it.")
+        st["odd_drafts"] = sorted(warned)[-50:]
+        if cards:
+            crflow.save(entries)
+    else:
+        newly = crflow.match_approvals(entries, cards) if cards else []
+        if newly:
+            crflow.save(entries)
     if newly or waiting:   # the bot's own drafts get a full post package instead of the generic "approved" note
         msgs = [m for m in msgs if not m.startswith("🟢")]
     st["last_sync"] = now_utc().isoformat()
@@ -736,7 +756,8 @@ def _auto_youtube(st, e):
     from .common import load_config
     cfg = load_config()
     if "youtube" not in jobs.auto_platforms(cfg) or "youtube" not in (e.get("platforms") or []) \
-            or "youtube" in (e.get("links") or {}) or not os.path.exists(e.get("file") or ""):
+            or "youtube" in (e.get("links") or {}) or not os.path.exists(e.get("file") or "") \
+            or not e.get("draft_id"):   # without knowing its draft, the link can't be submitted to the right one
         return False
     try:
         title = next((t for lbl, t in e.get("blocks") or [] if lbl == "YouTube title"), e.get("title") or e.get("hook"))
@@ -817,7 +838,7 @@ def queue_youtube(st):
     entries = crflow.load()
     todo = [e for e in crflow.best_first([e for e in entries if e.get("status") == "approved"])
             if "youtube" in (e.get("platforms") or []) and "youtube" not in (e.get("links") or {})
-            and os.path.exists(e.get("file") or "")]
+            and os.path.exists(e.get("file") or "") and e.get("draft_id")]
     start = now_utc()
     for i, e in enumerate(todo):
         e["yt_at"] = (start + timedelta(minutes=YT_GAP_MIN * i)).isoformat()
@@ -983,7 +1004,7 @@ def _submit(st, e, platform, url):
     from . import contentrewards as cr
     try:
         with cr.Site() as s:
-            s.submit_link(e.get("campaign"), e.get("duration"), url)
+            s.submit_link(e.get("campaign"), e.get("duration"), url, draft_id=e.get("draft_id"))
     except Exception as ex:
         tg.send(f"⚠️ Content Rewards didn't take your {platform} link ({str(ex)[:200]}).\n\nSubmit it yourself: "
                 f"Drafts > Approved > Submit link, and paste:\n{url}")
@@ -1027,7 +1048,8 @@ def hunt(st):
                         if all(p in (e.get("links") or {}) for p in e.get("platforms") or []):
                             break
                         label = s.submit_pick(e.get("campaign"), e.get("duration"),
-                                              [e.get("caption"), e.get("title"), e.get("hook")])
+                                              [e.get("caption"), e.get("title"), e.get("hook")],
+                                              draft_id=e.get("draft_id"))
                         if not label:
                             break
                         platform = _pick_platform(e, label)
