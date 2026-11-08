@@ -1730,6 +1730,15 @@ assert _cr.pick_card([{"campaign": "Lysium/Benji Ramos Clips", "duration": 23.0,
                      "Lysium/Benji Ramos Clips", 26.9) == 0                       # a sped-up render still matches
 assert _cr.pick_card([{"campaign": "Lysium/Benji Ramos Clips", "duration": 23.0, "posted": 0, "of": 2}],
                      "Lysium/Benji Ramos Clips", 31.0) is None
+# "resend": every approved clip's package again, watched for a day
+crflow.save([dict(_base, id=f"r{i}", token=f"rs{i}", status=st_, approved_at=_now_iso, file=str(_vid), score=7, links={},
+                  blocks=[("TikTok caption", "c"), ("YouTube title", "t")]) for i, st_ in enumerate(["approved", "approved", "done"])])
+_real_tgsv7, tg.send_video = tg.send_video, lambda *a, **k: None
+_tgcalls2.clear()
+mac.handle(_mst, "text", "resend", 20, "")
+assert any("Sending 2 approved clips again" in (c[1] or {}).get("text", "") for c in _tgcalls2 if c[0] == "sendMessage")
+assert len(crflow.watching(crflow.load())) == 2
+tg.send_video = _real_tgsv7
 # a campaign whose page isn't known: after 3 tries it's handed over with the manual steps
 crflow.save([dict(_q2[0], id="camp3", token="tok3", status="queued", campaign="Unknown Campaign", tries=2, links={})])
 mac.process_drafts(_mst)

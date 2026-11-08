@@ -380,7 +380,7 @@ def handle(st, kind, data, message_id, text):
         return
     if kind == "text":
         if clipping_on() and low not in ("status", "/status", "check", "/check", "cleanup", "/cleanup", "backup", "/backup",
-                                         "earnings", "/earnings", "money",
+                                         "earnings", "/earnings", "money", "resend", "/resend", "approved",
                                          "/start", "start", "help", "/help"):
             from . import mail
             verdict = mail.reply_verdict(data or "")
@@ -398,6 +398,10 @@ def handle(st, kind, data, message_id, text):
         elif low in ("earnings", "/earnings", "money"):
             tg.send("Reading the Earnings page…", silent=True)
             run_earnings(st, force=True)
+        elif low in ("resend", "/resend", "approved"):
+            n = resend_approved(st)
+            if not n:
+                tg.send("No approved campaign clips are waiting to be posted.")
         elif low in ("backup", "/backup"):
             r = run_backup(st)
             if r["ok"]:
@@ -411,7 +415,7 @@ def handle(st, kind, data, message_id, text):
         elif low in ("/start", "start", "help", "/help"):
             tg.send("I'm the Wanted Level clip bot. I'll message you about campaigns, your bio, drafts and problems.\n"
                     "Text \"status\" for a summary, \"check\" to look at Content Rewards right now, or \"earnings\" for "
-                    "what you've made.")
+                    "what you've made. \"resend\" sends every approved campaign clip again (video + captions).")
 
 
 FIX_JF_KEY = ("1. On the Mac, open http://localhost:8096 and log in.\n"
@@ -789,6 +793,27 @@ def _today_count(entries, campaign, field):
     today = local_now().date().isoformat()
     return sum(1 for e in entries if same_campaign(e.get("campaign"), campaign) and _local_day(e.get(field)) == today
                and e.get("status") not in ("queued", "dropped"))
+
+
+def resend_approved(st):
+    """Text "resend": the post package again for every approved campaign clip that isn't fully posted yet
+    (the videos can disappear from the chat). Doesn't count against the daily limit. Returns how many."""
+    from . import crflow
+    entries = crflow.load()
+    todo = [e for e in crflow.best_first([e for e in entries if e.get("status") == "approved"])
+            if os.path.exists(e.get("file") or "")]
+    if not todo:
+        return 0
+    tg.send(f"Sending {len(todo)} approved clip{'s' if len(todo) != 1 else ''} again, best first. After you post one, "
+            "the bot finds it and submits the link (tap ✅ Posted to make it look right away).")
+    now = now_utc().isoformat()
+    for e in todo:
+        e["packaged_at"] = now   # watch for these posts for the next day
+    crflow.save(entries)
+    for e in todo:
+        send_post_package(e, st=st)
+        time.sleep(1)
+    return len(todo)
 
 
 def send_packages_due(st):
