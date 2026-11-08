@@ -12,6 +12,16 @@ import yaml
 ROOT = Path(os.environ.get("CLIPPER_ROOT", Path(__file__).resolve().parent.parent))
 DATA = ROOT / "data"
 WORK = Path(os.environ.get("CLIPPER_WORK", ROOT / "work"))
+
+
+def work_ready():
+    """False when the work folder is on an external drive (/Volumes/<name>/...) that isn't mounted right now.
+    A plain folder at /Volumes/<name> doesn't count: if the drive is pulled and something writes there anyway,
+    macOS mounts the drive as "<name> 1" next time and everything goes missing."""
+    w = os.environ.get("CLIPPER_WORK", "")
+    if not w.startswith("/Volumes/"):
+        return True
+    return os.path.ismount("/Volumes/" + w.split("/")[2])
 STATE_FILE = DATA / "state.json"
 PLAYBOOK_FILE = DATA / "playbook.md"
 INSIGHTS_FILE = DATA / "insights.json"

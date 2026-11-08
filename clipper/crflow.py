@@ -61,6 +61,9 @@ def platforms(cfg):
 
 def enqueue(cfg, clip, src, pkg):
     """Called by the post job instead of sending the package. Returns the message id it records on the clip."""
+    from .common import work_ready
+    if not work_ready():
+        raise RuntimeError("the Work SSD isn't mounted; the campaign clip stays in the queue")
     d = WORK / "cr_drafts"
     d.mkdir(parents=True, exist_ok=True)
     dest = d / f"{clip['id']}.mp4"

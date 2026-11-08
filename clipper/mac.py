@@ -15,6 +15,7 @@ State lives in data/mac.json on the Mac (not committed). Secrets come from the .
 """
 import hashlib
 import json
+import glob
 import os
 import random
 import re
@@ -1149,10 +1150,19 @@ class Jobs:
                                 stderr=subprocess.STDOUT)
 
     def drive_ok(self, st):
+        from .common import work_ready
         work = os.environ.get("CLIPPER_WORK", "")
-        if work.startswith("/Volumes/") and not os.path.isdir("/Volumes/" + work.split("/")[2]):
-            tg.problem(st, "work_drive", f"The Work SSD isn't connected ({work}), so clipping is paused.",
-                       "Plug the Work SSD back into the Mac. Clipping picks up again within a few minutes.")
+        if not work_ready():
+            try:
+                self.stop_live()   # a running job would keep writing into an empty folder where the drive was
+            except Exception as e:
+                log.warning("couldn't stop the live watcher: %s", e)
+            vol = "/Volumes/" + work.split("/")[2]
+            other = sorted(p for p in glob.glob(vol + " *") if os.path.ismount(p))
+            how = (f"The drive is connected but macOS named it \"{os.path.basename(other[0])}\" (an empty folder "
+                   f"was left at {vol}). Send this message to Claude for the 3 commands that fix it."
+                   if other else "Plug the Work SSD back into the Mac. Clipping picks up again within a few minutes.")
+            tg.problem(st, "work_drive", f"The Work SSD isn't connected ({work}), so clipping is paused.", how)
             return False
         return True
 

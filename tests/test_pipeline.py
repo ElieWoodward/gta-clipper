@@ -2044,4 +2044,9 @@ _un = mac.compare({"campaigns": {}, "listed_once": True, "drafts": {}}, [],
                   {"counts": {"needs changes": 1}, "needs_changes": [{"who": "the reviewer", "when": "recently", "note": "(open it)",
                                                                        "card": "unread-1", "unread": True}]}, [])
 assert len(_un) == 1 and not getattr(_un[0], "rows", None)   # a note we couldn't read gets no Fix it button
+# a pulled Work SSD: a leftover folder at /Volumes/<name> must not count as the drive
+os.environ["CLIPPER_WORK"] = "/Volumes/NoSuchDriveXYZ/clipper"
+assert not common.work_ready()
+os.environ["CLIPPER_WORK"] = str(common.WORK)
+assert common.work_ready()
 print("BACKUP OK")

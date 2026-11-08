@@ -45,7 +45,7 @@ def dest():
     work = os.environ.get("CLIPPER_WORK", "")
     if work.startswith("/Volumes/"):
         vol = "/Volumes/" + work.split("/")[2]
-        return Path(vol) / "backup" if os.path.isdir(vol) else None
+        return Path(vol) / "backup" if os.path.ismount(vol) else None
     return None
 
 

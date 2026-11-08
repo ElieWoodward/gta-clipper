@@ -138,6 +138,9 @@ if __name__ == "__main__":
     job = sys.argv[1]
     if job == "live":
         os.environ["CLIPPER_LIVE"] = "1"   # the live watcher only writes data/live.json
+    from clipper.common import work_ready
+    if job in ("process", "post", "live", "analytics", "revise", "rerender", "weekly") and not work_ready():
+        sys.exit(f"the work drive ({os.environ.get('CLIPPER_WORK')}) isn't mounted; not starting {job}")
     tracked = job in ("process", "post", "live", "analytics") and not os.environ.get("TEST_SOURCE")
     try:
         CMDS[job]()
