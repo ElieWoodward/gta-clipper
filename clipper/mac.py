@@ -755,13 +755,14 @@ def _auto_youtube(st, e):
     e["yt_auto_at"] = now_utc().isoformat()
     if url:
         _submit(st, e, "youtube", url)
-    else:   # still processing: the 2-minute check picks it from Content Rewards' list
+    else:   # still processing: the regular check picks it from Content Rewards' list (watched for a day from now)
         e.setdefault("links", {})
         e["yt_pending"] = True
+        e["packaged_at"] = now_utc().isoformat()
     entries = crflow.load()
     for x in entries:
         if x.get("token") == e.get("token"):
-            x.update({k: e[k] for k in ("links", "yt_auto_at") if k in e}, yt_pending=e.get("yt_pending"))
+            x.update({k: e[k] for k in ("links", "yt_auto_at", "packaged_at") if k in e}, yt_pending=e.get("yt_pending"))
     crflow.save(entries)
     return True
 
