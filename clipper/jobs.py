@@ -527,6 +527,11 @@ def _quota(cfg):
     for r in cfg["posting"]["ramp"]:
         if day >= r["from_day"]:
             per = r["per_day"]
+    from . import crflow
+    total = crflow.daily_total(cfg)
+    if total and os.environ.get("MAC_RUNS_CLIPPER") == "1":
+        # one daily total for everything: campaign clips (paid) claim first, regular posts get the rest
+        per = max(0, total - min(total, crflow.claimed_today(cfg)))
     return per
 
 

@@ -1643,25 +1643,35 @@ _now_iso = common.now_utc().isoformat()
 _base = {k: v for k, v in dict(_q2[0], links={}, campaign="Lysium/Benji Ramos Clips").items()
          if k not in ("submitted_at", "approved_at", "posted_at", "packaged_at")}
 crflow.save([dict(_base, id=f"d{i}", token=f"dt{i}", status="queued", score=s_, queued_at=_now_iso, file=str(_vid))
-             for i, s_ in enumerate([6, 9, 7, 8, 6.5])])
+             for i, s_ in enumerate([6, 9, 7, 8, 6.5, 5, 7.5])])
 _FakeSite.drafts_sent.clear()
-for _ in range(3):
+for _ in range(4):
     mac.process_drafts(_mst)
-assert len(_FakeSite.drafts_sent) == 3, _FakeSite.drafts_sent
+assert len(_FakeSite.drafts_sent) == 5, _FakeSite.drafts_sent
 _sub = sorted(e["score"] for e in crflow.load() if e["status"] == "submitted")
-assert _sub == [7, 8, 9], _sub                      # the three best went
+assert _sub == [6.5, 7, 7.5, 8, 9], _sub            # the five best went (posting.daily_total)
 _old_q = crflow.load()
 _old_q.append(dict(_base, id="stale", token="st0", status="queued", score=10, file=str(TMP / "stale.mp4"),
                    queued_at=(common.now_utc() - __import__("datetime").timedelta(days=4)).isoformat()))
 crflow.save(_old_q)
 mac.process_drafts(_mst)
-assert crflow.by_token(crflow.load(), "st0")["status"] == "dropped" and len(_FakeSite.drafts_sent) == 3
-_ap = [dict(_base, id=f"a{i}", token=f"at{i}", status="approved", score=s_, approved_at=_now_iso) for i, s_ in enumerate([6, 9, 7, 8])]
+assert crflow.by_token(crflow.load(), "st0")["status"] == "dropped" and len(_FakeSite.drafts_sent) == 5
+_ap = [dict(_base, id=f"a{i}", token=f"at{i}", status="approved", score=s_, approved_at=_now_iso)
+       for i, s_ in enumerate([6, 9, 7, 8, 5, 7.5])]
 crflow.save(_ap)
 _mst["pkg_migrated"] = True
-assert mac.send_packages_due(_mst) == 3
-assert sorted(e["score"] for e in crflow.load() if e.get("packaged_at")) == [7, 8, 9]
-assert mac.send_packages_due(_mst) == 0             # the 4th waits for tomorrow
+_mrc8 = os.environ.get("MAC_RUNS_CLIPPER")
+os.environ["MAC_RUNS_CLIPPER"] = "1"
+assert jobs._quota(_ccfg) == 0                      # 6 approved waiting claim the whole day: no regular posts
+assert mac.send_packages_due(_mst) == 5
+assert sorted(e["score"] for e in crflow.load() if e.get("packaged_at")) == [6, 7, 7.5, 8, 9]
+assert mac.send_packages_due(_mst) == 0             # the 6th waits for tomorrow
+crflow.save(_ap[:2])
+assert jobs._quota(_ccfg) == 3                      # 2 campaign clips today: 3 regular posting times left
+os.environ.pop("MAC_RUNS_CLIPPER", None)
+assert jobs._quota(_ccfg) >= 3                      # GitHub: the ramp as before
+if _mrc8 is not None:
+    os.environ["MAC_RUNS_CLIPPER"] = _mrc8
 # YouTube through Blotato (posting.auto_post), TikTok still by hand
 from clipper import services as _svc6  # noqa: E402
 _bl = []

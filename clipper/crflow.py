@@ -128,6 +128,35 @@ def per_day(cfg):
     return int(((cfg.get("clip") or {}).get("campaign") or {}).get("max_per_day") or 3)
 
 
+def daily_total(cfg):
+    return int((cfg.get("posting") or {}).get("daily_total") or 0)
+
+
+def _local_day(iso, tz):
+    from zoneinfo import ZoneInfo
+    try:
+        return datetime.fromisoformat(iso).astimezone(ZoneInfo(tz)).date().isoformat()
+    except (TypeError, ValueError):
+        return ""
+
+
+def claimed_today(cfg, entries=None):
+    """Today's places that campaign clips take or will take: packages sent today, approved ones waiting, and drafts
+    sent today still waiting for the brand. Regular posting times only get what's left of posting.daily_total."""
+    tz = cfg.get("timezone", "UTC")
+    today = _local_day(now_utc().isoformat(), tz)
+    entries = load() if entries is None else entries
+    n = 0
+    for e in entries:
+        if _local_day(e.get("packaged_at"), tz) == today:
+            n += 1
+        elif e.get("status") == "approved" and not e.get("packaged_at"):
+            n += 1
+        elif e.get("status") == "submitted" and _local_day(e.get("submitted_at"), tz) == today:
+            n += 1
+    return n
+
+
 def best_first(entries):
     return sorted(entries, key=lambda e: (-(e.get("score") or 0), e.get("queued_at") or ""))
 

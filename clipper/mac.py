@@ -882,11 +882,15 @@ def send_packages_due(st):
                 e["packaged_at"] = e.get("approved_at") or now_utc().isoformat()
         st["pkg_migrated"] = True
         crflow.save(entries)
-    cap = crflow.per_day(load_config())
+    cfg = load_config()
+    cap = crflow.per_day(cfg)
+    total = crflow.daily_total(cfg)
     sent = 0
     for e in crflow.best_first([e for e in entries if e.get("status") == "approved" and not e.get("packaged_at")]):
         if _today_count(entries, e.get("campaign"), "packaged_at") >= cap:
             continue
+        if total and sum(1 for x in entries if _local_day(x.get("packaged_at")) == local_now().date().isoformat()) >= total:
+            break   # the day's total is used up; the rest go tomorrow
         e["packaged_at"] = now_utc().isoformat()
         crflow.save(entries)
         send_post_package(e, st=st)
@@ -911,8 +915,14 @@ def process_drafts(st):
             pass
     if stale:
         crflow.save(entries)
+    total = crflow.daily_total(load_config())
+    today = local_now().date().isoformat()
+    sent_today = sum(1 for x in entries if _local_day(x.get("submitted_at")) == today
+                     and x.get("status") not in ("queued", "dropped"))
     todo = []
     for e in crflow.best_first([e for e in entries if e.get("status") == "queued"]):
+        if total and sent_today + len(todo) >= total:
+            break   # no more drafts today than the day's total of posts
         if _today_count(entries, e.get("campaign"), "submitted_at") + \
                 sum(1 for t in todo if same_campaign(t.get("campaign"), e.get("campaign"))) < cap:
             todo.append(e)
