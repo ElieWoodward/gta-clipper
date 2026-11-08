@@ -1739,6 +1739,27 @@ mac.handle(_mst, "text", "resend", 20, "")
 assert any("Sending 2 approved clips again" in (c[1] or {}).get("text", "") for c in _tgcalls2 if c[0] == "sendMessage")
 assert len(crflow.watching(crflow.load())) == 2
 tg.send_video = _real_tgsv7
+# "youtube": the approved backlog goes up on YouTube through Blotato, one an hour, links submitted right after
+_yt7 = []
+_real_ay7, mac._auto_youtube = mac._auto_youtube, lambda st, e: (_yt7.append(e["token"]), True)[1]
+_real_ap7, jobs.auto_platforms = jobs.auto_platforms, lambda cfg: ["youtube"]
+crflow.save([dict(_base, id=f"y{i}", token=f"yt{i}", status="approved", approved_at=_now_iso, file=str(_vid), score=sc,
+                  platforms=["tiktok", "youtube"], links={}) for i, sc in enumerate([6, 9, 7])])
+_tgcalls2.clear()
+mac.handle(_mst, "text", "youtube", 21, "")
+assert any("Posting 3 approved clips on YouTube" in (c[1] or {}).get("text", "") for c in _tgcalls2 if c[0] == "sendMessage")
+mac.process_youtube_queue(_mst)
+mac.process_youtube_queue(_mst)
+assert _yt7 == ["yt1"], _yt7                       # best first, and only one until the next hour
+_ql = crflow.load()
+_due7 = common.now_utc().isoformat()
+for _x in _ql:
+    if _x.get("yt_at"):
+        _x["yt_at"] = _due7
+crflow.save(_ql)
+mac.process_youtube_queue(_mst)
+assert _yt7 == ["yt1", "yt2"], _yt7
+mac._auto_youtube, jobs.auto_platforms = _real_ay7, _real_ap7
 # a campaign whose page isn't known: after 3 tries it's handed over with the manual steps
 crflow.save([dict(_q2[0], id="camp3", token="tok3", status="queued", campaign="Unknown Campaign", tries=2, links={})])
 mac.process_drafts(_mst)

@@ -381,6 +381,7 @@ def handle(st, kind, data, message_id, text):
     if kind == "text":
         if clipping_on() and low not in ("status", "/status", "check", "/check", "cleanup", "/cleanup", "backup", "/backup",
                                          "earnings", "/earnings", "money", "resend", "/resend", "approved",
+                                         "youtube", "/youtube", "post youtube", "youtube all",
                                          "/start", "start", "help", "/help"):
             from . import mail
             verdict = mail.reply_verdict(data or "")
@@ -398,6 +399,12 @@ def handle(st, kind, data, message_id, text):
         elif low in ("earnings", "/earnings", "money"):
             tg.send("Reading the Earnings page…", silent=True)
             run_earnings(st, force=True)
+        elif low in ("youtube", "/youtube", "post youtube", "youtube all"):
+            n = queue_youtube(st)
+            if n is None:
+                tg.send("Blotato isn't set up on the Mac yet (BLOTATO_API_KEY in ~/projects/gta-clipper/.env).")
+            elif not n:
+                tg.send("No approved campaign clips are waiting for YouTube.")
         elif low in ("resend", "/resend", "approved"):
             n = resend_approved(st)
             if not n:
@@ -795,6 +802,50 @@ def _today_count(entries, campaign, field):
                and e.get("status") not in ("queued", "dropped"))
 
 
+YT_GAP_MIN = 60   # minutes between YouTube posts when a backlog goes out (one burst would split their views)
+
+
+def queue_youtube(st):
+    """Text "youtube": every approved campaign clip goes up on YouTube through Blotato, one an hour, best first,
+    and each link is submitted on Content Rewards right after. None if Blotato isn't set up; else how many."""
+    from . import crflow, jobs
+    from .common import load_config
+    if "youtube" not in jobs.auto_platforms(load_config()):
+        return None
+    entries = crflow.load()
+    todo = [e for e in crflow.best_first([e for e in entries if e.get("status") == "approved"])
+            if "youtube" in (e.get("platforms") or []) and "youtube" not in (e.get("links") or {})
+            and os.path.exists(e.get("file") or "")]
+    start = now_utc()
+    for i, e in enumerate(todo):
+        e["yt_at"] = (start + timedelta(minutes=YT_GAP_MIN * i)).isoformat()
+    crflow.save(entries)
+    if todo:
+        last = (start + timedelta(minutes=YT_GAP_MIN * (len(todo) - 1))).astimezone(local_now().tzinfo)
+        tg.send(f"▶️ Posting {len(todo)} approved clip{'s' if len(todo) != 1 else ''} on YouTube through Blotato, one "
+                f"every {YT_GAP_MIN} minutes (the last one around {last:%-I:%M %p}). I'll submit each YouTube link on "
+                "Content Rewards right after it goes up and tell you here.")
+    return len(todo)
+
+
+def process_youtube_queue(st):
+    """Post the next queued YouTube clip once its time comes."""
+    from . import crflow
+    entries = crflow.load()
+    due = [e for e in entries if e.get("yt_at") and e["yt_at"] <= now_utc().isoformat()
+           and e.get("status") == "approved" and "youtube" not in (e.get("links") or {})]
+    for e in sorted(due, key=lambda x: (x["yt_at"], -(x.get("score") or 0)))[:1]:
+        e.pop("yt_at", None)
+        crflow.save(entries)
+        if _auto_youtube(st, e):
+            fresh = crflow.by_token(crflow.load(), e["token"]) or e
+            link = (fresh.get("links") or {}).get("youtube", "")
+            if not link or link.startswith("failed:"):
+                tg.send(f"▶️ Posted on YouTube: \"{e.get('hook')}\". "
+                        + ("Its link is still processing; I'll submit it from Content Rewards' list in a few minutes."
+                           if not link else ""))
+
+
 def resend_approved(st):
     """Text "resend": the post package again for every approved campaign clip that isn't fully posted yet
     (the videos can disappear from the chat). Doesn't count against the daily limit. Returns how many."""
@@ -1170,6 +1221,10 @@ def loop():
                 process_joins(st)
             except Exception as e:
                 log.warning("campaign join step failed: %s", e)
+            try:
+                process_youtube_queue(st)
+            except Exception as e:
+                log.warning("youtube queue step failed: %s", e)
             try:
                 if awake():
                     process_drafts(st)
