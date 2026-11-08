@@ -1714,6 +1714,22 @@ jobs.DRY_RUN = _saved_dry6
 os.environ.pop("BLOTATO_API_KEY", None)
 if _mrc6 is None:
     os.environ.pop("MAC_RUNS_CLIPPER", None)
+# no Posted tap: an approved draft whose package went out is still watched, and its post gets submitted
+_FakeSite.picks = ["he wanted one drive-by and got zero kills 😭 Streamer: twitch.tv/Lysium #gta6, @wantedlevelclips8, "
+                   "Posted 3 min ago, 26 min left"]
+crflow.save([dict(_base, id="w1", token="w1", status="approved", approved_at=_now_iso, packaged_at=_now_iso,
+                  platforms=["tiktok"], links={}, caption="he wanted one drive-by and got zero kills 😭 Streamer: twitch.tv/Lysium",
+                  title="He wanted one drive-by", hook="zero kills")])
+mac.hunt(_mst)
+_w1 = crflow.by_token(crflow.load(), "w1")
+assert _w1["status"] == "done" and _w1["links"]["tiktok"].startswith("picked:"), _w1
+assert mac.hunt_every() == 300
+crflow.save([dict(_w1, status="approved", links={}, packaged_at=(common.now_utc() - __import__("datetime").timedelta(hours=30)).isoformat())])
+assert not crflow.watching(crflow.load())   # stops looking after a day
+assert _cr.pick_card([{"campaign": "Lysium/Benji Ramos Clips", "duration": 23.0, "posted": 0, "of": 2}],
+                     "Lysium/Benji Ramos Clips", 26.9) == 0                       # a sped-up render still matches
+assert _cr.pick_card([{"campaign": "Lysium/Benji Ramos Clips", "duration": 23.0, "posted": 0, "of": 2}],
+                     "Lysium/Benji Ramos Clips", 31.0) is None
 # a campaign whose page isn't known: after 3 tries it's handed over with the manual steps
 crflow.save([dict(_q2[0], id="camp3", token="tok3", status="queued", campaign="Unknown Campaign", tries=2, links={})])
 mac.process_drafts(_mst)

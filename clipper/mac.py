@@ -923,12 +923,13 @@ def _pick_platform(e, label):
 
 
 def hunt(st):
-    """Every 2 minutes after Posted: submit the new posts before the 30-minute cutoff. First from Content Rewards'
-    own list of your recent posts (it shows only the ones still inside the window); if that finds nothing, by
-    reading your TikTok/YouTube pages for the links."""
+    """Submit your posts before Content Rewards' 30-minute cutoff. Looks at drafts you tapped Posted on, and also at
+    every approved draft whose package went out in the last day (in case Posted wasn't tapped). First from Content
+    Rewards' own list of your recent posts; for tapped ones, also by reading your TikTok/YouTube pages."""
     from . import crflow, contentrewards as cr
     entries = crflow.load()
-    active = crflow.hunting(entries)
+    tapped = crflow.hunting(entries)
+    active = tapped + [e for e in crflow.watching(entries) if e not in tapped]
     changed = False
     if active:
         try:
@@ -952,7 +953,7 @@ def hunt(st):
                        "submit your post.", FIX_LOGIN)
         except Exception as ex:
             log.warning("submitting from the post list failed: %s", ex)
-        still = [e for e in active if e.get("status") == "posted"]
+        still = [e for e in tapped if e.get("status") == "posted"]
         if still:
             ups = _uploads({p for e in still for p in e.get("platforms") or []})
             for e in still:
@@ -969,6 +970,13 @@ def hunt(st):
                 "Content Rewards only takes it within 30 minutes of posting.")
     if changed:
         crflow.save(entries)
+
+
+def hunt_every(entries=None):
+    """Seconds until the next look: 2 minutes while a Posted tap is fresh, 5 while just watching, else idle."""
+    from . import crflow
+    entries = crflow.load() if entries is None else entries
+    return 120 if crflow.hunting(entries) else 300
 
 
 def submit_pasted_link(st, url):
@@ -1141,8 +1149,8 @@ def loop():
                 if awake():
                     process_drafts(st)
                 if time.time() >= st.get("hunt_next", 0):
-                    st["hunt_next"] = time.time() + 120
                     hunt(st)
+                    st["hunt_next"] = time.time() + hunt_every()
             except Exception as e:
                 log.warning("campaign draft step failed: %s", e)
                 tg.problem(st, "crflow", f"The campaign draft step hit an error: {str(e)[:200]}",

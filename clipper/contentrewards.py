@@ -181,7 +181,8 @@ def pick_card(cards, campaign, duration):
         gap = abs((c.get("duration") or 0) - (duration or 0)) if duration and c.get("duration") else 99
         if best is None or gap < best:
             best, best_i = gap, i
-    if best_i is None or (duration and best is not None and best > 4):
+    # the card shows the uploaded file's length; allow a little drift (rounding, a sped-up render)
+    if best_i is None or (duration and best is not None and best > max(4, 0.15 * duration)):
         return None
     return best_i
 
@@ -310,7 +311,9 @@ class Site:
         """Close announcement popups ("Support is here", what's new...) that cover the page and block every click.
         Only buttons that close something are pressed; nothing is opened or sent."""
         for _ in range(3):
-            dlg = self.page.locator('[role="dialog"]:visible, [role="alertdialog"]:visible')
+            # the chat panel is a dialog too; it's always there and harmless, so it's left alone
+            dlg = self.page.locator('[role="dialog"]:visible, [role="alertdialog"]:visible').filter(
+                has_not=self.page.get_by_role("button", name=re.compile("chat$", re.I)))
             if not dlg.count():
                 return
             btn = dlg.last.get_by_role("button", name=self.POPUP_CLOSE)
@@ -531,8 +534,19 @@ class Site:
         Every click stays inside the "Submit a draft" popup: the campaign page behind it has its own TikTok and
         YouTube labels, and clicking those hits the popup's dark backdrop instead."""
         self.go(campaign_url)
-        self.page.get_by_role("button", name="Submit clip").first.click()
+        self.page.locator("button:visible", has_text=re.compile(r"^\s*Submit clip\s*$")).first.click()
         form = self.page.locator('[role="dialog"]').filter(has_text="Submit a draft to").last
+        chooser = self.page.locator('[role="dialog"]').filter(has_text="What are you submitting").last
+        for _ in range(30):
+            # with approved drafts waiting, the button first asks "What are you submitting?" (Nov 2026):
+            # one of the approved clips, or "A new draft"
+            if chooser.count() and chooser.is_visible():
+                chooser.get_by_role("button", name=re.compile(r"^A new draft")).first.click()
+                self._pause(1, 2)
+                break
+            if form.count() and form.is_visible():
+                break
+            self.page.wait_for_timeout(1000)
         form.wait_for(timeout=30000)
         self._pause(1, 2)
         for p in platforms:

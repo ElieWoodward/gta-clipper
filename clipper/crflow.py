@@ -67,9 +67,14 @@ def enqueue(cfg, clip, src, pkg):
     if src and os.path.abspath(str(src)) != str(dest.resolve()):
         shutil.copy(src, dest)
     token = uuid.uuid4().hex[:10]
+    try:   # the length Content Rewards shows is the file's (a sped-up render is shorter than the cut)
+        from .clipqueue import _duration, _ffmpeg
+        length = round(_duration(str(dest), _ffmpeg()), 1)
+    except Exception:
+        length = clip.get("duration")
     entries = [e for e in load() if e.get("id") != clip["id"]]
     entries.append({"id": clip["id"], "token": token, "file": str(dest), "campaign": campaign_name(cfg, clip),
-                    "duration": clip.get("duration"), "hook": clip.get("hook"), "subject": pkg["subject"],
+                    "duration": length, "hook": clip.get("hook"), "subject": pkg["subject"],
                     "score": clip.get("score"),
                     "caption": clip.get("caption") or "", "title": clip.get("title") or "",
                     "blocks": pkg["blocks"], "platforms": platforms(cfg), "status": "queued",
@@ -173,6 +178,20 @@ def hunting(entries, now=None):
         if e.get("status") != "posted":
             continue
         if now - datetime.fromisoformat(e["posted_at"]) <= timedelta(minutes=HUNT_MINUTES):
+            out.append(e)
+    return out
+
+
+WATCH_HOURS = 24   # after the post package goes out, look for the posts this long even without a Posted tap
+
+
+def watching(entries, now=None):
+    """Approved drafts whose package went out recently: Elie may post without tapping Posted, so look anyway."""
+    now = now or now_utc()
+    out = []
+    for e in entries:
+        if e.get("status") == "approved" and e.get("packaged_at") and \
+                now - datetime.fromisoformat(e["packaged_at"]) <= timedelta(hours=WATCH_HOURS):
             out.append(e)
     return out
 
