@@ -717,6 +717,14 @@ def send_package(cfg, state, clip, test=False):
     return mid
 
 
+def auto_platforms(cfg):
+    """Platforms the bot posts itself through Blotato (posting.auto_post), once BLOTATO_API_KEY is set."""
+    if not os.environ.get("BLOTATO_API_KEY") or DRY_RUN or os.environ.get("MAC_RUNS_CLIPPER") != "1":
+        return []   # the Mac only; on GitHub, Blotato stays the launch-mode path
+    want = (cfg.get("posting") or {}).get("auto_post") or []
+    return [p for p in cfg["posting"]["platforms"] if p in want]
+
+
 def deliver(cfg, state, clip):
     """At a posting slot: post through Blotato in launch mode with automatic posting, otherwise email it.
     A failed automatic post falls back to the email, so the slot isn't lost."""
@@ -727,6 +735,20 @@ def deliver(cfg, state, clip):
         except Exception as e:
             log.exception("automatic post failed: %s", e)
             print(f"::warning::automatic post failed ({str(e)[:150]}); emailing the clip instead", flush=True)
+    auto = auto_platforms(cfg) if not clip.get("preapproval") else []
+    if auto:   # e.g. YouTube through Blotato; TikTok still comes to Elie
+        try:
+            auto_post_clip(cfg, state, clip, platforms=auto, finish=False)
+        except Exception as e:
+            log.exception("automatic post failed: %s", e)
+            print(f"::warning::automatic {', '.join(auto)} post failed ({str(e)[:150]}); sending it to you instead",
+                  flush=True)
+        left = [p for p in cfg["posting"]["platforms"] if p not in clip.get("posts", {})
+                and not (p == "tiktok" and clipqueue.tiktok_paused(cfg))]
+        if not left:
+            clip.update(status="posted", emailed_at=now_utc().isoformat(), auto_posted=True)
+            save_state(state)
+            return None
     try:
         return send_package(cfg, state, clip)
     except Exception as e:   # Gmail down: keep the clip in the queue and try again on a later run
@@ -739,8 +761,9 @@ def deliver(cfg, state, clip):
         return None
 
 
-def auto_post_clip(cfg, state, clip):
-    """Upload one queued clip to Blotato and post it to every platform. Raises if no platform worked."""
+def auto_post_clip(cfg, state, clip, platforms=None, finish=True):
+    """Upload one queued clip to Blotato and post it to every platform (or just `platforms`). Raises if none worked.
+    finish=False leaves the clip in the queue for the platforms Elie posts himself."""
     d = WORK / f"auto_{clip['id']}"
     d.mkdir(parents=True, exist_ok=True)
     try:
@@ -754,7 +777,7 @@ def auto_post_clip(cfg, state, clip):
         raise
     now = now_local(cfg)
     ok = []
-    for platform in cfg["posting"]["platforms"]:
+    for platform in platforms or cfg["posting"]["platforms"]:
         if platform in clip.get("posts", {}):
             continue
         try:
@@ -776,6 +799,11 @@ def auto_post_clip(cfg, state, clip):
     shutil.rmtree(d, ignore_errors=True)
     if not ok:
         raise RuntimeError("no platform accepted the post")
+    if not finish:
+        clip["blotato_url"] = url
+        print(f"::notice::posted automatically to {', '.join(ok)}: {clip['hook']}", flush=True)
+        save_state(state)
+        return None
     clip.update(status="posted", emailed_at=now_utc().isoformat(), auto_posted=True, blotato_url=url)
     print(f"::notice::posted automatically to {', '.join(ok)}: {clip['hook']}", flush=True)
     save_state(state)

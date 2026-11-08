@@ -1662,6 +1662,58 @@ _mst["pkg_migrated"] = True
 assert mac.send_packages_due(_mst) == 3
 assert sorted(e["score"] for e in crflow.load() if e.get("packaged_at")) == [7, 8, 9]
 assert mac.send_packages_due(_mst) == 0             # the 4th waits for tomorrow
+# YouTube through Blotato (posting.auto_post), TikTok still by hand
+from clipper import services as _svc6  # noqa: E402
+_bl = []
+_real6 = (_svc6.blotato_upload, _svc6.blotato_account_id, _svc6.blotato_post, _svc6.blotato_wait)
+_svc6.blotato_upload = lambda path: (_bl.append(("upload", str(path))), "https://media/x.mp4")[1]
+_svc6.blotato_account_id = lambda platform: "acct-" + platform
+_svc6.blotato_post = lambda platform, acct, url, text, title=None, ai_label=False: (_bl.append((platform, title)), "sub1")[1]
+_svc6.blotato_wait = lambda sub, limit=180: ("published", "https://youtube.com/shorts/AUTO1")
+assert jobs.auto_platforms(_ccfg) == []                # no key: nothing automatic
+os.environ["BLOTATO_API_KEY"] = "k"
+_mrc6 = os.environ.get("MAC_RUNS_CLIPPER")
+assert jobs.auto_platforms(_ccfg) == [] or _mrc6 == "1"   # GitHub: off
+os.environ["MAC_RUNS_CLIPPER"] = "1"
+_saved_dry6 = jobs.DRY_RUN
+jobs.DRY_RUN = False
+assert jobs.auto_platforms(_ccfg) == ["youtube"]
+_c6 = {"id": "c6", "hook": "he froze", "title": "He froze mid heist", "caption": "bro froze 😭", "streamer": "Lysium",
+       "score": 8, "duration": 20.0, "start": 0, "end": 20, "local_file": str(_vid), "status": "approved",
+       "created": common.now_utc().isoformat()}
+_st6 = {"clips": {"c6": _c6}}
+_sent6 = []
+_real_sp6 = jobs.send_package
+jobs.send_package = lambda cfg, state, clip: (_sent6.append(clipqueue.package(cfg, clip, [], state)), "mid")[1]
+_real_ss6, jobs.save_state = jobs.save_state, lambda st: None
+_real_es6, jobs.ensure_speed = jobs.ensure_speed, lambda cfg, state, clip, src, d: src
+jobs.deliver(_ccfg, _st6, _c6)
+assert [b for b in _bl if b[0] == "youtube"] == [("youtube", "He froze mid heist")] and not [b for b in _bl if b[0] == "tiktok"]
+assert _c6["posts"]["youtube"]["url"] == "https://youtube.com/shorts/AUTO1" and _c6["status"] == "approved"
+_labels6 = [b[0] for b in _sent6[0]["blocks"]]
+assert "TikTok caption" in _labels6 and "YouTube title" not in _labels6 and "YouTube: already posted" in _labels6, _labels6
+assert "(TikTok)" in _sent6[0]["subject"]
+# a campaign clip: on approval YouTube goes out through Blotato, its link is submitted, the package is TikTok only
+_links6 = []
+_real_sub6, mac._submit = mac._submit, lambda st, e, platform, url: (_links6.append((platform, url)),
+                                                                   e.setdefault("links", {}).__setitem__(platform, url))
+_real_tgsv, tg.send_video = tg.send_video, lambda *a, **k: None
+_e6 = dict(_base, id="cy", token="cy1", status="approved", approved_at=_now_iso, file=str(_vid), platforms=["tiktok", "youtube"],
+           blocks=[("TikTok caption", "bro froze"), ("YouTube title", "He froze #shorts"), ("YouTube description", "desc")])
+crflow.save([_e6])
+_tgcalls2.clear()
+mac.send_post_package(crflow.load()[0], st=_mst)
+assert _links6 == [("youtube", "https://youtube.com/shorts/AUTO1")] and crflow.load()[0]["links"]["youtube"].endswith("AUTO1")
+_txt6 = " ".join(c[1].get("text", "") for c in _tgcalls2 if c[0] == "sendMessage")
+assert "bro froze" in _txt6 and "He froze #shorts" not in _txt6 and "post it on TikTok" in _txt6
+mac._submit = _real_sub6
+tg.send_video = _real_tgsv
+jobs.send_package, jobs.save_state, jobs.ensure_speed = _real_sp6, _real_ss6, _real_es6
+_svc6.blotato_upload, _svc6.blotato_account_id, _svc6.blotato_post, _svc6.blotato_wait = _real6
+jobs.DRY_RUN = _saved_dry6
+os.environ.pop("BLOTATO_API_KEY", None)
+if _mrc6 is None:
+    os.environ.pop("MAC_RUNS_CLIPPER", None)
 # a campaign whose page isn't known: after 3 tries it's handed over with the manual steps
 crflow.save([dict(_q2[0], id="camp3", token="tok3", status="queued", campaign="Unknown Campaign", tries=2, links={})])
 mac.process_drafts(_mst)

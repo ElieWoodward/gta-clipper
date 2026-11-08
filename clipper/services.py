@@ -79,6 +79,13 @@ def blotato_wait(submission_id, limit=180):
     return "in-progress", None
 
 
+def blotato_post_file(platform, path, text, title=None, ai_label=False, wait=300):
+    """Upload a local video and post it to one platform. Returns (status, url_or_error); raises if Blotato says no."""
+    media = blotato_upload(path)
+    sub = blotato_post(platform, blotato_account_id(platform), media, text, title=title, ai_label=ai_label)
+    return blotato_wait(sub, limit=wait)
+
+
 def blotato_published(since_iso):
     """All published posts since a date, with their latest analytics."""
     items, cursor = [], None

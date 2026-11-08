@@ -87,8 +87,11 @@ def post_parts(entry, manual=False):
     info, fields = split_blocks(blocks)
     head = (f"📲 {entry.get('subject')}" if manual else
             f"✅ {entry.get('campaign')} approved your draft. Post it now:\n\n📲 {entry.get('subject')}")
-    tail = ("Tap ✅ Posted right after you post it on both, and I'll submit the links on Content Rewards for you "
-            "(it only takes them within 30 minutes of posting)." if not manual else
+    yt_done = any(b[0] == "YouTube: already posted" for b in entry.get("blocks") or [])
+    tail = (("Tap ✅ Posted right after you post it on TikTok, and I'll submit the link on Content Rewards for you "
+             if yt_done else
+             "Tap ✅ Posted right after you post it on both, and I'll submit the links on Content Rewards for you ")
+            + "(it only takes them within 30 minutes of posting)." if not manual else
             "Submit the video as a draft on the campaign page first, then post it once it's approved.")
     order = ", then ".join(label for label, _ in fields)
     return f"{head}\n\n{info}\n\nNext messages, one per field: {order}.\n{tail}".replace("\n\n\n", "\n\n"), fields

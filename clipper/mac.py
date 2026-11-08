@@ -717,9 +717,54 @@ def _campaign_url(st, name):
     return None
 
 
-def send_post_package(e, manual=False):
-    """The approved (or hand-submit) post package: video, info, then each field alone, buttons on the last."""
+def _auto_youtube(st, e):
+    """Approved campaign clip: post it on YouTube through Blotato and submit that link right away (Content Rewards
+    takes links for 30 minutes). Returns True if YouTube is done. Never raises."""
+    from . import jobs, services, crflow
+    from .common import load_config
+    cfg = load_config()
+    if "youtube" not in jobs.auto_platforms(cfg) or "youtube" not in (e.get("platforms") or []) \
+            or "youtube" in (e.get("links") or {}) or not os.path.exists(e.get("file") or ""):
+        return False
+    try:
+        title = next((t for lbl, t in e.get("blocks") or [] if lbl == "YouTube title"), e.get("title") or e.get("hook"))
+        desc = next((t for lbl, t in e.get("blocks") or [] if lbl == "YouTube description"), e.get("caption") or "")
+        status, url = services.blotato_post_file("youtube", e["file"], desc, title=title,
+                                                 ai_label=(cfg.get("posting") or {}).get("label_ai_generated"))
+    except Exception as ex:
+        tg.problem(st, "blotato", f"Blotato didn't post \"{e.get('hook')}\" on YouTube ({str(ex)[:150]}). "
+                   "It's in your post package instead.",
+                   "1. In Blotato, check Accounts shows your YouTube channel connected.\n"
+                   "2. Check BLOTATO_API_KEY in ~/projects/gta-clipper/.env matches Settings > API in Blotato.")
+        return False
+    if status == "failed":
+        tg.problem(st, "blotato", f"Blotato couldn't post on YouTube: {str(url)[:200]}. It's in your post package "
+                   "instead.", "Open Blotato and check the post's error, then reconnect YouTube under Accounts.")
+        return False
+    e["yt_auto_at"] = now_utc().isoformat()
+    if url:
+        _submit(st, e, "youtube", url)
+    else:   # still processing: the 2-minute check picks it from Content Rewards' list
+        e.setdefault("links", {})
+        e["yt_pending"] = True
+    entries = crflow.load()
+    for x in entries:
+        if x.get("token") == e.get("token"):
+            x.update({k: e[k] for k in ("links", "yt_auto_at") if k in e}, yt_pending=e.get("yt_pending"))
+    crflow.save(entries)
+    return True
+
+
+def send_post_package(e, manual=False, st=None):
+    """The approved (or hand-submit) post package: video, info, then each field alone, buttons on the last.
+    With YouTube on Blotato, YouTube is posted (and its link submitted) first and the package is TikTok only."""
     from . import crflow, relay
+    if not manual and st is not None and _auto_youtube(st, e):
+        e = dict(e, blocks=[b for b in e.get("blocks") or [] if not b[0].startswith("YouTube")]
+                 + [("YouTube: already posted", "The bot posted this on YouTube and submitted the link. "
+                     "Just post it on TikTok, then tap ✅ Posted.")])
+        if "tiktok" not in (e.get("platforms") or []):
+            return
     info, fields = crflow.post_parts(e, manual=manual)
     caption = f"📲 Post now: {e.get('hook')}"
     if os.path.exists(e.get("file") or ""):
@@ -767,7 +812,7 @@ def send_packages_due(st):
             continue
         e["packaged_at"] = now_utc().isoformat()
         crflow.save(entries)
-        send_post_package(e)
+        send_post_package(e, st=st)
         sent += 1
     return sent
 

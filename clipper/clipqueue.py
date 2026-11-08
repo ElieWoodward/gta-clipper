@@ -170,6 +170,12 @@ def package(cfg, clip, queue_now, state=None):
         ("Source", source or "(manual upload)"),
         ("Still in the queue", waiting),
     ]
+    done = {p_: v for p_, v in (clip.get("posts") or {}).items() if v.get("via") == "blotato"}
+    if "youtube" in done:   # posted by the bot through Blotato: only TikTok is left for Elie
+        blocks = [b for b in blocks if not b[0].startswith("YouTube")]
+        blocks.insert(0, ("YouTube: already posted", "The bot posted this on YouTube for you"
+                          + (f": {done['youtube']['url']}" if done["youtube"].get("url") else ".")
+                          + "\nJust post it on TikTok."))
     paused = tiktok_paused(cfg)
     if paused:
         blocks = [b for b in blocks if b[0] != "TikTok caption"]
@@ -191,7 +197,8 @@ def package(cfg, clip, queue_now, state=None):
         blocks.insert(0, ("Paid campaign (not joined yet)", f"{rec['name']} pays {rec.get('rate') or '?'} per 1K views "
                           f"for clips of this streamer. Join at {rec.get('join_url') or rec['url']} BEFORE posting, then "
                           "follow the brief's caption rules and submit your link to get paid for this one."))
-    return {"subject": f"Post now{' (YouTube)' if paused else ''}: {clip['hook']} ({clip['score']}/10)", "blocks": blocks,
+    where = " (YouTube)" if paused else (" (TikTok)" if "youtube" in done else "")
+    return {"subject": f"Post now{where}: {clip['hook']} ({clip['score']}/10)", "blocks": blocks,
             "tiktok_caption": tiktok_caption, "yt_title": yt_title}
 
 
