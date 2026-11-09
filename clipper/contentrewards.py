@@ -580,6 +580,23 @@ class Site:
             log.info("[dry run] link form filled for %s; not sending", campaign)
         return self._send(dialog, dry_run)
 
+    @staticmethod
+    def _row_selected(row):
+        """Whether an account row in the draft form is ticked (rows start unticked; checked Nov 2026)."""
+        try:
+            return row.evaluate("""el => {
+              for (let n = el, k = 0; n && k < 6; n = n.parentElement, k++) {
+                for (const a of ['aria-pressed', 'aria-checked', 'aria-selected', 'data-checked', 'data-selected'])
+                  if (n.getAttribute && n.getAttribute(a) !== null) return n.getAttribute(a) === 'true' || n.getAttribute(a) === '';
+                if (n.getAttribute && n.getAttribute('data-state')) return n.getAttribute('data-state') === 'checked';
+                const box = n.querySelector && n.querySelector('input[type=checkbox], input[type=radio]');
+                if (box) return box.checked;
+              }
+              return false;
+            }""")
+        except Exception:
+            return False
+
     def submit_draft(self, campaign_url, video, platforms=("tiktok", "youtube"), dry_run=False):
         """Upload a clip as a draft for the brand's pre-approval. Returns True once the form is sent.
         Every click stays inside the "Submit a draft" popup: the campaign page behind it has its own TikTok and
@@ -600,12 +617,18 @@ class Site:
             self.page.wait_for_timeout(1000)
         form.wait_for(timeout=30000)
         self._pause(1, 2)
-        for p in platforms:
+        want = {p.lower() for p in platforms}
+        for p in ("tiktok", "youtube", "instagram", "x"):
             row = form.get_by_text(re.compile(rf"^{p}$", re.I))
             if not row.count():
-                raise RuntimeError(f"the draft form has no {p} account to pick")
-            row.first.click()
-            self._pause(0.5, 1.5)
+                if p in want:
+                    raise RuntimeError(f"the draft form has no {p} account to pick")
+                continue
+            on = self._row_selected(row.first)
+            # only the accounts it will actually post on: a TikTok tick it never posts to just clutters Drafts
+            if (p in want) != bool(on):
+                row.first.click()
+                self._pause(0.5, 1.5)
         form.locator("input[type=file]").first.set_input_files(str(video))
         self.page.wait_for_timeout(5000)
         send = form.get_by_role("button", name="Submit draft for review")

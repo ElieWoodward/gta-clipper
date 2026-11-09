@@ -1823,6 +1823,16 @@ if _mrc6 is None:
     os.environ.pop("MAC_RUNS_CLIPPER", None)
 jobs.send_package, jobs.save_state, jobs.ensure_speed = _real_sp6, _real_ss6, _real_es6
 _svc6.blotato_upload, _svc6.blotato_account_id, _svc6.blotato_post, _svc6.blotato_wait = _real6
+# a clip queued before TikTok went once-a-day is still uploaded for YouTube only (no TikTok tick on the draft)
+os.environ.update(BLOTATO_API_KEY="k", MAC_RUNS_CLIPPER="1")
+crflow.save([dict(_base, id="pt", token="pt1", status="queued", score=9, queued_at=common.now_utc().isoformat(),
+                  file=str(_vid), platforms=["tiktok", "youtube"], links={})])
+_FakeSite.drafts_sent.clear()
+mac.process_drafts(_mst)
+assert _FakeSite.drafts_sent and _FakeSite.drafts_sent[-1][2] == ("youtube",), _FakeSite.drafts_sent
+os.environ.pop("BLOTATO_API_KEY", None)
+if _mrc6 is None:
+    os.environ.pop("MAC_RUNS_CLIPPER", None)
 # a campaign whose page isn't known: after 3 tries it's handed over with the manual steps
 crflow.save([dict(_q2[0], id="camp3", token="tok3", status="queued", campaign="Unknown Campaign", tries=2, links={})])
 mac.process_drafts(_mst)

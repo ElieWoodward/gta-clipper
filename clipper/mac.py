@@ -963,7 +963,9 @@ def process_drafts(st):
             continue
         try:
             with cr.Site() as s:
-                s.submit_draft(url, e["file"], platforms=e.get("platforms") or ("tiktok", "youtube"))
+                now_plats = crflow.platforms(load_config())   # today's settings, not the ones when it was queued
+                e["platforms"] = [p for p in (e.get("platforms") or now_plats) if p in now_plats] or now_plats
+                s.submit_draft(url, e["file"], platforms=e["platforms"])
         except cr.NotLoggedIn:
             tg.problem(st, "cr_login", "The bot's Chrome window isn't logged in to Content Rewards, so it can't "
                        "upload campaign drafts.", FIX_LOGIN)
