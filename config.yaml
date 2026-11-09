@@ -96,6 +96,9 @@ posting:
   platforms: [tiktok, youtube]
   daily_total: 5                  # Mac: most clips posted per day, campaign + regular together. Campaign clips
                                   # (they pay) get first claim; regular posting times fill what's left.
+  tiktok_daily: "11:00"           # Mac + Blotato: TikTok gets exactly ONE post a day, at this time (same time every
+                                  # day, to get the account out of TikTok's slow lane). It's the best-performing
+                                  # recent YouTube clip. No TikTok captions in Telegram and no TikTok on campaign drafts.
   auto_post: [youtube]            # posted by the bot through Blotato once BLOTATO_API_KEY is in the Mac's .env;
                                   # the rest still come to you on Telegram. [] = post everything yourself.
   tiktok_paused_until: "2026-10-28"   # emails are YouTube only until this date (TikTok's few days off); "" = off

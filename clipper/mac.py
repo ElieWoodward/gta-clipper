@@ -797,8 +797,10 @@ def send_post_package(e, manual=False, st=None):
         e = dict(e, blocks=[b for b in e.get("blocks") or [] if not b[0].startswith("YouTube")]
                  + [("YouTube: already posted", "The bot posted this on YouTube and submitted the link. "
                      "Just post it on TikTok, then tap ✅ Posted.")])
-        if "tiktok" not in (e.get("platforms") or []):
-            return
+        from .clipqueue import tiktok_daily
+        from .common import load_config
+        if "tiktok" not in (e.get("platforms") or []) or tiktok_daily(load_config()):
+            return   # nothing left for Elie to post
     info, fields = crflow.post_parts(e, manual=manual)
     caption = f"📲 Post now: {e.get('hook')}"
     if os.path.exists(e.get("file") or ""):

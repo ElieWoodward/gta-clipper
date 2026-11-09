@@ -5,6 +5,7 @@ replies "posted"/"skip" to its email, or when it's older than queue.max_age_hour
 """
 import difflib
 import json
+import os
 import re
 import unicodedata
 import xml.etree.ElementTree as ET
@@ -37,6 +38,15 @@ def tiktok_paused(cfg):
     until = str((cfg.get("posting") or {}).get("tiktok_paused_until") or "")
     today = now_utc().astimezone(ZoneInfo(cfg.get("timezone", "UTC"))).date().isoformat()
     return until if until and today < until else None
+
+
+def tiktok_daily(cfg):
+    """posting.tiktok_daily ("11:00") when the Mac posts TikTok itself once a day through Blotato; else None.
+    While it's on, TikTok is left out of everything else (Telegram packages, campaign drafts)."""
+    t = str((cfg.get("posting") or {}).get("tiktok_daily") or "")
+    if t and os.environ.get("MAC_RUNS_CLIPPER") == "1" and os.environ.get("BLOTATO_API_KEY"):
+        return t
+    return None
 
 
 def dead_on_tiktok(state, last=3, min_views=10, min_hours=6):
@@ -176,6 +186,8 @@ def package(cfg, clip, queue_now, state=None):
         blocks.insert(0, ("YouTube: already posted", "The bot posted this on YouTube for you"
                           + (f": {done['youtube']['url']}" if done["youtube"].get("url") else ".")
                           + "\nJust post it on TikTok."))
+    if tiktok_daily(cfg):   # TikTok gets its one post a day from the bot; nothing for Elie to post there
+        blocks = [b for b in blocks if b[0] != "TikTok caption" and b[0] != "YouTube: already posted"]
     paused = tiktok_paused(cfg)
     if paused:
         blocks = [b for b in blocks if b[0] != "TikTok caption"]

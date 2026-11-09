@@ -1699,7 +1699,13 @@ _real_ss6, jobs.save_state = jobs.save_state, lambda st: None
 _real_es6, jobs.ensure_speed = jobs.ensure_speed, lambda cfg, state, clip, src, d: src
 jobs.deliver(_ccfg, _st6, _c6)
 assert [b for b in _bl if b[0] == "youtube"] == [("youtube", "He froze mid heist")] and not [b for b in _bl if b[0] == "tiktok"]
-assert _c6["posts"]["youtube"]["url"] == "https://youtube.com/shorts/AUTO1" and _c6["status"] == "approved"
+# with TikTok on its once-a-day schedule (posting.tiktok_daily) there's nothing left for Elie: no package at all
+assert _c6["posts"]["youtube"]["url"] == "https://youtube.com/shorts/AUTO1" and _c6["status"] == "posted" and not _sent6
+# without the daily TikTok, the package is TikTok only
+_cfg_nt = dict(_ccfg, posting=dict(_ccfg["posting"], tiktok_daily=""))
+_c6b = dict(_c6, id="c6b", status="approved", posts={})
+_st6["clips"]["c6b"] = _c6b
+jobs.deliver(_cfg_nt, _st6, _c6b)
 _labels6 = [b[0] for b in _sent6[0]["blocks"]]
 assert "TikTok caption" in _labels6 and "YouTube title" not in _labels6 and "YouTube: already posted" in _labels6, _labels6
 assert "(TikTok)" in _sent6[0]["subject"]
@@ -1716,7 +1722,7 @@ _tgcalls2.clear()
 mac.send_post_package(crflow.load()[0], st=_mst)
 assert _links6 == [("youtube", "https://youtube.com/shorts/AUTO1")] and crflow.load()[0]["links"]["youtube"].endswith("AUTO1")
 _txt6 = " ".join(c[1].get("text", "") for c in _tgcalls2 if c[0] == "sendMessage")
-assert "bro froze" in _txt6 and "He froze #shorts" not in _txt6 and "post it on TikTok" in _txt6
+assert "He froze #shorts" not in _txt6 and "post it on TikTok" not in _txt6   # TikTok is the bot's daily post now
 mac._submit = _real_sub6
 tg.send_video = _real_tgsv
 jobs.send_package, jobs.save_state, jobs.ensure_speed = _real_sp6, _real_ss6, _real_es6
@@ -1786,6 +1792,37 @@ assert _ents[0]["draft_id"].startswith("2222") and _ents[1]["draft_id"].startswi
 assert [e["token"] for e in _new] == ["m1"] and [e["token"] for e in _odd] == ["m2"]   # m2 shows a post we didn't send
 _new, _odd = crflow.match_drafts(_ents, _cards)
 assert not _new                                          # ids remembered; nothing approved twice
+# TikTok: exactly one post a day at posting.tiktok_daily, the clip that did best on YouTube lately
+os.environ.update(BLOTATO_API_KEY="k", MAC_RUNS_CLIPPER="1")
+_bl.clear()
+_svc6.blotato_upload = lambda path: "https://media/t.mp4"
+_svc6.blotato_account_id = lambda platform: "acct-" + platform
+_svc6.blotato_post = lambda platform, acct, url, text, title=None, ai_label=False: (_bl.append((platform, text[:20])), "s")[1]
+_svc6.blotato_wait = lambda sub, limit=180: ("published", "https://tiktok.com/@w/video/1")
+jobs.save_state = lambda st: None
+jobs.ensure_speed = lambda cfg, state, clip, src, d: src
+assert clipqueue.tiktok_daily(_ccfg) == "11:00"
+_recent = common.now_utc().isoformat()
+_td = {"clips": {
+    "lo": dict(_c6, id="lo", hook="meh", posts={"youtube": {"posted_at": _recent, "views": 300}}, local_file=str(_vid)),
+    "hi": dict(_c6, id="hi", hook="banger", posts={"youtube": {"posted_at": _recent, "views": 9000}}, local_file=str(_vid)),
+    "camp": dict(_c6, id="camp", hook="paid", preapproval=True,
+                 posts={"youtube": {"posted_at": _recent, "views": 50000}}, local_file=str(_vid))}}
+from zoneinfo import ZoneInfo as _ZI  # noqa: E402
+_d11 = _dt(2026, 11, 9, 10, 40, tzinfo=_ZI(_ccfg["timezone"]))
+assert jobs.tiktok_daily_post(_ccfg, _td, now=_d11) is None and not _bl            # not before 11:00
+_d11b = _d11.replace(hour=11, minute=7)
+assert jobs.tiktok_daily_post(_ccfg, _td, now=_d11b)["id"] == "hi"                 # best on YouTube, no campaign clip
+assert [b[0] for b in _bl] == ["tiktok"] and _td["clips"]["hi"]["posts"]["tiktok"]["url"].endswith("/1")
+assert jobs.tiktok_daily_post(_ccfg, _td, now=_d11b.replace(hour=12)) is None and len(_bl) == 1   # once a day
+_pk = clipqueue.package(_ccfg, dict(_c6, posts={}), [], {"clips": {}})
+assert "TikTok caption" not in [b[0] for b in _pk["blocks"]]                       # nothing for Elie to post on TikTok
+assert crflow.platforms(_ccfg) == ["youtube"]                                      # campaign drafts: YouTube only
+os.environ.pop("BLOTATO_API_KEY", None)
+if _mrc6 is None:
+    os.environ.pop("MAC_RUNS_CLIPPER", None)
+jobs.send_package, jobs.save_state, jobs.ensure_speed = _real_sp6, _real_ss6, _real_es6
+_svc6.blotato_upload, _svc6.blotato_account_id, _svc6.blotato_post, _svc6.blotato_wait = _real6
 # a campaign whose page isn't known: after 3 tries it's handed over with the manual steps
 crflow.save([dict(_q2[0], id="camp3", token="tok3", status="queued", campaign="Unknown Campaign", tries=2, links={})])
 mac.process_drafts(_mst)

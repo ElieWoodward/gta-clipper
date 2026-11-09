@@ -54,7 +54,7 @@ def applies(cfg, clip):
 def platforms(cfg):
     from . import clipqueue
     out = [p for p in (cfg.get("posting") or {}).get("platforms") or ["tiktok", "youtube"] if p in ("tiktok", "youtube")]
-    if clipqueue.tiktok_paused(cfg):
+    if clipqueue.tiktok_paused(cfg) or clipqueue.tiktok_daily(cfg):
         out = [p for p in out if p != "tiktok"]
     return out
 
@@ -92,6 +92,10 @@ def post_parts(entry, manual=False):
     yourself" steps (used when the Mac couldn't upload the draft)."""
     from .relay import split_blocks
     blocks = [b for b in entry.get("blocks") or [] if manual or b[0] != "Campaign approval first"]
+    from .clipqueue import tiktok_daily
+    from .common import load_config
+    if tiktok_daily(load_config()):   # TikTok only gets the bot's one daily post
+        blocks = [b for b in blocks if b[0] != "TikTok caption"]
     info, fields = split_blocks(blocks)
     head = (f"📲 {entry.get('subject')}" if manual else
             f"✅ {entry.get('campaign')} approved your draft. Post it now:\n\n📲 {entry.get('subject')}")

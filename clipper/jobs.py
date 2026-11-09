@@ -749,7 +749,7 @@ def deliver(cfg, state, clip):
             print(f"::warning::automatic {', '.join(auto)} post failed ({str(e)[:150]}); sending it to you instead",
                   flush=True)
         left = [p for p in cfg["posting"]["platforms"] if p not in clip.get("posts", {})
-                and not (p == "tiktok" and clipqueue.tiktok_paused(cfg))]
+                and not (p == "tiktok" and (clipqueue.tiktok_paused(cfg) or clipqueue.tiktok_daily(cfg)))]
         if not left:
             clip.update(status="posted", emailed_at=now_utc().isoformat(), auto_posted=True)
             save_state(state)
@@ -835,6 +835,59 @@ def _email_test(cfg, state):
     send_package(cfg, state, clip, test=True)
 
 
+def tiktok_daily_post(cfg, state, now=None):
+    """posting.tiktok_daily: one TikTok a day, at the same time. Picks the recent clip that did best on YouTube
+    (it already proved itself), posts it through Blotato, and tells Elie. Campaign clips are left out (their drafts
+    don't include TikTok). Returns the clip posted, or None."""
+    at = clipqueue.tiktok_daily(cfg)
+    if not at:
+        return None
+    now = now or now_local(cfg)
+    hh, mm = (int(x) for x in at.split(":"))
+    start = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
+    rec = state.setdefault("tiktok_daily", {})
+    if now < start or now > start + timedelta(hours=2) or rec.get("day") == now.date().isoformat():
+        return None
+    rec["day"] = now.date().isoformat()   # once a day, even if it fails (the same time daily matters more)
+    since = (now_utc() - timedelta(days=3)).isoformat()
+
+    def yt_views(c):
+        yt = (c.get("posts") or {}).get("youtube") or {}
+        return yt.get("views") or 0
+
+    pool = [c for c in state["clips"].values()
+            if "tiktok" not in (c.get("posts") or {}) and not c.get("preapproval")
+            and ((c.get("posts") or {}).get("youtube") or {}).get("posted_at", "") >= since
+            and (c.get("local_file") and os.path.exists(c["local_file"]) or c.get("media_url"))]
+    if not pool:   # nothing on YouTube lately: the best clip waiting in the queue
+        pool = [c for c in clipqueue.queue(state) if not c.get("preapproval")]
+    if not pool:
+        print("::notice::daily TikTok: no clip to post today", flush=True)
+        return None
+    clip = max(pool, key=lambda c: (yt_views(c), c.get("score") or 0))
+    try:
+        auto_post_clip(cfg, state, clip, platforms=["tiktok"], finish=False)
+    except Exception as e:
+        print(f"::warning::daily TikTok post failed: {str(e)[:200]}", flush=True)
+        try:
+            from . import tg
+            tg.send(f"⚠️ Today's TikTok didn't go up ({str(e)[:150]}). In Blotato, check Accounts shows TikTok "
+                    "connected. It tries again tomorrow at the same time.")
+        except Exception:
+            pass
+        save_state(state)
+        return None
+    rec["clip"] = clip["id"]
+    url = ((clip.get("posts") or {}).get("tiktok") or {}).get("url")
+    try:
+        from . import tg
+        tg.send(f"🎵 Today's TikTok is up: \"{clip['hook']}\"" + (f"\n{url}" if url else ""), silent=True)
+    except Exception:
+        pass
+    save_state(state)
+    return clip
+
+
 def email_post(cfg):
     from . import health
     state = load_state()
@@ -857,6 +910,10 @@ def email_post(cfg):
     q = clipqueue.queue(state)
     log.info("queue %d, emails due today %d, sent %d", len(q), due, sent)
     em = state.setdefault("email", {})
+    try:
+        tiktok_daily_post(cfg, state)
+    except Exception as e:
+        log.exception("daily TikTok: %s", e)
     from . import crflow
     for c in [c for c in clipqueue.queue(state) if not c.get("emailed_at") and crflow.applies(cfg, c)]:
         # a pre-approval campaign clip goes up as a draft as soon as it's made: approval takes hours, and it's
