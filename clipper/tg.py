@@ -49,6 +49,20 @@ def send(text, rows=None, silent=False):
     return _call("sendMessage", data)["message_id"]
 
 
+def info(text, rows=None, silent=True):
+    """A progress note ("posted", "submitted", "sent for approval"). Sent only with notify.updates: true in
+    config.yaml; by default the bot runs quietly and only problems, decisions and the weekly report reach Elie."""
+    try:
+        from .common import load_config
+        on = bool((load_config().get("notify") or {}).get("updates"))
+    except Exception:
+        on = False
+    if not on:
+        log.info("[quiet] %s", text[:200])
+        return None
+    return send(text, rows, silent=silent)
+
+
 def send_video(path, caption, rows=None):
     """Send a clip (Telegram bots can send up to 50 MB). Falls back to text if the file is too big."""
     if not configured() or os.environ.get("DRY_RUN") == "1":

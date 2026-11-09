@@ -1268,6 +1268,8 @@ assert mac.same_campaign("Lysium/Benji Ramos Clips", "lysium benji ramos clips")
 assert mac.awake(__import__("datetime").datetime(2026, 11, 4, 9)) and not mac.awake(__import__("datetime").datetime(2026, 11, 4, 3))
 os.environ.pop("TELEGRAM_TOKEN", None)
 from clipper import tg  # noqa: E402
+_real_info = tg.info
+tg.info = lambda text, rows=None, silent=True: tg.send(text, rows, silent=silent)   # tests see progress notes too
 assert not tg.configured() and tg.send("hi") is None and tg.poll() == []
 assert json.loads(tg.buttons([[("Join", "camp:join:" + "x" * 80)]]))["inline_keyboard"][0][0]["callback_data"] == "camp:join:" + "x" * 54
 print("MAC OK")
@@ -2112,4 +2114,16 @@ os.environ["CLIPPER_WORK"] = "/Volumes/NoSuchDriveXYZ/clipper"
 assert not common.work_ready()
 os.environ["CLIPPER_WORK"] = str(common.WORK)
 assert common.work_ready()
+# quiet by default: progress notes ("posted", "submitted") stay off Telegram unless notify.updates is on
+_q_calls = []
+_real_call9 = tg._call
+tg._call = lambda m, data=None, files=None, timeout=30: (_q_calls.append((m, data)), {"message_id": 1})[1]
+os.environ.update(TELEGRAM_TOKEN="t", TELEGRAM_CHAT_ID="1")
+_real_info("💰 Submitted your youtube post")
+assert not _q_calls
+tg.send("⚠️ something broke")
+assert len(_q_calls) == 1
+tg._call = _real_call9
+for _k in ("TELEGRAM_TOKEN", "TELEGRAM_CHAT_ID"):
+    os.environ.pop(_k, None)
 print("BACKUP OK")

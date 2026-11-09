@@ -881,7 +881,7 @@ def tiktok_daily_post(cfg, state, now=None):
     url = ((clip.get("posts") or {}).get("tiktok") or {}).get("url")
     try:
         from . import tg
-        tg.send(f"🎵 Today's TikTok is up: \"{clip['hook']}\"" + (f"\n{url}" if url else ""), silent=True)
+        tg.info(f"🎵 Today's TikTok is up: \"{clip['hook']}\"" + (f"\n{url}" if url else ""), silent=True)
     except Exception:
         pass
     save_state(state)

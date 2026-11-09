@@ -126,7 +126,7 @@ def favorite(cfg, state, tz):
               f"{statistics.median(cur_v):,.0f} median views after {s['measure_hours']}h", flush=True)
         try:
             from . import tg
-            tg.send(f"🕐 Your daily posting time moved from {cur} to {best}: posts at {best} got "
+            tg.info(f"🕐 Your daily posting time moved from {cur} to {best}: posts at {best} got "
                     f"{statistics.median(res[best]):,.0f} YouTube views in their first {s['measure_hours']} hours, vs "
                     f"{statistics.median(cur_v):,.0f} at {cur}. The other slots keep testing.", silent=True)
         except Exception:

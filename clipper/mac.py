@@ -135,6 +135,7 @@ def bot_campaigns():
 
 
 # ------------------------------------------------------------- comparing checks and building messages
+INFO_PREFIXES = ("✅ You're approved", "⏳ Applied", "🟢", "📤 ")
 class Msg(str):
     """A message text that carries Telegram buttons (still a plain string everywhere else)."""
     rows = None
@@ -330,8 +331,8 @@ def run_check(st, force=False):
                        "Usually it fixes itself on the next check (30 minutes). If this keeps coming back, send this "
                        "message to Claude and it will look at the cause.")
         return
-    for m in msgs:
-        tg.send(m, getattr(m, "rows", None))
+    for m in msgs:   # progress notes go quiet; problems and things that need you still come through
+        (tg.info if str(m).startswith(INFO_PREFIXES) else tg.send)(m, getattr(m, "rows", None))
         time.sleep(1)
     st.pop("_approved_now", None)
     send_packages_due(st)
@@ -866,7 +867,7 @@ def process_youtube_queue(st):
             fresh = crflow.by_token(crflow.load(), e["token"]) or e
             link = (fresh.get("links") or {}).get("youtube", "")
             if not link or link.startswith("failed:"):
-                tg.send(f"▶️ Posted on YouTube: \"{e.get('hook')}\". "
+                tg.info(f"▶️ Posted on YouTube: \"{e.get('hook')}\". "
                         + ("Its link is still processing; I'll submit it from Content Rewards' list in a few minutes."
                            if not link else ""))
 
@@ -982,7 +983,7 @@ def process_drafts(st):
             continue
         e.update(status="submitted", submitted_at=now_utc().isoformat())
         crflow.save(entries)
-        tg.send(f"📤 Sent to {e.get('campaign')} for approval: {e.get('hook')}\n\n"
+        tg.info(f"📤 Sent to {e.get('campaign')} for approval: {e.get('hook')}\n\n"
                 "I'll send you the post package as soon as they approve it.", silent=True)
 
 
@@ -1015,7 +1016,7 @@ def _submit(st, e, platform, url):
         e.setdefault("links", {})[platform] = "failed:" + url
         return False
     e.setdefault("links", {})[platform] = url
-    tg.send(f"💰 Submitted your {platform} post to {e.get('campaign')}:\n{url}")
+    tg.info(f"💰 Submitted your {platform} post to {e.get('campaign')}:\n{url}")
     return True
 
 
@@ -1059,7 +1060,7 @@ def hunt(st):
                         platform = _pick_platform(e, label)
                         e.setdefault("links", {})[platform] = "picked:" + label[:120]
                         changed = True
-                        tg.send(f"💰 Submitted your {platform} post to {e.get('campaign')}: "
+                        tg.info(f"💰 Submitted your {platform} post to {e.get('campaign')}: "
                                 f"\"{cr.parse_pick_label(label)['text'][:80]}\"")
                     _finish_if_done(e)
         except cr.NotLoggedIn:
@@ -1241,7 +1242,7 @@ def loop():
     jobs = None
     (DATA.parent / "logs").mkdir(exist_ok=True)
     if not st.get("started_once"):
-        tg.send("🟢 Clip bot is running on the Mac. Text \"status\" any time.", silent=True)
+        tg.info("🟢 Clip bot is running on the Mac. Text \"status\" any time.", silent=True)
         st["started_once"] = now_utc().isoformat()
         save(st)
     while True:

@@ -53,6 +53,8 @@ def blotato_key():
 
 def auto_post(cfg, state=None):
     """Post through Blotato at each slot: launched, allowed in config, the key is set and its accounts checked out."""
+    if os.environ.get("MAC_RUNS_CLIPPER") == "1":
+        return False   # the Mac has its own Blotato setup (posting.auto_post, posting.tiktok_daily, daily_total)
     ok = ((state or {}).get("launch") or {}).get("blotato_ok")
     return launched(cfg, state) and bool(settings(cfg)["auto_post"]) and blotato_key() and bool(ok)
 
@@ -181,8 +183,8 @@ def blotato_check():
 def daily(cfg, state, dry_run=False):
     """Run from every posting check: the week-before reminder, the Blotato confirmation, the launch-mode email."""
     s = settings(cfg)
-    if not s["enabled"] or dry_run:
-        return
+    if not s["enabled"] or dry_run or os.environ.get("MAC_RUNS_CLIPPER") == "1":
+        return   # on the Mac, launch week just raises the Claude budget and watches the big streams; no emails
     rec = state.setdefault("launch", {})
     left = days_left(cfg, state)
     local = _local_now(cfg)

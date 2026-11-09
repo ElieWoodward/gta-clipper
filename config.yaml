@@ -189,3 +189,8 @@ limits:
   price_per_mtok: {input: 2.0, output: 10.0}   # Claude Sonnet 5.5 list price in USD per million tokens
   batch: true                     # judge full streams through Anthropic's half-price batch API (live clips stay instant)
   batch_wait_hours: 6             # if a batch isn't back by then, judge the normal way
+
+notify:
+  updates: false                  # Mac/Telegram: false = only problems, things that need you (campaign offers, bio,
+                                  # drafts needing changes), the Monday report and the weekly video. true = also
+                                  # every "posted / submitted / sent for approval" note.
