@@ -403,7 +403,7 @@ def handle(st, kind, data, message_id, text):
     if kind == "text":
         if clipping_on() and low not in ("status", "/status", "check", "/check", "cleanup", "/cleanup", "backup", "/backup",
                                          "earnings", "/earnings", "money", "resend", "/resend", "approved",
-                                         "youtube", "/youtube", "post youtube", "youtube all",
+                                         "youtube", "/youtube", "post youtube", "youtube all", "today", "/today", "stats",
                                          "/start", "start", "help", "/help"):
             from . import mail
             verdict = mail.reply_verdict(data or "")
@@ -421,6 +421,8 @@ def handle(st, kind, data, message_id, text):
         elif low in ("earnings", "/earnings", "money"):
             tg.send("Reading the Earnings page…", silent=True)
             run_earnings(st, force=True)
+        elif low in ("today", "/today", "stats"):
+            run_day_summary(st, force=True)
         elif low in ("youtube", "/youtube", "post youtube", "youtube all"):
             n = queue_youtube(st)
             if n is None:
@@ -546,6 +548,76 @@ def process_fixes(st, jobs):
     if len(fixes) > 50:
         for k in sorted(fixes, key=lambda k: fixes[k].get("at", ""))[:-50]:
             fixes.pop(k)
+
+
+# ------------------------------------------------------------- end-of-day summary
+def day_stats(main, entries, joins, cfg, day):
+    """Numbers for one local day: posts per platform, campaign posts, drafts, joins, Claude spend, best recent post."""
+    from . import crflow
+
+    def on_day(iso):
+        return _local_day(iso) == day
+
+    yt = tt = camp = 0
+    for c in (main.get("clips") or {}).values():
+        for platform, p in (c.get("posts") or {}).items():
+            if on_day(p.get("posted_at")):
+                yt += platform == "youtube"
+                tt += platform == "tiktok"
+                camp += bool(c.get("campaign") or c.get("preapproval"))
+    for e in entries:   # campaign clips posted on YouTube through Blotato live in the campaign queue, not the clips
+        if on_day(e.get("yt_auto_at")):
+            yt += 1
+            camp += 1
+    best, best_v = None, 0
+    since = (now_utc() - timedelta(days=2)).isoformat()
+    for c in (main.get("clips") or {}).values():
+        p = (c.get("posts") or {}).get("youtube") or {}
+        if (p.get("posted_at") or "") >= since and (p.get("views") or 0) > best_v:
+            best, best_v = c, p.get("views") or 0
+    spend = sum((main.get(k) or {}).get(now_utc().date().isoformat(), 0.0) for k in ("spend", "spend_live"))
+    return {"youtube": yt, "tiktok": tt, "campaign": camp, "target": crflow.daily_total(cfg, day),
+            "drafts": sum(1 for e in entries if on_day(e.get("submitted_at"))),
+            "approved": sum(1 for e in entries if on_day(e.get("approved_at"))),
+            "joined": [j.get("name") for j in joins if j.get("status") == "done" and on_day(j.get("at"))],
+            "spend": spend, "best": (best.get("hook") if best else None), "best_views": best_v}
+
+
+def day_text(d):
+    filled = d["youtube"]
+    if not filled and not d["tiktok"]:
+        line = "Nothing went up today. If that keeps happening, text \"status\" or send this to Claude."
+    elif filled >= d["target"]:
+        line = f"Every slot filled ({filled} of {d['target']})" + (f", {d['campaign']} of them paid." if d["campaign"]
+                                                                       else ". No campaign clips today.")
+    else:
+        line = (f"{filled} of {d['target']} slots filled: not enough clips good enough to post. "
+                + (f"{d['campaign']} paid." if d["campaign"] else "None paid today."))
+    lines = [f"📊 Today: {d['youtube']} on YouTube, {d['tiktok']} on TikTok ({d['campaign']} campaign)", line]
+    if d["drafts"] or d["approved"]:
+        lines.append(f"Campaign drafts: {d['drafts']} sent for approval, {d['approved']} approved")
+    if d["joined"]:
+        lines.append("Joined: " + ", ".join(n for n in d["joined"] if n))
+    if d["best"]:
+        lines.append(f"Best lately: \"{d['best']}\" ({d['best_views']:,} YouTube views)")
+    lines.append(f"Claude today: ${d['spend']:.2f}")
+    return "\n".join(lines)
+
+
+def run_day_summary(st, force=False):
+    """Once a day at 10:30 PM: one message with the day's numbers."""
+    from . import crflow
+    from .common import load_config, load_state
+    now = local_now()
+    day = now.date().isoformat()
+    if not force and (now.hour < 22 or (now.hour == 22 and now.minute < 30) or st.get("summary_day") == day):
+        return
+    st["summary_day"] = day
+    try:
+        main = load_state()
+    except Exception:
+        main = {}
+    tg.send(day_text(day_stats(main, crflow.load(), joins_load(), load_config(), day)), silent=True)
 
 
 # ------------------------------------------------------------- Monday earnings report
@@ -1302,6 +1374,10 @@ def loop():
                 run_earnings(st)
             except Exception as e:
                 log.warning("earnings report failed: %s", e)
+        try:
+            run_day_summary(st)
+        except Exception as e:
+            log.warning("day summary failed: %s", e)
         if now >= nxt and awake():
             run_check(st)
             save(st)

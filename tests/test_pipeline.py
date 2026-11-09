@@ -2153,4 +2153,16 @@ assert [crflow.daily_total(_ccfg, d) for d in ("2026-11-10", "2026-11-19", "2026
 _bs = {"limits": {"claude_usd_per_month": 5.0, "claude_usd_day_max": 0.5,
                   "budget_schedule": [{"from": "2000-01-01", "per_month": 30.0, "day_max": 1.5}]}}
 assert abs(highlights.budget_left(_bs, {"spend": {}}) - 1.5) < 0.01
+# end-of-day message: posts per platform, how many paid, drafts, best recent post, Claude spend
+_today9 = mac.local_now().date().isoformat()
+_nowi = common.now_utc().isoformat()
+_main9 = {"clips": {"a": {"hook": "big one", "posts": {"youtube": {"posted_at": _nowi, "views": 4200},
+                                                       "tiktok": {"posted_at": _nowi}}},
+                    "b": {"hook": "paid one", "campaign": "Lysium", "posts": {"youtube": {"posted_at": _nowi, "views": 90}}}},
+          "spend": {common.now_utc().date().isoformat(): 0.31}}
+_ent9 = [{"yt_auto_at": _nowi, "submitted_at": _nowi}, {"approved_at": _nowi}]
+_d9 = mac.day_stats(_main9, _ent9, [], _ccfg, _today9)
+assert (_d9["youtube"], _d9["tiktok"], _d9["campaign"], _d9["drafts"], _d9["approved"]) == (3, 1, 2, 1, 1), _d9
+_t9 = mac.day_text(_d9)
+assert "3 on YouTube, 1 on TikTok (2 campaign)" in _t9 and "big one" in _t9 and "$0.31" in _t9, _t9
 print("BACKUP OK")
