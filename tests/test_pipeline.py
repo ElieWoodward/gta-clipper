@@ -2147,8 +2147,10 @@ assert len(mac.joins_load()) == 1
 mac.JOINS.unlink(missing_ok=True)
 if _mrc9 is None:
     os.environ.pop("MAC_RUNS_CLIPPER", None)
-# launch week: 7 posts a day in total
-_lc = dict(_ccfg, limits=dict(_ccfg.get("limits") or {}, boost_dates=[common.now_utc().date().isoformat()]))
-_nc = dict(_ccfg, limits=dict(_ccfg.get("limits") or {}, boost_dates=[]))
-assert crflow.daily_total(_lc) == 7 and crflow.daily_total(_nc) == 5
+# posts a day step up: 5 now, 10 from launch day (and the week after), 12 from Dec 3
+assert [crflow.daily_total(_ccfg, d) for d in ("2026-11-10", "2026-11-19", "2026-11-30", "2026-12-03")] == [5, 10, 10, 12]
+# and the Claude budget steps up with them
+_bs = {"limits": {"claude_usd_per_month": 5.0, "claude_usd_day_max": 0.5,
+                  "budget_schedule": [{"from": "2000-01-01", "per_month": 30.0, "day_max": 1.5}]}}
+assert abs(highlights.budget_left(_bs, {"spend": {}}) - 1.5) < 0.01
 print("BACKUP OK")

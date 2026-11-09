@@ -135,12 +135,15 @@ def per_day(cfg):
     return int(((cfg.get("clip") or {}).get("campaign") or {}).get("max_per_day") or 3)
 
 
-def daily_total(cfg):
-    """Posts a day in total (posting.daily_total; posting.daily_total_launch during GTA 6 launch week)."""
+def daily_total(cfg, day=None):
+    """Posts a day in total: posting.daily_total, stepped up on the dates in posting.daily_total_schedule."""
     post = cfg.get("posting") or {}
-    if post.get("daily_total_launch") and now_utc().date().isoformat() in ((cfg.get("limits") or {}).get("boost_dates") or []):
-        return int(post["daily_total_launch"])
-    return int(post.get("daily_total") or 0)
+    day = day or _local_day(now_utc().isoformat(), cfg.get("timezone", "UTC"))
+    n = int(post.get("daily_total") or 0)
+    for step in sorted(post.get("daily_total_schedule") or [], key=lambda x: str(x.get("from"))):
+        if str(step.get("from")) <= day:
+            n = int(step.get("per_day") or n)
+    return n
 
 
 def _local_day(iso, tz):

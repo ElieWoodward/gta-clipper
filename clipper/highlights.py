@@ -285,12 +285,16 @@ def budget_left(cfg, state):
     if cap is not None:
         left = float(cap) - today
     month = lim.get("claude_usd_per_month")
+    day_max = lim.get("claude_usd_day_max")
+    for step in sorted(lim.get("budget_schedule") or [], key=lambda x: str(x.get("from"))):
+        if str(step.get("from")) <= now_utc().date().isoformat():   # more posts later need more Claude
+            month = step.get("per_month", month)
+            day_max = step.get("day_max", day_max)
     if month is not None:
         start = (now_utc().date() - _td(days=29)).isoformat()
         boosted = sum(v for key in ("spend", "spend_live") for d, v in (state.get(key) or {}).items()
                       if d in boost and d >= start)
         left = min(left, float(month) - (spend_last_days(state, 30) - boosted))
-        day_max = lim.get("claude_usd_day_max")
         if day_max is not None:
             left = min(left, float(day_max) - today)
     return left
