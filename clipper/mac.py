@@ -575,6 +575,11 @@ def earnings_text(e, last=None, claude=None, budget=None, times=None):
     if times:
         lines.append("")
         lines += times
+    week_ago = (now_utc() - timedelta(days=7)).isoformat()
+    joined = [j.get("name") for j in joins_load() if j.get("status") == "done" and (j.get("at") or "") >= week_ago]
+    if joined:
+        lines.append("")
+        lines.append("🤝 Joined this week: " + ", ".join(n for n in joined if n))
     return "\n".join(lines)
 
 
@@ -720,8 +725,9 @@ def process_joins(st):
             else:
                 j["status"] = "done"
                 _mark_joined(j["token"])
-                tg.send(f"✅ Joined {name} on Content Rewards. Its clips go to the front of the queue now.\n"
-                        f"{res.get('url')}{extra}")
+                (tg.info if j.get("auto") else tg.send)(
+                    f"✅ Joined {name} on Content Rewards. Its clips go to the front of the queue now.\n"
+                    f"{res.get('url')}{extra}")
         joins_save(items)
 
 

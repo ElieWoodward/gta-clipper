@@ -79,7 +79,7 @@ clip:
     clips_per_hour: 3             # campaigns (Lysium) still have the brand check every clip, so weak ones just
     min_per_vod: 5                # get turned down there. A streamer's own min_score: wins over this.
     candidates_per_hour: 8
-    max_per_day: 5                # most clips per campaign per day: drafts sent for approval and post packages
+    max_per_day: 7                # most clips per campaign per day: drafts sent for approval and post packages
                                   # sent to you. The best-scoring go first; the rest wait (dropped after 3 days).
   commentary: false               # true adds rotating context lines under the hook (off: the hook stays alone)
 
@@ -94,6 +94,7 @@ posting:
   mode: email                     # email = you get an email with the clip + captions at each slot and post it yourself
                                   # blotato = the bot posts for you through Blotato (needs BLOTATO_API_KEY)
   platforms: [tiktok, youtube]
+  daily_total_launch: 7           # the same during GTA 6 launch week (Nov 19-26); TikTok stays at 1 a day
   daily_total: 5                  # Mac: most clips posted per day, campaign + regular together. Campaign clips
                                   # (they pay) get first claim; regular posting times fill what's left.
   tiktok_daily: "11:00"           # Mac + Blotato: TikTok gets exactly ONE post a day, at this time (same time every
@@ -194,3 +195,8 @@ notify:
   updates: false                  # Mac/Telegram: false = only problems, things that need you (campaign offers, bio,
                                   # drafts needing changes), the Monday report and the weekly video. true = also
                                   # every "posted / submitted / sent for approval" note.
+
+campaigns:
+  auto_join: true                 # Mac: join Content Rewards campaigns that are certainly GTA by itself (GTA named in the
+                                  # campaign, or a streamer whose recent streams are mostly GTA). Others aren't sent.
+                                  # You only hear about a campaign when it needs something from you (bio, another site).

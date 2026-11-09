@@ -256,8 +256,46 @@ def _steps(m):
     return steps
 
 
+# For joining by itself the bot wants more than a loose match: GTA named outright (not just "RP"/"roleplay", which
+# also fits Minecraft or Rust roleplay), or a streamer whose recent streams are mostly GTA.
+SURE_GTA_RE = re.compile(r"\bgta ?(v|5|6|vi|rp|online)?\b|grand theft auto|nopixel|no pixel|los santos|leonida|"
+                         r"vice city|\bfivem\b", re.I)
+
+
+def sure_gta(m):
+    """True only when a campaign is certainly GTA content (used to join by itself)."""
+    if SURE_GTA_RE.search(m.get("name") or "") or SURE_GTA_RE.search(m.get("brief") or ""):
+        return True
+    hit = re.search(r"GTA in (\d+) of their last (\d+)", m.get("why") or "")
+    return bool(m.get("twitch_login") and hit and int(hit.group(1)) >= max(3, (int(hit.group(2)) + 1) // 2))
+
+
+def auto_join_on(cfg=None):
+    from .common import load_config
+    cfg = cfg or load_config()
+    return os.environ.get("MAC_RUNS_CLIPPER") == "1" and bool((cfg.get("campaigns") or {}).get("auto_join", True))
+
+
+def queue_join(m):
+    """Hand a campaign to the Mac's join step (it opens Content Rewards and clicks Join). Returns the reference the
+    join is tracked by, the same shape a Telegram Join tap gives."""
+    import uuid
+    from . import mac
+    token = uuid.uuid4().hex[:10]
+    items = [j for j in mac.joins_load() if j.get("name") != m.get("name")]
+    items.append({"token": token, "name": m.get("name"), "link": m.get("join_url") or m.get("url"), "status": "todo",
+                  "tries": 0, "auto": True, "at": now_utc().isoformat()})
+    mac.joins_save(items)
+    log.info("auto-joining campaign %s", m.get("name"))
+    return f"tg:{token}"
+
+
 def notify(state, m):
     from . import mail
+    if auto_join_on():   # the Mac joins certain-GTA campaigns by itself; anything less certain isn't sent at all
+        if sure_gta(m):
+            return queue_join(m)
+        return "skipped:not-sure-gta"
     rate = f"${m['rate']:.2f} per 1,000 views" if m.get("rate") else "rate on the page"
     budget = f"{m['left']} of {m['budget']} left" if m.get("left") else "budget on the page"
     lines = [f"New paid campaign that fits the channel: {m['name']}", "",

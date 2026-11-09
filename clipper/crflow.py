@@ -136,7 +136,11 @@ def per_day(cfg):
 
 
 def daily_total(cfg):
-    return int((cfg.get("posting") or {}).get("daily_total") or 0)
+    """Posts a day in total (posting.daily_total; posting.daily_total_launch during GTA 6 launch week)."""
+    post = cfg.get("posting") or {}
+    if post.get("daily_total_launch") and now_utc().date().isoformat() in ((cfg.get("limits") or {}).get("boost_dates") or []):
+        return int(post["daily_total_launch"])
+    return int(post.get("daily_total") or 0)
 
 
 def _local_day(iso, tz):

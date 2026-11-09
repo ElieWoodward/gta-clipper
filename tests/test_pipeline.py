@@ -1639,7 +1639,9 @@ _e9 = crflow.by_token(crflow.load(), "tok9")
 assert _e9["status"] == "done" and set(_e9["links"]) == {"tiktok", "youtube"}, _e9
 assert _e9["links"]["youtube"].startswith("picked:He got asked") and len(_FakeSite.links_sent) == _n_links
 assert "Submitted your" in _tgcalls2[-1][1]["text"]
-# at most 3 campaign clips a day: drafts sent for approval and post packages, best score first
+# at most posting.daily_total (5) campaign clips a day: drafts and post packages, best score first
+_real_dt = crflow.daily_total
+crflow.daily_total = lambda cfg: 5   # an ordinary day (this test's state may sit in launch week)
 _tgcalls2.clear()
 _now_iso = common.now_utc().isoformat()
 _base = {k: v for k, v in dict(_q2[0], links={}, campaign="Lysium/Benji Ramos Clips").items()
@@ -1674,6 +1676,7 @@ os.environ.pop("MAC_RUNS_CLIPPER", None)
 assert jobs._quota(_ccfg) >= 3                      # GitHub: the ramp as before
 if _mrc8 is not None:
     os.environ["MAC_RUNS_CLIPPER"] = _mrc8
+crflow.daily_total = _real_dt
 # YouTube through Blotato (posting.auto_post), TikTok still by hand
 from clipper import services as _svc6  # noqa: E402
 _bl = []
@@ -2126,4 +2129,26 @@ assert len(_q_calls) == 1
 tg._call = _real_call9
 for _k in ("TELEGRAM_TOKEN", "TELEGRAM_CHAT_ID"):
     os.environ.pop(_k, None)
+# certain-GTA campaigns are joined by the Mac by itself; anything less certain isn't sent
+from clipper import campaigns as _cmp9  # noqa: E402
+assert _cmp9.sure_gta({"name": "NoPixel 4.0 Clips", "brief": ""})
+assert _cmp9.sure_gta({"name": "Lysium/Benji Ramos Clips", "brief": "", "twitch_login": "lysium",
+                       "why": "GTA in 9 of their last 10 streams"})
+assert not _cmp9.sure_gta({"name": "Minecraft RP Server", "brief": "roleplay clips", "twitch_login": "x",
+                           "why": "GTA in 2 of their last 10 streams"})
+_mrc9 = os.environ.get("MAC_RUNS_CLIPPER")
+os.environ["MAC_RUNS_CLIPPER"] = "1"
+mac.JOINS.unlink(missing_ok=True)
+_ref = _cmp9.notify({}, {"name": "GTA RP Highlights", "brief": "", "join_url": "https://clippingalpha.com/go/9",
+                          "url": "u", "why": "mentions GTA"})
+assert _ref.startswith("tg:") and mac.joins_load()[0]["status"] == "todo" and mac.joins_load()[0]["auto"]
+assert _cmp9.notify({}, {"name": "Rust roleplay", "brief": "", "why": "mentions GTA"}).startswith("skipped")
+assert len(mac.joins_load()) == 1
+mac.JOINS.unlink(missing_ok=True)
+if _mrc9 is None:
+    os.environ.pop("MAC_RUNS_CLIPPER", None)
+# launch week: 7 posts a day in total
+_lc = dict(_ccfg, limits=dict(_ccfg.get("limits") or {}, boost_dates=[common.now_utc().date().isoformat()]))
+_nc = dict(_ccfg, limits=dict(_ccfg.get("limits") or {}, boost_dates=[]))
+assert crflow.daily_total(_lc) == 7 and crflow.daily_total(_nc) == 5
 print("BACKUP OK")
