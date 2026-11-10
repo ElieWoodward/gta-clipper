@@ -171,6 +171,37 @@ def claimed_today(cfg, entries=None):
     return n
 
 
+WINDOW_HOURS = 15   # posting day, about 7 AM to 10 PM
+
+
+def youtube_gap_minutes(cfg):
+    """Minutes between any two YouTube posts: the day's posts spread evenly over the posting day (never under 45)."""
+    return max(45, int(WINDOW_HOURS * 60 / max(1, daily_total(cfg) or 5)))
+
+
+def last_youtube_at(clips, entries):
+    """When the most recent YouTube post went up (regular clips and campaign clips), or ""."""
+    times = [((c.get("posts") or {}).get("youtube") or {}).get("posted_at") or "" for c in (clips or {}).values()]
+    times += [e.get("yt_auto_at") or "" for e in entries or []]
+    return max(times + [""])
+
+
+def youtube_ready(cfg, clips, entries, now=None):
+    """True once the last YouTube post is at least youtube_gap_minutes old (so posts never land together)."""
+    last = last_youtube_at(clips, entries)
+    if not last:
+        return True
+    now = now or now_utc()
+    return (now - datetime.fromisoformat(last)).total_seconds() >= youtube_gap_minutes(cfg) * 60
+
+
+def campaign_waiting(entries, now=None):
+    """Approved campaign clips queued for YouTube whose turn has come (they go before regular clips)."""
+    now_iso = (now or now_utc()).isoformat()
+    return [e for e in entries or [] if e.get("yt_at") and e["yt_at"] <= now_iso and e.get("status") == "approved"
+            and "youtube" not in (e.get("links") or {})]
+
+
 def best_first(entries):
     return sorted(entries, key=lambda e: (-(e.get("score") or 0), e.get("queued_at") or ""))
 

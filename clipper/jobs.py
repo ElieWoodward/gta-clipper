@@ -964,8 +964,14 @@ def email_post(cfg):
         log.info("posting emails are paused (reply resume to turn them back on)")
     elif FORCE or sent < due:
         clip = clipqueue.pick_for_email(state)
-        if clip:
+        spaced = True
+        if clip and "youtube" in auto_platforms(cfg):   # YouTube posts spread out, paid campaign clips first
+            entries = crflow.load()
+            spaced = (crflow.youtube_ready(cfg, state["clips"], entries) and not crflow.campaign_waiting(entries))
+        if clip and spaced:
             deliver(cfg, state, clip)
+        elif clip:
+            log.info("a posting slot is due; waiting so it doesn't land right after the last YouTube post")
         else:
             log.info("a posting slot is due but nothing new is waiting")
     from . import launch

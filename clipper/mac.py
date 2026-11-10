@@ -935,9 +935,16 @@ def queue_youtube(st):
 def process_youtube_queue(st):
     """Post the next queued YouTube clip once its time comes."""
     from . import crflow
+    from .common import load_config, load_state
     entries = crflow.load()
-    due = [e for e in entries if e.get("yt_at") and e["yt_at"] <= now_utc().isoformat()
-           and e.get("status") == "approved" and "youtube" not in (e.get("links") or {})]
+    due = crflow.campaign_waiting(entries)
+    if due:
+        try:
+            clips = load_state().get("clips") or {}
+        except Exception:
+            clips = {}
+        if not crflow.youtube_ready(load_config(), clips, entries):
+            return   # too soon after the last YouTube post; its turn comes at the next spaced-out time
     for e in sorted(due, key=lambda x: (x["yt_at"], -(x.get("score") or 0)))[:1]:
         e.pop("yt_at", None)
         crflow.save(entries)
@@ -974,7 +981,8 @@ def resend_approved(st):
 def send_packages_due(st):
     """Post packages for approved drafts: at most clip.campaign.max_per_day per campaign per day, best score
     first; the rest wait for tomorrow."""
-    from . import crflow
+    from . import crflow, jobs
+    from .clipqueue import tiktok_daily
     from .common import load_config
     entries = crflow.load()
     if not st.get("pkg_migrated"):   # approvals from before the daily limit were already sent
@@ -995,6 +1003,13 @@ def send_packages_due(st):
         if total and sum(1 for x in entries if _local_day(x.get("packaged_at")) == local_now().date().isoformat()) >= total:
             break   # the day's total is used up; the rest go tomorrow
         e["packaged_at"] = now_utc().isoformat()
+        if "youtube" in jobs.auto_platforms(cfg) and e.get("draft_id") and "youtube" in (e.get("platforms") or []):
+            e["yt_at"] = now_utc().isoformat()   # goes up on YouTube at the next spaced-out turn (see the queue)
+            crflow.save(entries)
+            if "tiktok" in (e.get("platforms") or []) and not tiktok_daily(cfg):
+                send_post_package(dict(e, blocks=[b for b in e.get("blocks") or [] if not b[0].startswith("YouTube")]))
+            sent += 1
+            continue
         crflow.save(entries)
         send_post_package(e, st=st)
         sent += 1

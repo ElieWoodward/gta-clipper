@@ -1770,6 +1770,7 @@ crflow.save([dict(_base, id=f"y{i}", token=f"yt{i}", status="approved", approved
             + [dict(_base, id="y9", token="yt9", status="approved", file=str(_vid), score=10, links={},
                     platforms=["tiktok", "youtube"])])   # no draft id: never posted (its link couldn't be matched)
 _tgcalls2.clear()
+_real_ready7, crflow.youtube_ready = crflow.youtube_ready, lambda *a, **k: True   # spacing is tested on its own
 mac.handle(_mst, "text", "youtube", 21, "")
 assert any("Posting 3 approved clips on YouTube" in (c[1] or {}).get("text", "") for c in _tgcalls2 if c[0] == "sendMessage")
 mac.process_youtube_queue(_mst)
@@ -1784,6 +1785,7 @@ crflow.save(_ql)
 mac.process_youtube_queue(_mst)
 assert _yt7 == ["yt1", "yt2"], _yt7
 mac._auto_youtube, jobs.auto_platforms = _real_ay7, _real_ap7
+crflow.youtube_ready = _real_ready7
 # drafts are tied to clips by Content Rewards' own id, learned from the video's exact size
 _fa = TMP / "fa.mp4"; _fa.write_bytes(b"a" * 1000)  # noqa: E702
 _fb = TMP / "fb.mp4"; _fb.write_bytes(b"b" * 2000)  # noqa: E702
@@ -2174,4 +2176,12 @@ _d9 = mac.day_stats(_main9, _ent9, [], _ccfg, _today9)
 assert (_d9["youtube"], _d9["tiktok"], _d9["campaign"], _d9["drafts"], _d9["approved"]) == (3, 1, 2, 1, 1), _d9
 _t9 = mac.day_text(_d9)
 assert "3 on YouTube, 1 on TikTok (2 campaign)" in _t9 and "big one" in _t9 and "$0.31" in _t9, _t9
+# YouTube posts are spread out: never closer than the posting day divided by the day's posts (45 min minimum)
+_g = dict(_ccfg, limits=dict(_ccfg.get("limits") or {}, boost_dates=[]),
+          posting=dict(_ccfg["posting"], daily_total_schedule=[]))
+assert crflow.youtube_gap_minutes(_g) == 180
+_half_hour_ago = (common.now_utc() - __import__("datetime").timedelta(minutes=30)).isoformat()
+assert not crflow.youtube_ready(_g, {"a": {"posts": {"youtube": {"posted_at": _half_hour_ago}}}}, [])
+assert crflow.youtube_ready(_g, {}, [{"yt_auto_at": "2026-01-01T00:00:00+00:00"}])
+assert crflow.youtube_gap_minutes(dict(_g, posting=dict(_g["posting"], daily_total=12))) == 75
 print("BACKUP OK")
