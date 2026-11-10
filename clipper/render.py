@@ -184,7 +184,9 @@ def build_ass(pick, words, out_path, commentary=False, handle=None):
                 lines.append(f"Dialogue: 1,{_ts(s)},{_ts(e)},Note,,0,0,0,,{_esc(n['text'])}")
 
     # Captions: 3-word groups, current word in yellow.
-    rel = [dict(w, s=w["s"] - pick["start"], e=w["e"] - pick["start"]) for w in words
+    from .clean import mask
+    rel = [dict(w, s=w["s"] - pick["start"], e=w["e"] - pick["start"],
+                w=mask(w["w"]) if pick.get("mask_profanity", True) else w["w"]) for w in words
            if pick["start"] <= w["s"] < pick["end"]]
     groups, cur = [], []
     for w in rel:

@@ -418,6 +418,9 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
     cid = _clip_id(vod["id"], p["start"])
     if cid in state["clips"]:
         return state["clips"][cid]
+    from . import clean
+    if clean.enabled(cfg):   # no strong swearing in on-screen text or post text (YouTube age-restricts for it)
+        p = dict(p, **{k: clean.mask(p[k]) for k in ("hook", "title", "caption", "punch_text") if p.get(k)})
     if src is None:
         dl_start = max(0, int(p["start"]) - 2)
         src = fetch.download_section(vod, dl_start, p["end"] + 2, d / f"{cid}_src.mp4")
@@ -426,6 +429,9 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
     words = caption_words(cfg, src, src_offset, p, d / f"{cid}_cap.wav", fallback=words)
     # Look at the frames first: find the webcam and where the action is, so the vertical crop keeps what matters.
     p = dict(p, **place_punchline(p, words))   # only show a punchline that's really said, exactly when it's said
+    if clean.enabled(cfg) and p.get("punch_text"):
+        p["punch_text"] = clean.mask(p["punch_text"])
+    p["mask_profanity"] = clean.enabled(cfg)
     look = vision.analyze_frames(cfg, src, src_offset, p["end"] - p["start"], d)
     facecam = vod["streamer"].get("facecam") or look["facecam"]
     layout = cfg["clip"].get("layout", "auto")
@@ -548,6 +554,9 @@ def _slots(cfg, n, state=None):
 
 def _caption(cfg, clip, platform):
     """Viral-style description: one casual reaction line, a credit, then 4-6 hashtags incl. the streamer's."""
+    from . import clean
+    if clean.enabled(cfg):
+        clip = dict(clip, caption=clean.mask(clip.get("caption") or ""))
     tags = list(cfg["posting"]["hashtags"])
     if clip["streamer"] not in ("manual", "test"):
         tags.append("#" + "".join(ch for ch in clip["streamer"].lower() if ch.isalnum()))

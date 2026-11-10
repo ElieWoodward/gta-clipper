@@ -2184,4 +2184,14 @@ _half_hour_ago = (common.now_utc() - __import__("datetime").timedelta(minutes=30
 assert not crflow.youtube_ready(_g, {"a": {"posts": {"youtube": {"posted_at": _half_hour_ago}}}}, [])
 assert crflow.youtube_ready(_g, {}, [{"yt_auto_at": "2026-01-01T00:00:00+00:00"}])
 assert crflow.youtube_gap_minutes(dict(_g, posting=dict(_g["posting"], daily_total=12))) == 75
+# strong swearing is masked in on-screen text and post text (YouTube age-restricts for it); ordinary words aren't
+from clipper import clean as _cl  # noqa: E402
+assert _cl.mask("YOU FUCKING MORON") == "YOU F***ING MORON"
+assert _cl.mask("bro said shit") == "bro said s***"
+assert _cl.mask("cockpit Dickens Scunthorpe classic") == "cockpit Dickens Scunthorpe classic"
+assert _cl.mask("what a dick") == "what a d***"
+_ass = TMP / "mask.ass"
+render.build_ass({"start": 0, "end": 3}, [{"w": "fucking", "s": 0.1, "e": 0.5}], _ass)
+assert "F***ING" in _ass.read_text() and "FUCKING" not in _ass.read_text()
+assert "f***" in jobs._caption(_ccfg, {"caption": "fuck that guy", "streamer": "Lysium"}, "youtube")
 print("BACKUP OK")
