@@ -1820,6 +1820,15 @@ _d11b = _d11.replace(hour=11, minute=7)
 assert jobs.tiktok_daily_post(_ccfg, _td, now=_d11b)["id"] == "hi"                 # best on YouTube, no campaign clip
 assert [b[0] for b in _bl] == ["tiktok"] and _td["clips"]["hi"]["posts"]["tiktok"]["url"].endswith("/1")
 assert jobs.tiktok_daily_post(_ccfg, _td, now=_d11b.replace(hour=12)) is None and len(_bl) == 1   # once a day
+# a recent clip whose video is gone is skipped for the next one instead of losing the day
+_td2 = {"clips": {
+    "gone": dict(_c6, id="gone", hook="gone", posts={"youtube": {"posted_at": _recent, "views": 99999}},
+                 local_file=str(TMP / "nope.mp4"), media_url=(TMP / "nope.mp4").as_uri()),
+    "ok": dict(_c6, id="ok", hook="still here", posts={"youtube": {"posted_at": _recent, "views": 10}}, local_file=str(_vid))}}
+assert jobs.tiktok_daily_post(_ccfg, _td2, now=_d11b)["id"] == "ok"
+# posted clips keep their video for 3 days while they're TikTok candidates
+assert jobs._keep_for_tiktok({"posts": {"youtube": {"posted_at": _recent}}})
+assert not jobs._keep_for_tiktok({"posts": {"youtube": {"posted_at": _recent}, "tiktok": {}}})
 _pk = clipqueue.package(_ccfg, dict(_c6, posts={}), [], {"clips": {}})
 assert "TikTok caption" not in [b[0] for b in _pk["blocks"]]                       # nothing for Elie to post on TikTok
 assert crflow.platforms(_ccfg) == ["youtube"]                                      # campaign drafts: YouTube only

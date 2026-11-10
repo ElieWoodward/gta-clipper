@@ -646,10 +646,33 @@ def overlaps_existing(state, vod_id, start, end, min_share=0.5):
 
 
 # ------------------------------------------------------------------ email mode: one email per posting slot
+def _has_video(c):
+    """The clip's video is still on disk (or a non-local download address is known)."""
+    if c.get("local_file") and os.path.exists(c["local_file"]):
+        return True
+    url = str(c.get("media_url") or "")
+    if url.startswith("file://"):
+        from urllib.parse import unquote, urlparse
+        return os.path.exists(unquote(urlparse(url).path))
+    return bool(url)
+
+
+def _keep_for_tiktok(c):
+    """Posted on YouTube in the last 3 days and not on TikTok yet: a candidate for the daily TikTok, keep its video."""
+    try:
+        if not clipqueue.tiktok_daily(load_config()):
+            return False
+    except Exception:
+        return False
+    posts = c.get("posts") or {}
+    since = (now_utc() - timedelta(days=3)).isoformat()
+    return "tiktok" not in posts and ((posts.get("youtube") or {}).get("posted_at") or "") >= since
+
+
 def cleanup_assets(state):
     """Delete the stored video of clips that left the queue, and close their GitHub issues."""
     for c in state["clips"].values():
-        if c.get("status") == "approved":
+        if c.get("status") == "approved" or _keep_for_tiktok(c):
             continue
         if c.get("asset_id") and not c.get("asset_deleted"):
             try:
@@ -846,9 +869,12 @@ def tiktok_daily_post(cfg, state, now=None):
     hh, mm = (int(x) for x in at.split(":"))
     start = now.replace(hour=hh, minute=mm, second=0, microsecond=0)
     rec = state.setdefault("tiktok_daily", {})
-    if now < start or now > start + timedelta(hours=2) or rec.get("day") == now.date().isoformat():
-        return None
-    rec["day"] = now.date().isoformat()   # once a day, even if it fails (the same time daily matters more)
+    today = now.date().isoformat()
+    if rec.get("tries_day") != today:
+        rec.update(tries_day=today, tries=0)
+    if now < start or now > start + timedelta(hours=2) or rec.get("posted_day") == today or rec.get("tries", 0) >= 3:
+        return None   # once a day, inside 2 hours of its time; 3 tries at most (they're 15 minutes apart)
+    rec["tries"] = rec.get("tries", 0) + 1
     since = (now_utc() - timedelta(days=3)).isoformat()
 
     def yt_views(c):
@@ -857,27 +883,36 @@ def tiktok_daily_post(cfg, state, now=None):
 
     pool = [c for c in state["clips"].values()
             if "tiktok" not in (c.get("posts") or {}) and not c.get("preapproval")
-            and ((c.get("posts") or {}).get("youtube") or {}).get("posted_at", "") >= since
-            and (c.get("local_file") and os.path.exists(c["local_file"]) or c.get("media_url"))]
-    if not pool:   # nothing on YouTube lately: the best clip waiting in the queue
-        pool = [c for c in clipqueue.queue(state) if not c.get("preapproval")]
+            and ((c.get("posts") or {}).get("youtube") or {}).get("posted_at", "") >= since and _has_video(c)]
+    pool.sort(key=lambda c: (yt_views(c), c.get("score") or 0), reverse=True)
+    # then the best clips waiting in the queue, in case nothing recent still has its video
+    pool += sorted((c for c in clipqueue.queue(state) if not c.get("preapproval") and _has_video(c)
+                    and c not in pool), key=lambda c: c.get("score") or 0, reverse=True)
     if not pool:
         print("::notice::daily TikTok: no clip to post today", flush=True)
         return None
-    clip = max(pool, key=lambda c: (yt_views(c), c.get("score") or 0))
-    try:
-        auto_post_clip(cfg, state, clip, platforms=["tiktok"], finish=False)
-    except Exception as e:
+    err = None
+    for clip in pool[:4]:   # a clip whose video went missing is skipped, not the whole day
+        try:
+            auto_post_clip(cfg, state, clip, platforms=["tiktok"], finish=False)
+            err = None
+            break
+        except Exception as e:
+            err = e
+            log.warning("daily TikTok: %s failed (%s), trying the next one", clip["id"], e)
+    if err is not None:
+        e = err
         print(f"::warning::daily TikTok post failed: {str(e)[:200]}", flush=True)
         try:
             from . import tg
-            tg.send(f"⚠️ Today's TikTok didn't go up ({str(e)[:150]}). In Blotato, check Accounts shows TikTok "
-                    "connected. It tries again tomorrow at the same time.")
+            if rec["tries"] >= 3:
+                tg.send(f"⚠️ Today's TikTok didn't go up after 3 tries ({str(e)[:150]}). If it mentions Blotato, "
+                        "check Accounts there shows TikTok connected. It tries again tomorrow at the same time.")
         except Exception:
             pass
         save_state(state)
         return None
-    rec["clip"] = clip["id"]
+    rec.update(clip=clip["id"], posted_day=today)
     url = ((clip.get("posts") or {}).get("tiktok") or {}).get("url")
     try:
         from . import tg
