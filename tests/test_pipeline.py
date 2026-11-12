@@ -23,7 +23,8 @@ assert "enabled: false\n  date:" in _cfg_text   # launch mode is tested on its o
 import re as _re  # noqa: E402
 _cfg_text = _re.sub(r'tiktok_paused_until: "[^"]*"', 'tiktok_paused_until: ""', _cfg_text)   # tested in section 25
 (TMP / "config.yaml").write_text(_cfg_text)
-os.environ.update(CLIPPER_ROOT=str(TMP), CLIPPER_WORK=str(TMP / "work"), FORCE="1", BLOTATO_API_KEY="test-key")
+os.environ.update(CLIPPER_ROOT=str(TMP), CLIPPER_WORK=str(TMP / "work"), FORCE="1", BLOTATO_API_KEY="test-key",
+                  HAND_TEST_OFF="1")
 sys.path.insert(0, str(REPO))
 
 from clipper import fetch, highlights, jobs, services, common, twitch, render  # noqa: E402
@@ -1511,6 +1512,8 @@ print("MAC CLIPPING OK")
 
 # ---------- 35. Campaign clips on the Mac: draft -> approved package -> Posted -> links submitted ----------
 from clipper import crflow, contentrewards as _cr, jobs as _jobs  # noqa: E402
+_real_step = crflow._step   # the dated posting schedule (reach reset, launch ramp) is tested on its own below;
+crflow._step = lambda cfg, day=None: _real_step(cfg, day) if day else {}   # elsewhere "today" is an ordinary day
 _cards_txt = ("Approved\n1\nLysium/Benji Ramos Clips\nCPM\n0/2 posted\n00:00\n/\n00:29\nSubmit link\n"
               "Lysium/Benji Ramos Clips\nCPM\n1/2 posted\n00:00\n/\n00:41\nSubmit link")
 _cards = _cr.parse_approved_cards(_cards_txt)
@@ -2159,7 +2162,54 @@ mac.JOINS.unlink(missing_ok=True)
 if _mrc9 is None:
     os.environ.pop("MAC_RUNS_CLIPPER", None)
 # posts a day step up: 5 now, 10 from launch day (and the week after), 12 from Dec 3
-assert [crflow.daily_total(_ccfg, d) for d in ("2026-11-10", "2026-11-19", "2026-11-30", "2026-12-03")] == [5, 10, 10, 12]
+assert [crflow.daily_total(_ccfg, d) for d in ("2026-11-10", "2026-11-19", "2026-11-30", "2026-12-03")] == [5, 5, 10, 12]
+from datetime import datetime, timezone  # noqa: E402
+_cpd = _ccfg["clip"]["campaign"]["max_per_day"]
+# reach reset: 2 a day with no campaign clips, then a gradual climb into launch
+assert [crflow.daily_total(_ccfg, d) for d in ("2026-11-12", "2026-11-16", "2026-11-17", "2026-11-18", "2026-11-20",
+                                               "2026-11-21", "2026-11-22")] == [2, 2, 3, 4, 6, 8, 10]
+assert [crflow.per_day(_ccfg, d) for d in ("2026-11-10", "2026-11-14", "2026-11-17", "2026-11-19")] == [_cpd, 0, 1, _cpd]
+# with no campaign posts today, waiting approvals don't eat the day's regular places
+_cs = crflow._step
+crflow._step = lambda cfg, day=None: {"per_day": 2, "campaign": 0}
+assert crflow.claimed_today(_ccfg, [{"status": "approved"}, {"status": "approved"}]) == 0
+crflow._step = lambda cfg, day=None: {"per_day": 5}
+assert crflow.claimed_today(_ccfg, [{"status": "approved"}, {"status": "approved"}]) == 2
+# ramp guard: dead views hold the day at 3 posts; healthy views don't
+crflow._step = lambda cfg, day=None: {"per_day": 8}
+_now = datetime(2026, 11, 21, 18, 0, tzinfo=timezone.utc)
+def _yt(v, h):
+    return {"posts": {"youtube": {"posted_at": (_now - timedelta(hours=h)).isoformat(), "views": v}}}
+_dead = {str(i): _yt(v, 20 + i * 8) for i, v in enumerate([0, 2, 3, 1])}
+crflow.HOLD.unlink(missing_ok=True)
+_h = crflow.ramp_check(_ccfg, _dead, now=_now)
+assert _h[0] and _h[2] == 4, _h
+assert crflow.daily_total(_ccfg, "2026-11-21") == 3
+crflow.HOLD.unlink(missing_ok=True)
+_live = {str(i): _yt(v, 20 + i * 8) for i, v in enumerate([400, 90, 1200])}
+assert not crflow.ramp_check(_ccfg, _live, now=_now)[0] and crflow.daily_total(_ccfg, "2026-11-21") == 8
+assert not crflow.ramp_check(_ccfg, _dead, now=datetime(2026, 11, 14, 18, 0, tzinfo=timezone.utc))[0]   # not yet
+crflow.HOLD.unlink(missing_ok=True)
+crflow._step = _cs
+# hand-upload test day: the first clip skips Blotato's YouTube and comes to Elie; later ones go through Blotato
+os.environ.pop("HAND_TEST_OFF")
+_calls, _sent = [], []
+_hap, _hsp, _hautop, _htg = _jobs.auto_post_clip, _jobs.send_package, _jobs.auto_platforms, None
+_jobs.auto_post_clip = lambda cfg, st, c, platforms=None, finish=True: (_calls.append(platforms),
+                                                                         c.setdefault("posts", {}).update(youtube={}))
+_jobs.send_package = lambda cfg, st, c, test=False: _sent.append(c["id"])
+_jobs.auto_platforms = lambda cfg: ["youtube"]
+from clipper import tg as _tgm  # noqa: E402
+_htg, _tgm.send = _tgm.send, lambda *a, **k: None
+_hcfg = dict(_ccfg, posting=dict(_ccfg["posting"], hand_youtube_test=_jobs.now_local(_ccfg).date().isoformat(),
+                                 platforms=["youtube"]))
+_hst = {}
+_jobs.deliver(_hcfg, _hst, {"id": "h1"})
+_jobs.deliver(_hcfg, _hst, {"id": "h2"})
+assert _sent == ["h1"] and _calls == [["youtube"]], (_sent, _calls)
+_jobs.auto_post_clip, _jobs.send_package, _jobs.auto_platforms, _tgm.send = _hap, _hsp, _hautop, _htg
+os.environ["HAND_TEST_OFF"] = "1"
+print("REACH RESET OK")
 # and the Claude budget steps up with them
 _bs = {"limits": {"claude_usd_per_month": 5.0, "claude_usd_day_max": 0.5,
                   "budget_schedule": [{"from": "2000-01-01", "per_month": 30.0, "day_max": 1.5}]}}

@@ -130,20 +130,75 @@ def match_approvals(entries, cards):
     return newly
 
 
-def per_day(cfg):
-    """Most clips per campaign per day (drafts sent for approval, and post packages sent to Elie)."""
-    return int(((cfg.get("clip") or {}).get("campaign") or {}).get("max_per_day") or 3)
+def _step(cfg, day=None):
+    """Today's step of posting.daily_total_schedule (the last one whose date has come), or {}."""
+    post = cfg.get("posting") or {}
+    day = day or _local_day(now_utc().isoformat(), cfg.get("timezone", "UTC"))
+    out = {}
+    for step in sorted(post.get("daily_total_schedule") or [], key=lambda x: str(x.get("from"))):
+        if str(step.get("from")) <= day:
+            out = step
+    return out
+
+
+def per_day(cfg, day=None):
+    """Most clips per campaign per day (drafts sent for approval, and post packages sent to Elie). A schedule step's
+    `campaign` lowers it for those days (0 = no campaign drafts or posts, e.g. the reach reset)."""
+    n = int(((cfg.get("clip") or {}).get("campaign") or {}).get("max_per_day") or 3)
+    step = _step(cfg, day)
+    if step.get("campaign") is not None:
+        n = min(n, int(step["campaign"]))
+    return n
+
+
+HOLD = DATA / "ramp_hold.json"
 
 
 def daily_total(cfg, day=None):
-    """Posts a day in total: posting.daily_total, stepped up on the dates in posting.daily_total_schedule."""
+    """Posts a day in total: posting.daily_total, stepped up on the dates in posting.daily_total_schedule, and held
+    down for the day when recent YouTube views say the channel isn't being shown (see ramp_check)."""
     post = cfg.get("posting") or {}
     day = day or _local_day(now_utc().isoformat(), cfg.get("timezone", "UTC"))
-    n = int(post.get("daily_total") or 0)
-    for step in sorted(post.get("daily_total_schedule") or [], key=lambda x: str(x.get("from"))):
-        if str(step.get("from")) <= day:
-            n = int(step.get("per_day") or n)
+    n = int(_step(cfg, day).get("per_day") or post.get("daily_total") or 0)
+    try:
+        hold = json.loads(HOLD.read_text())
+        if hold.get("day") == day and hold.get("cap"):
+            n = min(n, int(hold["cap"]))
+    except (OSError, ValueError):
+        pass
     return n
+
+
+def ramp_check(cfg, clips, now=None):
+    """Once a day, before stepping up: if the YouTube Shorts from the last 3 days still have almost no views, stay at
+    posting.ramp_guard.hold_at for today instead of posting more into a feed that isn't showing them.
+    Returns (held, median_views, n_posts)."""
+    import statistics
+    g = (cfg.get("posting") or {}).get("ramp_guard") or {}
+    if not g.get("from"):
+        return False, None, 0
+    now = now or now_utc()
+    tz = cfg.get("timezone", "UTC")
+    day = _local_day(now.isoformat(), tz)
+    if day < str(g["from"]):
+        return False, None, 0
+    hold_at = int(g.get("hold_at") or 3)
+    views = []
+    for c in clips.values():
+        yt = (c.get("posts") or {}).get("youtube") or {}
+        try:
+            age = (now - datetime.fromisoformat(yt["posted_at"])).total_seconds() / 3600
+        except (KeyError, TypeError, ValueError):
+            continue
+        if 12 <= age <= 72 and yt.get("views") is not None:
+            views.append(int(yt["views"]))
+    if len(views) < 3:
+        return False, None, len(views)
+    med = statistics.median(views)
+    held = med < int(g.get("min_views") or 50) and daily_total(cfg, day) > hold_at
+    if held:
+        HOLD.write_text(json.dumps({"day": day, "cap": hold_at, "median": med, "posts": len(views)}))
+    return held, med, len(views)
 
 
 def _local_day(iso, tz):
@@ -164,6 +219,8 @@ def claimed_today(cfg, entries=None):
     for e in entries:
         if _local_day(e.get("packaged_at"), tz) == today:
             n += 1
+        elif per_day(cfg) == 0:
+            continue   # no campaign posts today: waiting approvals don't hold places
         elif e.get("status") == "approved" and not e.get("packaged_at"):
             n += 1
         elif e.get("status") == "submitted" and _local_day(e.get("submitted_at"), tz) == today:

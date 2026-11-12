@@ -773,6 +773,17 @@ def deliver(cfg, state, clip):
             log.exception("automatic post failed: %s", e)
             print(f"::warning::automatic post failed ({str(e)[:150]}); emailing the clip instead", flush=True)
     auto = auto_platforms(cfg) if not clip.get("preapproval") else []
+    test_day = str((cfg.get("posting") or {}).get("hand_youtube_test") or "")
+    if "youtube" in auto and test_day == now_local(cfg).date().isoformat() and not os.environ.get("HAND_TEST_OFF") \
+            and state.get("hand_youtube_test") != test_day:
+        # one clip that day comes to Elie to upload on YouTube by hand, to compare with the Blotato ones
+        state["hand_youtube_test"] = test_day
+        clip["hand_test"] = True
+        auto = [p for p in auto if p != "youtube"]
+        from . import tg
+        tg.send("✋ Test for the views problem: upload the next clip on YouTube yourself, from the YouTube app, with "
+                "the title and description in its message. Today's other clips go through Blotato, so in 2 days we "
+                "can see if the hand-uploaded one does better.")
     if auto:   # e.g. YouTube through Blotato; TikTok still comes to Elie
         try:
             auto_post_clip(cfg, state, clip, platforms=auto, finish=False)
@@ -932,6 +943,26 @@ def tiktok_daily_post(cfg, state, now=None):
     return clip
 
 
+def _ramp_guard(cfg, state, now):
+    """Once a day: stay at a few posts if the last days' Shorts got almost no views (posting.ramp_guard)."""
+    from . import crflow, tg
+    today = now.date().isoformat()
+    if state.get("ramp_checked") == today:
+        return
+    state["ramp_checked"] = today
+    try:
+        held, med, n = crflow.ramp_check(cfg, state["clips"])
+    except Exception as e:
+        log.warning("ramp check: %s", e)
+        return
+    if held:
+        g = cfg["posting"]["ramp_guard"]
+        tg.send(f"📉 Your YouTube Shorts from the last 3 days have a median of {med:,.0f} views ({n} posts), so today "
+                f"stays at {g.get('hold_at', 3)} posts instead of {crflow._step(cfg, today).get('per_day') or 'more'}. "
+                "I check again tomorrow and step up once views come back.\n\nIf you want to post more anyway, tell "
+                "Claude to turn the ramp guard off.")
+
+
 def email_post(cfg):
     from . import health
     state = load_state()
@@ -954,6 +985,7 @@ def email_post(cfg):
     q = clipqueue.queue(state)
     log.info("queue %d, emails due today %d, sent %d", len(q), due, sent)
     em = state.setdefault("email", {})
+    _ramp_guard(cfg, state, now)
     try:
         tiktok_daily_post(cfg, state)
     except Exception as e:
@@ -976,7 +1008,8 @@ def email_post(cfg):
         spaced = True
         if clip and "youtube" in auto_platforms(cfg):   # YouTube posts spread out, paid campaign clips first
             entries = crflow.load()
-            spaced = (crflow.youtube_ready(cfg, state["clips"], entries) and not crflow.campaign_waiting(entries))
+            spaced = (crflow.youtube_ready(cfg, state["clips"], entries)
+                      and not (crflow.per_day(cfg) and crflow.campaign_waiting(entries)))
         if clip and spaced:
             deliver(cfg, state, clip)
         elif clip:

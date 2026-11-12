@@ -936,6 +936,8 @@ def process_youtube_queue(st):
     """Post the next queued YouTube clip once its time comes."""
     from . import crflow
     from .common import load_config, load_state
+    if crflow.per_day(load_config()) == 0:
+        return   # no campaign posts today (reach reset): approved clips wait for the first day that allows them
     entries = crflow.load()
     due = crflow.campaign_waiting(entries)
     if due:

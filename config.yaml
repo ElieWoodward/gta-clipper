@@ -94,9 +94,20 @@ posting:
   mode: email                     # email = you get an email with the clip + captions at each slot and post it yourself
                                   # blotato = the bot posts for you through Blotato (needs BLOTATO_API_KEY)
   platforms: [tiktok, youtube]
-  daily_total_schedule:           # stepping up: GTA 6 launch week and the week after at 10, then 12 (TikTok stays 1)
-    - {from: "2026-11-19", per_day: 10}
+  daily_total_schedule:           # posts a day from each date (TikTok stays 1). campaign = most per campaign per day.
+    # Reach reset: Shorts dropped to 0-3 views after the jump to 5 a day, mostly campaign clips. 5 quiet days with
+    # 2 non-campaign clips, then a gradual climb into the GTA 6 launch instead of a jump.
+    - {from: "2026-11-12", per_day: 2, campaign: 0}
+    - {from: "2026-11-17", per_day: 3, campaign: 1}
+    - {from: "2026-11-18", per_day: 4, campaign: 1}
+    - {from: "2026-11-19", per_day: 5}
+    - {from: "2026-11-20", per_day: 6}
+    - {from: "2026-11-21", per_day: 8}
+    - {from: "2026-11-22", per_day: 10}
     - {from: "2026-12-03", per_day: 12}
+  ramp_guard: {from: "2026-11-17", min_views: 50, hold_at: 3}   # from this date, if the last 3 days' Shorts have a
+                                  # median under min_views, that day stays at hold_at posts (Telegram says so)
+  hand_youtube_test: "2026-11-12" # that day one clip comes to Telegram to upload on YouTube by hand (Blotato test)
   daily_total: 5                  # Mac: most clips posted per day, campaign + regular together. Campaign clips
                                   # (they pay) get first claim; regular posting times fill what's left.
   tiktok_daily: "11:00"           # Mac + Blotato: TikTok gets exactly ONE post a day, at this time (same time every
