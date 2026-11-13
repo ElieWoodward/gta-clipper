@@ -24,7 +24,8 @@ import re as _re  # noqa: E402
 _cfg_text = _re.sub(r'tiktok_paused_until: "[^"]*"', 'tiktok_paused_until: ""', _cfg_text)   # tested in section 25
 (TMP / "config.yaml").write_text(_cfg_text)
 os.environ.update(CLIPPER_ROOT=str(TMP), CLIPPER_WORK=str(TMP / "work"), FORCE="1", BLOTATO_API_KEY="test-key",
-                  HAND_TEST_OFF="1", CAMPAIGN_RULES_OFF="1")
+                  HAND_TEST_OFF="1", CAMPAIGN_RULES_OFF="1",
+                  AUTO_LIMIT_OFF="1")
 sys.path.insert(0, str(REPO))
 
 from clipper import fetch, highlights, jobs, services, common, twitch, render  # noqa: E402
@@ -2246,6 +2247,55 @@ assert crflow.campaign_waiting([{"yt_at": "2000-01-01", "status": "approved", "c
 assert _jobs.streamer_off(_pcfg, "lysium") and not _jobs.streamer_off(_pcfg, "xQc") and not _jobs.streamer_off(_pcfg, "manual")
 assert _cpn.popular(_pc, 1200000) and not _cpn.popular(_pc, None) and not _cpn.popular(_pc, 999)
 print("CAMPAIGN PAUSE OK")
+# posts a day chosen from the channel's own numbers: views per Short and likes per view, level against level
+from clipper import autolimit as _al  # noqa: E402
+os.environ.pop("AUTO_LIMIT_OFF")
+_alc = {"timezone": "America/Los_Angeles", "posting": {"auto_limit": {"enabled": True, "min": 2, "max": 8}}}
+_t0 = datetime(2026, 11, 14, 14, 0, tzinfo=timezone.utc)
+def _sh(i, t, v, likes=None):
+    return {f"s{i}": {"posts": {"youtube": {"posted_at": t.isoformat(), "views": v,
+                                            "likes": likes if likes is not None else v // 20}}}}
+def _clips(*groups):
+    out = {}
+    for g in groups:
+        out.update(g)
+    return out
+_al.FILE.unlink(missing_ok=True)
+# the 2 days before: about 1,000 views per Short
+_before = _clips(*[_sh(i, _t0 - timedelta(hours=30 + 8 * i), 1000) for i in range(4)])
+_d = _al.decide(_alc, _before, 3, now=_t0)
+assert _d["level"] == 3 and "waiting" in _d["why"], _d                        # nothing at this level measured yet
+assert _al.level(_alc) == 3
+# 3 Shorts at level 3, 24h+ old, ~1,500 views: 1.5x before -> up 1
+_t1 = _t0 + timedelta(days=2)
+_lv3 = _clips(*[_sh(10 + i, _t0 + timedelta(hours=1 + 6 * i), 1500) for i in range(3)])
+_d = _al.decide(_alc, _clips(_before, _lv3), 3, now=_t1)
+assert _d["level"] == 4 and "1.5x" in _d["why"], _d
+# at 4 a day views per Short halve -> down 1
+_t2 = _t1 + timedelta(days=2)
+_lv4 = _clips(*[_sh(20 + i, _t1 + timedelta(hours=1 + 5 * i), 700) for i in range(4)])
+_d = _al.decide(_alc, _clips(_before, _lv3, _lv4), 3, now=_t2)
+assert _d["level"] == 3 and "fell" in _d["why"], _d
+# likes per view collapsing also brings it down, even with views up
+_al.save({"level": 5, "since": _t1.isoformat(), "prev_median": 1000, "prev_likes": 0.05, "log": []})
+_lowl = _clips(*[_sh(30 + i, _t1 + timedelta(hours=1 + 5 * i), 1300, likes=13) for i in range(3)])
+assert _al.decide(_alc, _lowl, 3, now=_t2)["level"] == 4
+# dead views: straight back to 3
+_al.save({"level": 7, "since": _t1.isoformat(), "prev_median": 1000, "prev_likes": 0.05, "log": []})
+_dead2 = _clips(*[_sh(40 + i, _t1 + timedelta(hours=1 + 5 * i), 2) for i in range(3)])
+assert _al.decide(_alc, _dead2, 3, now=_t2)["level"] == 3
+# steady for 3+ days: try one more; never past max
+_al.save({"level": 8, "since": (_t2 - timedelta(days=4)).isoformat(), "prev_median": 1000, "prev_likes": 0.05, "log": []})
+_st = _clips(*[_sh(50 + i, _t2 - timedelta(days=3, hours=-6 * i), 1050) for i in range(4)])
+assert _al.decide(_alc, _st, 3, now=_t2)["level"] == 8                       # max 8
+_al.save({"level": 5, "since": (_t2 - timedelta(days=4)).isoformat(), "prev_median": 1000, "prev_likes": 0.05, "log": []})
+assert _al.decide(_alc, _st, 3, now=_t2)["level"] == 6
+assert "6 (up from 5)" in _al.today_note(now=_t2)
+# daily_total follows it today; a past or future date keeps the schedule
+assert crflow.daily_total(_alc) == 6
+_al.FILE.unlink(missing_ok=True)
+os.environ["AUTO_LIMIT_OFF"] = "1"
+print("AUTO LIMIT OK")
 # and the Claude budget steps up with them
 _bs = {"limits": {"claude_usd_per_month": 5.0, "claude_usd_day_max": 0.5,
                   "budget_schedule": [{"from": "2000-01-01", "per_month": 30.0, "day_max": 1.5}]}}

@@ -160,6 +160,10 @@ def daily_total(cfg, day=None):
     post = cfg.get("posting") or {}
     day = day or _local_day(now_utc().isoformat(), cfg.get("timezone", "UTC"))
     n = int(_step(cfg, day).get("per_day") or post.get("daily_total") or 0)
+    from . import autolimit
+    auto = autolimit.level(cfg)
+    if auto is not None and day == _local_day(now_utc().isoformat(), cfg.get("timezone", "UTC")):
+        n = auto   # chosen from the channel's own views and likes (autolimit.py)
     try:
         hold = json.loads(HOLD.read_text())
         if hold.get("day") == day and hold.get("cap"):
@@ -174,8 +178,9 @@ def ramp_check(cfg, clips, now=None):
     posting.ramp_guard.hold_at for today instead of posting more into a feed that isn't showing them.
     Returns (held, median_views, n_posts)."""
     import statistics
+    from . import autolimit
     g = (cfg.get("posting") or {}).get("ramp_guard") or {}
-    if not g.get("from"):
+    if not g.get("from") or autolimit.on(cfg):   # auto_limit makes its own call on dead views
         return False, None, 0
     now = now or now_utc()
     tz = cfg.get("timezone", "UTC")

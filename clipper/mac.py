@@ -580,7 +580,16 @@ def day_stats(main, entries, joins, cfg, day):
             "drafts": sum(1 for e in entries if on_day(e.get("submitted_at"))),
             "approved": sum(1 for e in entries if on_day(e.get("approved_at"))),
             "joined": [j.get("name") for j in joins if j.get("status") == "done" and on_day(j.get("at"))],
-            "spend": spend, "best": (best.get("hook") if best else None), "best_views": best_v}
+            "spend": spend, "best": (best.get("hook") if best else None), "best_views": best_v,
+            "limit_note": _limit_note()}
+
+
+def _limit_note():
+    try:
+        from . import autolimit
+        return autolimit.today_note()
+    except Exception:
+        return None
 
 
 def day_text(d):
@@ -600,6 +609,8 @@ def day_text(d):
         lines.append("Joined: " + ", ".join(n for n in d["joined"] if n))
     if d["best"]:
         lines.append(f"Best lately: \"{d['best']}\" ({d['best_views']:,} YouTube views)")
+    if d.get("limit_note"):
+        lines.append(d["limit_note"])
     lines.append(f"Claude today: ${d['spend']:.2f}")
     return "\n".join(lines)
 

@@ -104,6 +104,11 @@ posting:
     - {from: "2026-11-22", per_day: 6}
     - {from: "2026-11-23", per_day: 7}
     - {from: "2026-11-24", per_day: 8}
+  auto_limit:                     # Mac: posts a day chosen each morning from the channel's own views and likes per
+                                  # Short (clipper/autolimit.py). Replaces the schedule above after its first day.
+    enabled: true
+    min: 2
+    max: 8                        # never more than this; raise it when you want the bot allowed to go higher
   ramp_guard: {from: "2026-11-13", min_views: 50, hold_at: 3}   # if the last 3 days' Shorts have a median under
                                   # min_views, that day stays at hold_at posts (Telegram says so)
   daily_total: 5                  # Mac: most clips posted per day, campaign + regular together. Campaign clips

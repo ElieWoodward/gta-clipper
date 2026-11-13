@@ -953,9 +953,19 @@ def tiktok_daily_post(cfg, state, now=None):
 
 def _ramp_guard(cfg, state, now):
     """Once a day: stay at a few posts if the last days' Shorts got almost no views (posting.ramp_guard)."""
-    from . import crflow, tg
+    from . import crflow, tg, autolimit
     today = now.date().isoformat()
     if state.get("ramp_checked") == today:
+        return
+    if autolimit.on(cfg):
+        if now.hour < 6:
+            return   # decided in the morning, so the night's views are in
+        state["ramp_checked"] = today
+        try:
+            start = crflow._step(cfg, today).get("per_day") or cfg["posting"].get("daily_total") or 3
+            autolimit.decide(cfg, state["clips"], start)
+        except Exception as e:
+            log.warning("auto limit: %s", e)
         return
     state["ramp_checked"] = today
     try:
