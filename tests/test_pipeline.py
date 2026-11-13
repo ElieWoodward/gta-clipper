@@ -2162,13 +2162,14 @@ mac.JOINS.unlink(missing_ok=True)
 if _mrc9 is None:
     os.environ.pop("MAC_RUNS_CLIPPER", None)
 # posts a day step up: 5 now, 10 from launch day (and the week after), 12 from Dec 3
-assert [crflow.daily_total(_ccfg, d) for d in ("2026-11-10", "2026-11-19", "2026-11-30", "2026-12-03")] == [5, 5, 10, 12]
+assert [crflow.daily_total(_ccfg, d) for d in ("2026-11-10", "2026-11-19", "2026-11-30", "2026-12-03")] == [5, 5, 8, 8]
 from datetime import datetime, timezone  # noqa: E402
 _cpd = _ccfg["clip"]["campaign"]["max_per_day"]
 # reach reset: 2 a day with no campaign clips, then a gradual climb into launch
-assert [crflow.daily_total(_ccfg, d) for d in ("2026-11-12", "2026-11-16", "2026-11-17", "2026-11-18", "2026-11-20",
-                                               "2026-11-21", "2026-11-22")] == [2, 2, 3, 4, 6, 8, 10]
-assert [crflow.per_day(_ccfg, d) for d in ("2026-11-10", "2026-11-14", "2026-11-17", "2026-11-19")] == [_cpd, 0, 1, _cpd]
+assert [crflow.daily_total(_ccfg, d) for d in ("2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15", "2026-11-21",
+                                               "2026-11-22", "2026-11-23", "2026-11-24", "2026-12-20")] == \
+    [2, 3, 4, 5, 5, 6, 7, 8, 8]
+assert [crflow.per_day(_ccfg, d) for d in ("2026-11-10", "2026-11-12", "2026-11-13", "2026-11-19")] == [_cpd, 0, _cpd, _cpd]
 # with no campaign posts today, waiting approvals don't eat the day's regular places
 _cs = crflow._step
 crflow._step = lambda cfg, day=None: {"per_day": 2, "campaign": 0}
@@ -2188,7 +2189,7 @@ assert crflow.daily_total(_ccfg, "2026-11-21") == 3
 crflow.HOLD.unlink(missing_ok=True)
 _live = {str(i): _yt(v, 20 + i * 8) for i, v in enumerate([400, 90, 1200])}
 assert not crflow.ramp_check(_ccfg, _live, now=_now)[0] and crflow.daily_total(_ccfg, "2026-11-21") == 8
-assert not crflow.ramp_check(_ccfg, _dead, now=datetime(2026, 11, 14, 18, 0, tzinfo=timezone.utc))[0]   # not yet
+assert not crflow.ramp_check(_ccfg, _dead, now=datetime(2026, 11, 12, 18, 0, tzinfo=timezone.utc))[0]   # not yet
 crflow.HOLD.unlink(missing_ok=True)
 crflow._step = _cs
 # hand-upload test day: the first clip skips Blotato's YouTube and comes to Elie; later ones go through Blotato
