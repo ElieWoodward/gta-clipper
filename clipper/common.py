@@ -49,6 +49,12 @@ def load_config():
                 cfg.setdefault("streamers", []).append(s)
     except Exception as e:
         log.warning("couldn't add campaign streamers: %s", e)
+    if not os.environ.get("CAMPAIGN_RULES_OFF"):   # tests of the campaign flow turn this off
+        try:
+            from .campaigns import apply_rules
+            apply_rules(cfg)
+        except Exception as e:
+            log.warning("couldn't apply the campaign pause: %s", e)
     # GTA 6 launch day: more posts, a bigger queue, automatic posting when it's set up (see launch.py).
     try:
         from .launch import apply

@@ -24,7 +24,7 @@ import re as _re  # noqa: E402
 _cfg_text = _re.sub(r'tiktok_paused_until: "[^"]*"', 'tiktok_paused_until: ""', _cfg_text)   # tested in section 25
 (TMP / "config.yaml").write_text(_cfg_text)
 os.environ.update(CLIPPER_ROOT=str(TMP), CLIPPER_WORK=str(TMP / "work"), FORCE="1", BLOTATO_API_KEY="test-key",
-                  HAND_TEST_OFF="1")
+                  HAND_TEST_OFF="1", CAMPAIGN_RULES_OFF="1")
 sys.path.insert(0, str(REPO))
 
 from clipper import fetch, highlights, jobs, services, common, twitch, render  # noqa: E402
@@ -2154,7 +2154,12 @@ _mrc9 = os.environ.get("MAC_RUNS_CLIPPER")
 os.environ["MAC_RUNS_CLIPPER"] = "1"
 mac.JOINS.unlink(missing_ok=True)
 _ref = _cmp9.notify({}, {"name": "GTA RP Highlights", "brief": "", "join_url": "https://clippingalpha.com/go/9",
-                          "url": "u", "why": "mentions GTA"})
+                          "url": "u", "why": "mentions GTA", "followers": 5000000})
+if _cmp9.paused(common.load_config()):   # before GTA 6 launch a small streamer's campaign waits; Lysium never joins
+    assert _cmp9.notify({}, {"name": "GTA RP Small", "brief": "", "url": "u", "why": "mentions GTA",
+                             "followers": 20000}) == "skipped:paused"
+assert _cmp9.notify({}, {"name": "Lysium GTA", "brief": "", "url": "u", "why": "mentions GTA", "twitch_login": "lysium",
+                         "followers": 5000000}) == "skipped:avoided"
 assert _ref.startswith("tg:") and mac.joins_load()[0]["status"] == "todo" and mac.joins_load()[0]["auto"]
 assert _cmp9.notify({}, {"name": "Rust roleplay", "brief": "", "why": "mentions GTA"}).startswith("skipped")
 assert len(mac.joins_load()) == 1
@@ -2211,6 +2216,36 @@ assert _sent == ["h1"] and _calls == [["youtube"]], (_sent, _calls)
 _jobs.auto_post_clip, _jobs.send_package, _jobs.auto_platforms, _tgm.send = _hap, _hsp, _hautop, _htg
 os.environ["HAND_TEST_OFF"] = "1"
 print("REACH RESET OK")
+# avoided streamers are never clipped; before pause_until only a really popular streamer's campaign counts
+from clipper import campaigns as _cpn  # noqa: E402
+import copy as _copy  # noqa: E402
+_pc = {"timezone": "America/Los_Angeles",
+       "campaigns": {"avoid": ["lysium"], "pause_until": "2026-11-19", "popular_followers": 1000000},
+       "streamers": [{"name": "Lysium", "channel": "lysium", "enabled": True, "campaign": "Lysium/Benji Ramos Clips",
+                      "preapproval": True},
+                     {"name": "xQc", "channel": "xqc", "enabled": True},
+                     {"name": "smallguy", "channel": "smallguy", "enabled": True, "campaign": "Small Clips",
+                      "followers": 40000, "from_campaign": True},
+                     {"name": "bigguy", "channel": "bigguy", "enabled": True, "campaign": "Big Clips",
+                      "followers": 3000000, "from_campaign": True},
+                     {"name": "cinna", "channel": "cinna", "enabled": True, "campaign": "Cinna Clips"}]}
+_a = {s["name"]: s for s in _cpn.apply_rules(_copy.deepcopy(_pc), "2026-11-14")["streamers"]}
+assert _a["Lysium"]["enabled"] is False and not _a["Lysium"]["campaign"]
+assert _a["smallguy"]["enabled"] is False                                   # small campaign streamer: not clipped
+assert _a["bigguy"]["enabled"] and _a["bigguy"]["campaign"] == "Big Clips"  # really popular: campaign stays on
+assert _a["cinna"]["enabled"] and not _a["cinna"]["campaign"]               # clipped anyway, as a regular stream
+assert _a["xQc"]["enabled"]
+_b = {s["name"]: s for s in _cpn.apply_rules(_copy.deepcopy(_pc), "2026-11-19")["streamers"]}
+assert _b["smallguy"]["enabled"] and _b["cinna"]["campaign"] and _b["Lysium"]["enabled"] is False   # launch day
+_pcfg = _cpn.apply_rules(_copy.deepcopy(_pc), "2026-11-14")
+assert not crflow.campaign_on(_pcfg, "Lysium/Benji Ramos Clips") and crflow.campaign_on(_pcfg, "Big Clips")
+assert not crflow.campaign_on(_pcfg, "Small Clips") and crflow.campaign_on(_pcfg, "Some Other Campaign")
+assert crflow.campaign_waiting([{"yt_at": "2000-01-01", "status": "approved", "campaign": "Lysium/Benji Ramos Clips"},
+                                {"yt_at": "2000-01-01", "status": "approved", "campaign": "Big Clips"}],
+                               cfg=_pcfg) == [{"yt_at": "2000-01-01", "status": "approved", "campaign": "Big Clips"}]
+assert _jobs.streamer_off(_pcfg, "lysium") and not _jobs.streamer_off(_pcfg, "xQc") and not _jobs.streamer_off(_pcfg, "manual")
+assert _cpn.popular(_pc, 1200000) and not _cpn.popular(_pc, None) and not _cpn.popular(_pc, 999)
+print("CAMPAIGN PAUSE OK")
 # and the Claude budget steps up with them
 _bs = {"limits": {"claude_usd_per_month": 5.0, "claude_usd_day_max": 0.5,
                   "budget_schedule": [{"from": "2000-01-01", "per_month": 30.0, "day_max": 1.5}]}}

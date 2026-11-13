@@ -45,6 +45,14 @@ def _posting_ready(cfg=None):
     return False
 
 
+def streamer_off(cfg, name):
+    """True when config has this streamer but isn't clipping them (enabled false, avoided, paused campaign)."""
+    for s in cfg.get("streamers") or []:
+        if (s.get("name") or "").lower() == (name or "").lower():
+            return s.get("enabled", True) is False
+    return False
+
+
 def is_campaign(streamer):
     """A campaign that pays now: one in config.yaml, or one Elie joined. Campaigns he's only been told about are
     clipped (so clips are ready if he joins) but get the normal settings."""
@@ -902,7 +910,7 @@ def tiktok_daily_post(cfg, state, now=None):
         return yt.get("views") or 0
 
     pool = [c for c in state["clips"].values()
-            if "tiktok" not in (c.get("posts") or {}) and not c.get("preapproval")
+            if "tiktok" not in (c.get("posts") or {}) and not c.get("preapproval") and not streamer_off(cfg, c.get("streamer"))
             and ((c.get("posts") or {}).get("youtube") or {}).get("posted_at", "") >= since and _has_video(c)]
     pool.sort(key=lambda c: (yt_views(c), c.get("score") or 0), reverse=True)
     # then the best clips waiting in the queue, in case nothing recent still has its video
@@ -978,6 +986,10 @@ def email_post(cfg):
         print(f"::notice::{note}", flush=True)
     for c in clipqueue.expire(cfg, state):
         print(f"::notice::expired (too old to post): {c['hook']}", flush=True)
+    for c in clipqueue.queue(state):   # streamers no longer clipped (avoided, or a paused small campaign)
+        if streamer_off(cfg, c.get("streamer")):
+            c["status"] = "skipped"
+            log.info("dropped %s: %s isn't clipped right now", c["id"], c.get("streamer"))
     cleanup_assets(state)
     save_state(state)
     now = now_local(cfg)
@@ -1009,7 +1021,7 @@ def email_post(cfg):
         if clip and "youtube" in auto_platforms(cfg):   # YouTube posts spread out, paid campaign clips first
             entries = crflow.load()
             spaced = (crflow.youtube_ready(cfg, state["clips"], entries)
-                      and not (crflow.per_day(cfg) and crflow.campaign_waiting(entries)))
+                      and not (crflow.per_day(cfg) and crflow.campaign_waiting(entries, cfg=cfg)))
         if clip and spaced:
             deliver(cfg, state, clip)
         elif clip:

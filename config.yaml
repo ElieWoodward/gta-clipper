@@ -213,6 +213,10 @@ notify:
                                   # every "posted / submitted / sent for approval" note.
 
 campaigns:
+  avoid: [lysium]                 # never clipped or posted, campaign or not (small channel, few views)
+  pause_until: "2026-11-19"       # until GTA 6 launch: no campaign clips (build the account with what gets views),
+                                  # except a really popular streamer's campaign (popular_followers on Twitch)
+  popular_followers: 1000000
   auto_join: true                 # Mac: join Content Rewards campaigns that are certainly GTA by itself (GTA named in the
                                   # campaign, or a streamer whose recent streams are mostly GTA). Others aren't sent.
                                   # You only hear about a campaign when it needs something from you (bio, another site).

@@ -939,7 +939,7 @@ def process_youtube_queue(st):
     if crflow.per_day(load_config()) == 0:
         return   # no campaign posts today (reach reset): approved clips wait for the first day that allows them
     entries = crflow.load()
-    due = crflow.campaign_waiting(entries)
+    due = crflow.campaign_waiting(entries, cfg=load_config())
     if due:
         try:
             clips = load_state().get("clips") or {}
@@ -999,7 +999,8 @@ def send_packages_due(st):
     cap = crflow.per_day(cfg)
     total = crflow.daily_total(cfg)
     sent = 0
-    for e in crflow.best_first([e for e in entries if e.get("status") == "approved" and not e.get("packaged_at")]):
+    for e in crflow.best_first([e for e in entries if e.get("status") == "approved" and not e.get("packaged_at")
+                                and crflow.campaign_on(cfg, e.get("campaign"))]):
         if _today_count(entries, e.get("campaign"), "packaged_at") >= cap:
             continue
         if total and sum(1 for x in entries if _local_day(x.get("packaged_at")) == local_now().date().isoformat()) >= total:
@@ -1040,7 +1041,9 @@ def process_drafts(st):
     sent_today = sum(1 for x in entries if _local_day(x.get("submitted_at")) == today
                      and x.get("status") not in ("queued", "dropped"))
     todo = []
-    for e in crflow.best_first([e for e in entries if e.get("status") == "queued"]):
+    on_cfg = load_config()
+    for e in crflow.best_first([e for e in entries if e.get("status") == "queued"
+                                and crflow.campaign_on(on_cfg, e.get("campaign"))]):
         if total and sent_today + len(todo) >= total:
             break   # no more drafts today than the day's total of posts
         if _today_count(entries, e.get("campaign"), "submitted_at") + \

@@ -270,6 +270,43 @@ def sure_gta(m):
     return bool(m.get("twitch_login") and hit and int(hit.group(1)) >= max(3, (int(hit.group(2)) + 1) // 2))
 
 
+def paused(cfg, day=None):
+    """campaigns.pause_until: before this date only really popular streamers' campaigns are clipped and joined
+    (posting what gets views builds the account first)."""
+    until = str((cfg.get("campaigns") or {}).get("pause_until") or "")
+    if not until:
+        return False
+    if day is None:
+        from zoneinfo import ZoneInfo
+        day = now_utc().astimezone(ZoneInfo(cfg.get("timezone", "UTC"))).date().isoformat()
+    return day < until
+
+
+def popular(cfg, followers):
+    """Big enough to be worth a campaign during the pause (campaigns.popular_followers on Twitch)."""
+    need = int((cfg.get("campaigns") or {}).get("popular_followers") or 1_000_000)
+    return followers is not None and int(followers) >= need
+
+
+def avoided(cfg, login):
+    """Streamers Elie never wants clipped (campaigns.avoid), campaign or not."""
+    return (login or "").lower() in {str(a).lower() for a in (cfg.get("campaigns") or {}).get("avoid") or []}
+
+
+def apply_rules(cfg, day=None):
+    """In place on a loaded config: avoided streamers off; during the pause, small campaign streamers off (or plain
+    regular streams if they're clipped anyway)."""
+    for s in cfg.get("streamers") or []:
+        login = s.get("channel") or s.get("name")
+        if avoided(cfg, login):
+            s.update(enabled=False, campaign="", campaign_off="avoided", campaign_was=s.get("campaign") or "")
+        elif s.get("campaign") and paused(cfg, day) and not popular(cfg, s.get("followers")):
+            s.update(campaign="", preapproval=False, campaign_off="paused", campaign_was=s["campaign"])
+            if s.get("from_campaign"):
+                s["enabled"] = False
+    return cfg
+
+
 def auto_join_on(cfg=None):
     from .common import load_config
     cfg = cfg or load_config()
@@ -293,6 +330,12 @@ def queue_join(m):
 def notify(state, m):
     from . import mail
     if auto_join_on():   # the Mac joins certain-GTA campaigns by itself; anything less certain isn't sent at all
+        from .common import load_config
+        cfg = load_config()
+        if avoided(cfg, m.get("twitch_login")):
+            return "skipped:avoided"
+        if sure_gta(m) and paused(cfg) and not popular(cfg, m.get("followers")):
+            return "skipped:paused"   # looked at again once the pause ends (see scan)
         if sure_gta(m):
             return queue_join(m)
         return "skipped:not-sure-gta"
@@ -359,8 +402,11 @@ def scan(cfg, state):
         seen[c["id"]] = now_utc().date().isoformat()
         if not m:
             continue
+        if m.get("twitch_login"):
+            from . import twitch
+            m["followers"] = twitch.followers(m["twitch_login"])
         rec = {k: m.get(k) for k in ("id", "name", "url", "join_url", "rate", "left", "budget", "platforms", "kind",
-                                     "twitch_login", "auto_clip", "why", "gta6")}
+                                     "twitch_login", "auto_clip", "why", "gta6", "followers")}
         rec.update(brief=m["brief"][:1500], found=now_utc().isoformat(), status="found")
         if dry:
             print(f"::notice::[dry run] would email: {rec['name']} | {rec.get('rate')}/1K | twitch={rec.get('twitch_login')} "
@@ -370,6 +416,15 @@ def scan(cfg, state):
         book[c["id"]] = rec
         found.append(rec)
         print(f"::notice::campaign match: {rec['name']} ({rec.get('rate')} per 1K) | {rec['why']}", flush=True)
+    for r in book.values():   # campaign streamers found before follower counts were kept
+        if r.get("status") in ACTIVE and r.get("twitch_login") and r.get("followers") is None and not dry:
+            from . import twitch
+            r["followers"] = twitch.followers(r["twitch_login"])
+    if not paused(cfg):   # the pause is over: campaigns skipped during it get their turn
+        for r in book.values():
+            if r.get("email_message_id") == "skipped:paused" and r.get("status") == "notified":
+                r["status"] = "found"
+                r.pop("email_message_id", None)
     if launch_on:   # GTA 6 campaigns noted before launch get their email now
         for r in book.values():
             text = f"{r.get('name')} {r.get('brief')}"
@@ -423,7 +478,8 @@ def joined_streamers(state):
         if rec.get("status") in ACTIVE and rec.get("auto_clip") and rec.get("twitch_login"):
             out.append({"name": rec["twitch_login"], "platform": "twitch", "channel": rec["twitch_login"],
                         "enabled": True, "campaign": clean_name(rec["name"]), "campaign_id": rec["id"],
-                        "campaign_joined": rec.get("status") == "joined"})
+                        "campaign_joined": rec.get("status") == "joined", "followers": rec.get("followers"),
+                        "from_campaign": True})
     return out
 
 

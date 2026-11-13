@@ -219,8 +219,8 @@ def claimed_today(cfg, entries=None):
     for e in entries:
         if _local_day(e.get("packaged_at"), tz) == today:
             n += 1
-        elif per_day(cfg) == 0:
-            continue   # no campaign posts today: waiting approvals don't hold places
+        elif per_day(cfg) == 0 or not campaign_on(cfg, e.get("campaign")):
+            continue   # no campaign posts today, or this campaign is off: waiting approvals don't hold places
         elif e.get("status") == "approved" and not e.get("packaged_at"):
             n += 1
         elif e.get("status") == "submitted" and _local_day(e.get("submitted_at"), tz) == today:
@@ -252,11 +252,22 @@ def youtube_ready(cfg, clips, entries, now=None):
     return (now - datetime.fromisoformat(last)).total_seconds() >= youtube_gap_minutes(cfg) * 60
 
 
-def campaign_waiting(entries, now=None):
+def campaign_on(cfg, name):
+    """False when this campaign was turned off (its streamer avoided, or a small campaign during the pause)."""
+    if cfg is None:
+        return True
+    from .mac import same_campaign
+    streamers = cfg.get("streamers") or []
+    if any(s.get("enabled", True) and s.get("campaign") and same_campaign(s["campaign"], name) for s in streamers):
+        return True
+    return not any(s.get("campaign_off") and same_campaign(s.get("campaign_was"), name) for s in streamers)
+
+
+def campaign_waiting(entries, now=None, cfg=None):
     """Approved campaign clips queued for YouTube whose turn has come (they go before regular clips)."""
     now_iso = (now or now_utc()).isoformat()
     return [e for e in entries or [] if e.get("yt_at") and e["yt_at"] <= now_iso and e.get("status") == "approved"
-            and "youtube" not in (e.get("links") or {})]
+            and "youtube" not in (e.get("links") or {}) and campaign_on(cfg, e.get("campaign"))]
 
 
 def best_first(entries):

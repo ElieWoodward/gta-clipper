@@ -44,6 +44,15 @@ def _gql(body, timeout=15):
     return None
 
 
+def followers(login):
+    """A channel's Twitch follower count, or None if Twitch didn't say."""
+    data = _gql({"query": 'query { user(login: "%s") { followers { totalCount } } }' % re.sub(r"[^a-z0-9_]", "", login.lower())})
+    try:
+        return int(data["data"]["user"]["followers"]["totalCount"])
+    except (TypeError, KeyError, ValueError):
+        return None
+
+
 def video_id(vod):
     """Numeric Twitch video id for a VOD dict, or None if it isn't a Twitch VOD."""
     for s in (vod.get("url") or "", vod.get("id") or ""):
