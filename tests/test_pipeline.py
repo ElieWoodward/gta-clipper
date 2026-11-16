@@ -2296,6 +2296,25 @@ assert crflow.daily_total(_alc) == 6
 _al.FILE.unlink(missing_ok=True)
 os.environ["AUTO_LIMIT_OFF"] = "1"
 print("AUTO LIMIT OK")
+# draft cards labelled "Retainer draft": the campaign is the real name, the same note isn't sent twice when the card
+# is relabelled, and notes for a dropped streamer (Lysium) aren't sent at all
+from clipper import contentrewards as _crd  # noqa: E402
+assert _crd.card_campaign("Retainer draft\nNYZ Clips\nbro got robbed") == "NYZ Clips"
+assert _crd.card_campaign("Retainer draft\nLysium/Benji Ramos Clips", ["Lysium/Benji Ramos Clips"]) == \
+    "Lysium/Benji Ramos Clips"
+_rn = {"who": "Brand reviewer", "when": "Nov 13, 3:19 PM", "note": "The caption is incorrect"}
+_rst = {}
+assert len(mac.compare(_rst, [], {"counts": {}, "needs_changes": [dict(_rn, card="NYZ Clips | a")]}, [])) == 1
+assert not mac.compare(_rst, [], {"counts": {}, "needs_changes": [dict(_rn, card="Retainer draft | NYZ Clips | a")]},
+                       [])
+os.environ.pop("CAMPAIGN_RULES_OFF")
+_rst2 = {}
+assert not mac.compare(_rst2, [], {"counts": {}, "needs_changes": [dict(_rn, card="Retainer draft | Lysium/Benji Ramos Clips")]}, [])
+_fx = {"fixes": {"k": {"status": "todo", "campaign": "Lysium/Benji Ramos Clips", "note": "x"}}}
+mac.process_fixes(_fx, None)
+assert _fx["fixes"]["k"]["status"] == "skipped"
+os.environ["CAMPAIGN_RULES_OFF"] = "1"
+print("RETAINER CARDS OK")
 # and the Claude budget steps up with them
 _bs = {"limits": {"claude_usd_per_month": 5.0, "claude_usd_day_max": 0.5,
                   "budget_schedule": [{"from": "2000-01-01", "per_month": 30.0, "day_max": 1.5}]}}

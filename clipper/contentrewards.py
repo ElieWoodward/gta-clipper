@@ -94,6 +94,21 @@ def parse_draft_counts(text):
     return out
 
 
+# labels Content Rewards puts on a draft card above the campaign name ("Retainer draft", "Revision 2", times...)
+CARD_LABEL = re.compile(r"^((retainer|campaign|new)\s+)?draft$|^revision\b|^v\d+$|^needs changes$|^\d{1,2}:\d{2}$|"
+                        r"^see revisions$|^\d+ (sec|min|hour|day)s? ago$", re.I)
+
+
+def card_campaign(card_text, known=()):
+    """The campaign name on a draft card: a known campaign if one is named, else the first line that isn't a label."""
+    ls = _lines(card_text or "")
+    for ln in ls:
+        for k in known:
+            if k and (k.lower() in ln.lower() or ln.lower() in k.lower()) and len(ln) > 3:
+                return k
+    return next((ln for ln in ls if not CARD_LABEL.match(ln)), "")
+
+
 def parse_timeline(text):
     """A draft's revisions panel -> the newest reviewer request ({"who", "when", "note"}) or None."""
     ls = _lines(text)
@@ -385,8 +400,8 @@ class Site:
             self._pause(1.5, 3)
             t = parse_timeline(self.page.inner_text("body"))
             if t:
-                t["campaign"] = _lines(card_text)[0] if card_text else ""
-                t["card"] = " | ".join(_lines(card_text)[:3])
+                t["campaign"] = card_campaign(card_text)
+                t["card"] = " | ".join(_lines(card_text)[:4])
                 notes.append(t)
             self.page.keyboard.press("Escape")
             self._pause(1, 2)

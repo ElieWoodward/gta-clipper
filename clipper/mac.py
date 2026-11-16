@@ -206,11 +206,23 @@ def compare(st, camps, drafts, prioritized):
             msgs.append(f"📤 {n} more draft{'s' if n > 1 else ''} marked posted on Content Rewards.")
     st["drafts"] = counts
     seen = st.setdefault("notes_seen", [])
+    off = _off_campaigns()
     for n in drafts.get("needs_changes") or []:
-        key = hashlib.sha1(f"{n.get('card')}|{n.get('when')}|{n.get('note')}".encode()).hexdigest()[:16]
-        if key in seen:
+        old_key = hashlib.sha1(f"{n.get('card')}|{n.get('when')}|{n.get('note')}".encode()).hexdigest()[:16]
+        # the same note is the same note even when the site relabels the card ("Retainer draft")
+        key = hashlib.sha1(f"note|{n.get('when')}|{n.get('note')}".encode()).hexdigest()[:16]
+        if key in seen or old_key in seen:
+            if key not in seen:
+                seen.append(key)
             continue
         seen.append(key)
+        from .contentrewards import CARD_LABEL, card_campaign
+        if not n.get("campaign") or CARD_LABEL.match(n["campaign"]):   # a card label, not a campaign name
+            n["campaign"] = card_campaign(n.get("card", "").replace(" | ", "\n"), list(book))
+        blob = f"{n.get('campaign')} {n.get('card')}".lower()
+        if any(o in blob for o in off):
+            log.info("needs-changes note for a campaign that's off (%s): not sent", n.get("campaign"))
+            continue
         text = (f"✂️ A draft{(' for ' + n['campaign']) if n.get('campaign') else ''} needs changes.\n\n"
                 f"Reviewer ({n.get('who')}, {n.get('when')}): {n.get('note')}\n\n")
         if clipping_on() and not n.get("unread"):
@@ -223,6 +235,24 @@ def compare(st, camps, drafts, prioritized):
             msgs.append(text + "Fix the clip and use Upload revision on Content Rewards (Drafts > Needs changes).")
     del seen[:-200]
     return msgs
+
+
+def _off_campaigns():
+    """Lowercase names that mark a draft as belonging to a campaign the bot dropped (avoided streamer, or paused):
+    its campaign names and its streamer's names."""
+    if os.environ.get("CAMPAIGN_RULES_OFF"):
+        return set()
+    try:
+        from .common import load_config
+        cfg = load_config()
+    except Exception:
+        return set()
+    out = set()
+    for s in cfg.get("streamers") or []:
+        if s.get("campaign_off") == "avoided":
+            out |= {x.lower() for x in (s.get("campaign_was"), s.get("name"), s.get("channel")) if x}
+    out |= {str(a).lower() for a in (cfg.get("campaigns") or {}).get("avoid") or []}
+    return {o for o in out if len(o) > 2}
 
 
 def _ended_text(name, rec, book, gone=False):
@@ -500,6 +530,9 @@ def process_fixes(st, jobs):
     for key, fix in list(fixes.items()):
         status = fix.get("status")
         if status == "todo":
+            if any(o in f"{fix.get('campaign')} {fix.get('note')}".lower() for o in _off_campaigns()):
+                fix["status"] = "skipped"   # a campaign the bot dropped: not worth a revision
+                continue
             if jobs is None or jobs.busy():
                 continue   # one job at a time (they share the clip state)
             entries = crflow.load()
