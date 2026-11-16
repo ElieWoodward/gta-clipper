@@ -205,6 +205,7 @@ limits:
   claude_usd_per_month: 5.00      # hard budget: no Claude calls once the last 30 days add up to this
   claude_usd_day_max: 0.50        # and never more than this in one day, so one busy day can't use up the month
   budget_schedule:                # more posts a day need more clips found: the budget steps up with them
+    - {from: "2026-11-15", per_month: 20.00, day_max: 1.00}   # $5/month ran out mid-month and clipping stopped
     - {from: "2026-11-27", per_month: 30.00, day_max: 1.50}   # after launch week (that week has its own $4/day)
     - {from: "2026-12-03", per_month: 40.00, day_max: 2.00}   # 12 posts a day
   claude_usd_per_day_from: {3: 2.00}   # raised to $2 a day once posting reaches 3 a day (launch.claude_usd_per_day after)

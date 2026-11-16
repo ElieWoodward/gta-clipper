@@ -981,6 +981,25 @@ def _ramp_guard(cfg, state, now):
                 "Claude to turn the ramp guard off.")
 
 
+def _budget_alert(cfg, state, now):
+    """Nothing left to post and no Claude budget to find more: say so once a day (it stops posting silently otherwise)."""
+    from . import highlights, tg
+    from .common import spend_last_days
+    today = now.date().isoformat()
+    if state.get("budget_alert_day") == today or now.hour < 9 or clipqueue.queue(state):
+        return
+    try:
+        left = highlights.budget_left(cfg, state)
+    except Exception:
+        return
+    if left > 0:
+        return
+    state["budget_alert_day"] = today
+    tg.send(f"⚠️ Nothing to post: the queue is empty and the Claude budget is used up "
+            f"(${spend_last_days(state, 30):.2f} in the last 30 days), so no new clips are being found. "
+            "Tell Claude to raise limits.budget_schedule in config.yaml, or it starts again when the budget frees up.")
+
+
 def email_post(cfg):
     from . import health
     state = load_state()
@@ -1008,6 +1027,7 @@ def email_post(cfg):
     log.info("queue %d, emails due today %d, sent %d", len(q), due, sent)
     em = state.setdefault("email", {})
     _ramp_guard(cfg, state, now)
+    _budget_alert(cfg, state, now)
     try:
         tiktok_daily_post(cfg, state)
     except Exception as e:
