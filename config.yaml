@@ -42,6 +42,14 @@ streamers:
       escapes, big RP scenes count). No drama baiting: no hooks or titles that stir up beef or fake conflict.
       Give context through the hook: it should tell a stranger what's going on (e.g. "Benji tried to sell the cops
       their own car back"), since there's no separate context line.
+  - name: LordKebun               # Kick: NoPixel, moved from Twitch Feb 2026; 1.2M-1.8M GTA V hours watched a month
+    platform: kick                # (Streams Charts, Aug 2026). The biggest English GTA RP channel on Kick
+    channel: lordkebun
+    enabled: true
+  - name: AdinRoss                # Kick: says he'll stream GTA 6; only streams with GTA in the title are clipped
+    platform: kick
+    channel: adinross
+    enabled: true
   - name: AnthonyZ
     platform: twitch
     channel: anthonyz

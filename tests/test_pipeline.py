@@ -273,6 +273,32 @@ assert lst[0]["id"] == "v2900842637" and lst[0]["duration"] == 43425 and lst[0][
 assert _tw.video_id({"id": "twitch:" + lst[0]["id"]}) == "2900842637"
 _tw._gql = _g
 print("LISTING OK")
+# Kick channels list through yt-dlp: GTA by title (Kick has no category history), Twitch-only signals skipped
+_krun = _fetch.run
+_kseen = []
+def _fake_ytdlp(cmd, **kw):  # noqa: E302
+    _kseen.append(cmd[-1])
+    return json.dumps({"entries": [
+        {"id": "3f1c2b7a-1111-4a2b-9c3d-abcdefabcdef", "title": "NOPIXEL 4.0 | Kebun Day 1200",
+         "url": "https://kick.com/lordkebun/videos/3f1c2b7a-1111-4a2b-9c3d-abcdefabcdef", "duration": 30000,
+         "timestamp": common.now_utc().timestamp() - 3600},
+        {"id": "9e9e9e9e-2222-4a2b-9c3d-abcdefabcdef", "title": "JUST CHATTING + REACTS",
+         "url": "https://kick.com/lordkebun/videos/9e9e9e9e-2222-4a2b-9c3d-abcdefabcdef", "duration": 9000,
+         "timestamp": common.now_utc().timestamp() - 7200}]})
+_fetch.run = _fake_ytdlp  # noqa: E305
+_kcfg = dict(cfg, streamers=[{"name": "LordKebun", "platform": "kick", "channel": "lordkebun", "enabled": True}],
+             manual_urls=[])
+_kv = _fetch.list_new_vods(_kcfg, {"processed_vods": [], "streamers": {}})
+_fetch.run = _krun
+assert _kseen == ["https://kick.com/lordkebun/videos"], _kseen
+assert [v["id"] for v in _kv] == ["kick:3f1c2b7a-1111-4a2b-9c3d-abcdefabcdef"], _kv   # the non-GTA stream is skipped
+assert _tw.video_id(_kv[0]) is None   # no Twitch chat or clip lookups for Kick
+_kclip = {"id": "k1", "streamer": "LordKebun", "title": "t", "caption": "c", "hook": "h", "tags": [], "duration": 20,
+          "score": 8, "why": "w", "created": common.now_utc().isoformat()}
+from clipper import clipqueue as _kcq  # noqa: E402
+_kpkg = _kcq.package(_kcfg, _kclip, [])
+assert any("https://kick.com/lordkebun" in t for _, t in _kpkg["blocks"]), _kpkg["blocks"]
+print("KICK OK")
 
 # ---------- 8. live: spike detection, viewer clip clusters, state merge ----------
 from clipper import live as _live  # noqa: E402

@@ -163,7 +163,9 @@ def package(cfg, clip, queue_now, state=None):
     title = clip["title"].strip()
     yt_title = (title if "#shorts" in title.lower() else f"{title} #shorts")[:100]
     hashtags = " ".join(dict.fromkeys(list(cfg["posting"]["hashtags"]) + ["#" + re.sub(r"[^a-z0-9]", "", channel)]))
-    yt_desc = (f"{clip['caption']}\n\nStreamer: {clip['streamer']} (https://twitch.tv/{channel})\n\n{hashtags} #shorts")
+    plat = next((x.get("platform") for x in cfg.get("streamers") or [] if x.get("name") == clip["streamer"]), "twitch")
+    home = f"https://kick.com/{channel}" if plat == "kick" else f"https://twitch.tv/{channel}"
+    yt_desc = (f"{clip['caption']}\n\nStreamer: {clip['streamer']} ({home})\n\n{hashtags} #shorts")
     source = clip.get("vod_url") or ""
     if source and "twitch.tv/videos/" in source:
         source = f"{source}?t={_ts(clip['start'])}"
