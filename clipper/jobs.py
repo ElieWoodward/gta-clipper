@@ -815,6 +815,9 @@ def deliver(cfg, state, clip):
             log.exception("automatic post failed: %s", e)
             print(f"::warning::automatic {', '.join(auto)} post failed ({str(e)[:150]}); sending it to you instead",
                   flush=True)
+            from . import tg
+            tg.send(f"⚠️ Blotato couldn't post the next clip to {', '.join(auto)} ({str(e)[:200]}), so it's coming to "
+                    "you to post by hand instead.")
         left = [p for p in cfg["posting"]["platforms"] if p not in clip.get("posts", {})
                 and not (p == "tiktok" and (clipqueue.tiktok_paused(cfg) or clipqueue.tiktok_daily(cfg)))]
         if not left:
