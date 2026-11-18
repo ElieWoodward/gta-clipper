@@ -101,13 +101,32 @@ class StillLive(Exception):
     """The VOD belongs to a stream that hasn't ended yet; try again on a later run."""
 
 
+FMP4_ERR = "Initialization fragment found after media fragments"
+
+
+def _ytdlp(args):
+    """yt-dlp, retried with ffmpeg as the downloader when Twitch serves the stream as fragmented MP4 (some GTA 6
+    streams are), which yt-dlp's own HLS downloader can't put together."""
+    try:
+        return run(["yt-dlp", *args])
+    except RuntimeError as e:
+        if FMP4_ERR not in str(e):
+            raise
+        log.info("fragmented MP4 stream; downloading with ffmpeg instead")
+        rest = list(args)
+        if "-N" in rest:   # parallel fragments don't apply to ffmpeg
+            i = rest.index("-N")
+            del rest[i:i + 2]
+        return run(["yt-dlp", "--downloader", "ffmpeg", *rest])
+
+
 def download_audio(vod, dest_dir):
     """Download audio only, as 16 kHz mono wav (small and enough for analysis)."""
     dest_dir.mkdir(parents=True, exist_ok=True)
     tmpl = str(dest_dir / "audio.%(ext)s")
     t0 = time.time()
     # A VOD of a stream that's still live downloads at real-time speed, so skip it until the stream ends.
-    run(["yt-dlp", "-N", "16", "--match-filter", "!is_live & live_status!=is_live & live_status!=post_live",
+    _ytdlp(["-N", "16", "--match-filter", "!is_live & live_status!=is_live & live_status!=post_live",
          "-f", "bestaudio/worst", "-x", "--audio-format", "m4a", "-o", tmpl, vod["url"]])
     if not list(dest_dir.glob("audio.*")):
         raise StillLive(vod["id"])
@@ -121,6 +140,6 @@ def download_audio(vod, dest_dir):
 def download_section(vod, start, end, dest):
     """Download just [start, end] seconds of the video at up to 1080p."""
     sec = f"*{int(start)}-{int(end) + 1}"
-    run(["yt-dlp", "-N", "8", "-f", "bv*[height<=1080]+ba/b[height<=1080]/b", "--download-sections", sec,
+    _ytdlp(["-N", "8", "-f", "bv*[height<=1080]+ba/b[height<=1080]/b", "--download-sections", sec,
          "--force-keyframes-at-cuts", "--merge-output-format", "mp4", "-o", str(dest), vod["url"]])
     return dest

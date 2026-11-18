@@ -450,6 +450,12 @@ def prepare(cfg, vod, wav, max_picks=None):
             return any(s + 20 <= t <= (e if e is not None else len(db)) - 5 for s, e in ranges)
         cands = [c for c in merge_candidates(db, sig, n_cands * 3) if in_gta(c["t"])]
         cands = sorted(sorted(cands, key=lambda c: -c["strength"])[:n_cands], key=lambda c: c["t"])
+        covered = sum(((e if e is not None else len(db)) - s) for s, e in ranges)
+        if len(cands) < 3 and re.search(r"gta|grand theft auto", vod.get("title") or "", re.I):
+            # Twitch's chapter markers can be wrong or tiny (a category flicked at the end); the title says GTA
+            print(f"::notice::{vod['id']}: GTA chapters cover {covered / 60:.0f} of {len(db) / 60:.0f} min "
+                  f"({ranges[:4]}) but the title says GTA, so using the whole stream", flush=True)
+            cands = merge_candidates(db, sig, n_cands)
     else:
         cands = merge_candidates(db, sig, n_cands)
     kinds = {k: sum(1 for c in cands if c["signals"][0].startswith(k)) for k in ("viewers", "chat", "loud")}
