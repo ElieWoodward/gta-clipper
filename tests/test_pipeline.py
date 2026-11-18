@@ -2194,13 +2194,13 @@ mac.JOINS.unlink(missing_ok=True)
 if _mrc9 is None:
     os.environ.pop("MAC_RUNS_CLIPPER", None)
 # posts a day step up: 5 now, 10 from launch day (and the week after), 12 from Dec 3
-assert [crflow.daily_total(_ccfg, d) for d in ("2026-11-10", "2026-11-19", "2026-11-30", "2026-12-03")] == [5, 5, 8, 8]
+assert [crflow.daily_total(_ccfg, d) for d in ("2026-11-10", "2026-11-19", "2026-11-30", "2026-12-03")] == [5, 8, 8, 8]
 from datetime import datetime, timezone  # noqa: E402
 _cpd = _ccfg["clip"]["campaign"]["max_per_day"]
 # reach reset: 2 a day with no campaign clips, then a gradual climb into launch
 assert [crflow.daily_total(_ccfg, d) for d in ("2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15", "2026-11-21",
                                                "2026-11-22", "2026-11-23", "2026-11-24", "2026-12-20")] == \
-    [2, 3, 4, 5, 5, 6, 7, 8, 8]
+    [2, 3, 4, 5, 10, 6, 7, 8, 8]
 assert [crflow.per_day(_ccfg, d) for d in ("2026-11-10", "2026-11-12", "2026-11-13", "2026-11-19")] == [_cpd, 0, _cpd, _cpd]
 # with no campaign posts today, waiting approvals don't eat the day's regular places
 _cs = crflow._step
@@ -2210,17 +2210,17 @@ crflow._step = lambda cfg, day=None: {"per_day": 5}
 assert crflow.claimed_today(_ccfg, [{"status": "approved"}, {"status": "approved"}]) == 2
 # ramp guard: dead views hold the day at 3 posts; healthy views don't
 crflow._step = lambda cfg, day=None: {"per_day": 8}
-_now = datetime(2026, 11, 21, 18, 0, tzinfo=timezone.utc)
+_now = datetime(2026, 11, 23, 18, 0, tzinfo=timezone.utc)
 def _yt(v, h):
     return {"posts": {"youtube": {"posted_at": (_now - timedelta(hours=h)).isoformat(), "views": v}}}
 _dead = {str(i): _yt(v, 20 + i * 8) for i, v in enumerate([0, 2, 3, 1])}
 crflow.HOLD.unlink(missing_ok=True)
 _h = crflow.ramp_check(_ccfg, _dead, now=_now)
 assert _h[0] and _h[2] == 4, _h
-assert crflow.daily_total(_ccfg, "2026-11-21") == 3
+assert crflow.daily_total(_ccfg, "2026-11-23") == 3
 crflow.HOLD.unlink(missing_ok=True)
 _live = {str(i): _yt(v, 20 + i * 8) for i, v in enumerate([400, 90, 1200])}
-assert not crflow.ramp_check(_ccfg, _live, now=_now)[0] and crflow.daily_total(_ccfg, "2026-11-21") == 8
+assert not crflow.ramp_check(_ccfg, _live, now=_now)[0] and crflow.daily_total(_ccfg, "2026-11-23") == 8
 assert not crflow.ramp_check(_ccfg, _dead, now=datetime(2026, 11, 12, 18, 0, tzinfo=timezone.utc))[0]   # not yet
 crflow.HOLD.unlink(missing_ok=True)
 crflow._step = _cs
@@ -2364,7 +2364,8 @@ _g = dict(_ccfg, limits=dict(_ccfg.get("limits") or {}, boost_dates=[]),
 _rush = dict(_g, launch=dict(_ccfg.get("launch") or {}, enabled=True,
                              date=common.now_utc().date().isoformat()))
 from clipper import launch as _lch  # noqa: E402
-assert _lch.rush(_rush) and crflow.youtube_gap_minutes(_rush) == 30 and crflow.daily_total(_rush) >= 6
+assert _lch.rush(_rush) and crflow.youtube_gap_minutes(_rush) == 30
+assert [crflow.daily_total(_rush, d) for d in ("2026-11-18", "2026-11-19", "2026-11-20", "2026-11-21")] == [8, 8, 10, 10]
 assert not _lch.rush(dict(_rush, launch=dict(_rush["launch"], date="2026-01-01")))
 assert crflow.youtube_gap_minutes(_g) == 180
 _half_hour_ago = (common.now_utc() - __import__("datetime").timedelta(minutes=30)).isoformat()

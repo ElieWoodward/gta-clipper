@@ -191,10 +191,14 @@ launch:                           # GTA 6 launch day: switches on by itself, not
   multiplier: 3                   # posts per day x3 from launch day when automatic posting (Blotato) is set up...
   email_multiplier: 2             # ...x2 if posting is still by email
   auto_post: true                 # post through Blotato from launch day once BLOTATO_API_KEY is added and checked
-  rush_days: 3                    # first days of GTA 6: post each clip as soon as it's ready (no best-hours wait),
+  rush_days: 4                    # first days of GTA 6: post each clip as soon as it's ready (no best-hours wait),
   rush_gap: 30                    # at least this many minutes apart on YouTube,
-  rush_per_day: 6                 # and at least this many a day (auto_limit can go higher);
   rush_min_score: 6               # first-reaction moments count (the judge is told GTA 6 just came out), bar 6 not 7
+  rush_max:                       # most posts on these days (a ceiling: only clips that pass the bar go out);
+    "2026-11-18": 8               # after them auto_limit picks the number again
+    "2026-11-19": 8
+    "2026-11-20": 10
+    "2026-11-21": 10
   watch_top: 4                    # also watch this many of the biggest English GTA 6 streams live
   clip_top: 6                     # streamers re-picked on launch day (and daily after): paid GTA 6 campaigns first,
                                   # then this many of the biggest English GTA 6 streamers

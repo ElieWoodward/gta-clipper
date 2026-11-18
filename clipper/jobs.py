@@ -116,6 +116,12 @@ def process():
         clipqueue.expire(cfg, state)
         try:   # GTA 6 launch days: pick up whoever is streaming it now, every hour
             from . import launch
+            if launch.rush(cfg, state):   # GTA 6 campaigns appear through the day: look every 2 hours, not daily
+                last = state.get("campaign_scan_at") or ""
+                if not last or (now_utc() - datetime.fromisoformat(last)).total_seconds() > 2 * 3600:
+                    from . import campaigns
+                    state["campaign_scan_at"] = now_utc().isoformat()
+                    campaigns.scan(cfg, state)
             if launch.refresh_streamers(cfg, state, dry_run=DRY_RUN) is not None:
                 save_state(state)
                 cfg = load_config()   # launch streamers are merged into the config on load

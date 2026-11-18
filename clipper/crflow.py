@@ -165,8 +165,9 @@ def daily_total(cfg, day=None):
     if auto is not None and day == _local_day(now_utc().isoformat(), cfg.get("timezone", "UTC")):
         n = auto   # chosen from the channel's own views and likes (autolimit.py)
     from . import launch
-    if day == _local_day(now_utc().isoformat(), cfg.get("timezone", "UTC")) and launch.rush(cfg):
-        n = max(n, int(launch.settings(cfg).get("rush_per_day") or 6))
+    caps = {str(k): int(v) for k, v in (launch.settings(cfg).get("rush_max") or {}).items()}
+    if day in caps and launch.settings(cfg).get("enabled"):
+        n = caps[day]   # launch days: up to this many; only clips that pass the score bar go out, so it's a ceiling
     try:
         hold = json.loads(HOLD.read_text())
         if hold.get("day") == day and hold.get("cap"):

@@ -841,7 +841,7 @@ def process_joins(st):
             else:
                 j["status"] = "done"
                 _mark_joined(j["token"])
-                (tg.info if j.get("auto") else tg.send)(
+                tg.send(   # joining a paid campaign is worth a message, even when the bot did it by itself
                     f"✅ Joined {name} on Content Rewards. Its clips go to the front of the queue now.\n"
                     f"{res.get('url')}{extra}")
         joins_save(items)
