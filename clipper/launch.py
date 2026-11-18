@@ -17,7 +17,7 @@ from datetime import date, datetime, timedelta
 
 from .common import log, now_utc
 
-DEFAULTS = {"enabled": True, "date": "2026-11-19", "remind_days_before": 7, "remind_hour": 9,
+DEFAULTS = {"enabled": True, "date": "2026-11-18", "remind_days_before": 7, "remind_hour": 9,
             "multiplier": 3, "email_multiplier": 2, "auto_post": True, "watch_top": 4, "claude_usd_per_day": 4.0,
             "boost_days": 8, "clip_top": 6, "campaign_emails": 8,
             "games": ["Grand Theft Auto VI", "Grand Theft Auto 6"]}
@@ -34,8 +34,8 @@ def _local_now(cfg):
 
 def launch_date(cfg, state=None):
     """The launch date: a date Elie replied with wins over config.yaml."""
-    d = ((state or {}).get("launch") or {}).get("date") or settings(cfg)["date"]
-    return date.fromisoformat(str(d))
+    days = [str(x) for x in (((state or {}).get("launch") or {}).get("date"), settings(cfg)["date"]) if x]
+    return min(date.fromisoformat(d) for d in days)   # an earlier date wins: the game came out early somewhere
 
 
 def days_left(cfg, state=None):
@@ -274,9 +274,17 @@ def refresh_streamers(cfg, state, dry_run=False):
     if not (cfg.get("_launch") or {}).get("on"):
         return None
     rec = state.setdefault("launch", {})
-    today = now_local(cfg).date().isoformat()
-    if rec.get("streamers_on") == today:
+    now = now_local(cfg)
+    today = now.date().isoformat()
+    first_days = (now.date() - launch_date(cfg, state)).days < 3
+    if rec.get("streamers_on") == today and not first_days:
         return rec.get("streamers")
+    if first_days and rec.get("streamers_at"):   # launch days: who's streaming changes by the hour, so re-pick hourly
+        try:
+            if (now_utc() - datetime.fromisoformat(rec["streamers_at"])).total_seconds() < 50 * 60:
+                return rec.get("streamers")
+        except ValueError:
+            pass
     s = settings(cfg)
     configured = {(x.get("channel") or "").lower() for x in cfg.get("streamers") or [] if not x.get("auto_found")}
     paid = sorted((r for r in (state.get("campaigns") or {}).values()
@@ -294,7 +302,11 @@ def refresh_streamers(cfg, state, dry_run=False):
         log.warning("couldn't list the biggest GTA 6 streams: %s", e)
         top = []
     picked += [{"name": login, "channel": login} for login in top]
-    rec.update(streamers=picked, streamers_on=today)
+    if first_days:   # keep today's earlier picks too: a streamer who went offline still has a VOD to clip
+        for x in rec.get("streamers") or []:
+            if rec.get("streamers_on") == today and x["channel"] not in [p["channel"] for p in picked]:
+                picked.append(x)
+    rec.update(streamers=picked, streamers_on=today, streamers_at=now_utc().isoformat())
     print(f"::notice::launch streamers: {', '.join(x['name'] for x in picked) or 'none found yet'}", flush=True)
     if not rec.get("digest") and not dry_run:
         camps = sorted((r for r in (state.get("campaigns") or {}).values()

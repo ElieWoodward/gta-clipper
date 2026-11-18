@@ -18,7 +18,7 @@ shutil.copy(REPO / "config.yaml", TMP / "config.yaml")
 _cfg_text = (TMP / "config.yaml").read_text().replace("  mode: email ", "  mode: blotato ", 1)
 assert "mode: blotato" in _cfg_text
 _cfg_text = _cfg_text.replace("launch:                           # GTA 6", "launch:  # GTA 6", 1).replace(
-    "  enabled: true\n  date: \"2026-11-19\"", "  enabled: false\n  date: \"2026-11-19\"", 1)
+    "  enabled: true\n  date: \"2026-11-18\"", "  enabled: false\n  date: \"2026-11-19\"", 1)
 assert "enabled: false\n  date:" in _cfg_text   # launch mode is tested on its own in section 21
 import re as _re  # noqa: E402
 _cfg_text = _re.sub(r'tiktok_paused_until: "[^"]*"', 'tiktok_paused_until: ""', _cfg_text)   # tested in section 25

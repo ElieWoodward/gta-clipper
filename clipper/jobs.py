@@ -114,6 +114,13 @@ def process():
         return
     if clipqueue.email_mode(cfg):
         clipqueue.expire(cfg, state)
+        try:   # GTA 6 launch days: pick up whoever is streaming it now, every hour
+            from . import launch
+            if launch.refresh_streamers(cfg, state, dry_run=DRY_RUN) is not None:
+                save_state(state)
+                cfg = load_config()   # launch streamers are merged into the config on load
+        except Exception as e:
+            log.warning("launch streamers: %s", e)
         finish_batches(cfg, state)   # clips from streams judged at half price on an earlier run
         save_state(state)
         if not DRY_RUN:

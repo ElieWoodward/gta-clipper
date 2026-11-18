@@ -186,7 +186,7 @@ weekly:                           # long YouTube video every Sunday: "GTA RP MOS
 
 launch:                           # GTA 6 launch day: switches on by itself, nothing to edit on the day
   enabled: true
-  date: "2026-11-19"              # if it moves, reply "launch YYYY-MM-DD" to any bot email (or edit this)
+  date: "2026-11-18"              # GTA 6 unlocked in New Zealand/Australia on Nov 18 (Pacific); if it moves, reply "launch YYYY-MM-DD" to any bot email (or edit this)
   remind_days_before: 7           # email with the automatic-posting setup steps this many days before
   multiplier: 3                   # posts per day x3 from launch day when automatic posting (Blotato) is set up...
   email_multiplier: 2             # ...x2 if posting is still by email
@@ -228,7 +228,7 @@ notify:
 
 campaigns:
   avoid: [lysium]                 # never clipped or posted, campaign or not (small channel, few views)
-  pause_until: "2026-11-19"       # until GTA 6 launch: no campaign clips (build the account with what gets views),
+  pause_until: "2026-11-18"       # until GTA 6 launch: no campaign clips (build the account with what gets views),
                                   # except a really popular streamer's campaign (popular_followers on Twitch)
   popular_followers: 1000000
   auto_join: true                 # Mac: join Content Rewards campaigns that are certainly GTA by itself (GTA named in the
