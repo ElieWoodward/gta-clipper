@@ -2080,7 +2080,7 @@ _lys = next(x for x in _ccfg["streamers"] if x.get("campaign"))
 _plain = next(x for x in _ccfg["streamers"] if not x.get("campaign"))
 assert jobs.for_stream(_ccfg, _plain) is _ccfg
 _cc = jobs.for_stream(_ccfg, _lys)["clip"]
-assert _cc["min_score"] == 6 and _cc["clips_per_hour"] == 3 and _cc["min_per_vod"] == 5 and _ccfg["clip"]["min_score"] == 7
+assert _cc["min_score"] == 6 and _cc["clips_per_hour"] == 3 and _cc["min_per_vod"] == 5 and _ccfg["clip"]["min_score"] == (6 if (_ccfg.get("_launch") or {}).get("rush") else 7)
 assert highlights.clip_budget(jobs.for_stream(_ccfg, _lys), 2 * 3600)[0] == 6
 assert highlights.clip_budget(_ccfg, 2 * 3600)[0] == 4
 assert jobs.for_stream(_ccfg, dict(_lys, min_score=5))["clip"]["min_score"] == 5

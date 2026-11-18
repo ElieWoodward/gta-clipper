@@ -17,7 +17,7 @@ from datetime import date, datetime, timedelta
 
 from .common import log, now_utc
 
-DEFAULTS = {"enabled": True, "date": "2026-11-18", "rush_days": 3, "rush_gap": 30, "rush_per_day": 6, "remind_days_before": 7, "remind_hour": 9,
+DEFAULTS = {"enabled": True, "date": "2026-11-18", "rush_days": 3, "rush_gap": 30, "rush_per_day": 6, "rush_min_score": 6, "remind_days_before": 7, "remind_hour": 9,
             "multiplier": 3, "email_multiplier": 2, "auto_post": True, "watch_top": 4, "claude_usd_per_day": 4.0,
             "boost_days": 8, "clip_top": 6, "campaign_emails": 8,
             "games": ["Grand Theft Auto VI", "Grand Theft Auto 6"]}
@@ -101,6 +101,10 @@ def apply(cfg, state=None):
     q["max_size"] = int(q.get("max_size", 5)) * mult
     live = cfg.setdefault("live", {})
     live["extra_posts_per_day"] = int(live.get("extra_posts_per_day", 1)) * mult
+    if rush(cfg, state):   # launch days: first reactions to the new game are worth posting; the bar comes down a notch
+        cl = cfg.setdefault("clip", {})
+        cl["min_score"] = min(int(cl.get("min_score") or 7), int(s.get("rush_min_score") or 6))
+        cfg["_launch"]["rush"] = True
     return cfg
 
 

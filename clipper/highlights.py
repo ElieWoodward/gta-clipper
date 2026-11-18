@@ -133,6 +133,16 @@ CANDIDATES:
 {candidates}
 """
 
+LAUNCH_NOTE = """GTA 6 CAME OUT TODAY. Millions of people are searching for it and haven't played it yet, so besides
+the funny moments above, these are worth posting and can score 7+ even without a joke:
+- the streamer's genuine first reaction to something new: the graphics, a view of the map or city, a car, an animation
+- the new game doing something wild: NPCs reacting in a crazy way, physics going off, the cops showing up absurdly fast
+- a funny or shocking glitch, or the streamer getting destroyed by something they didn't know the game did
+- a big streamer losing it (yelling, laughing, speechless) at anything in the game
+Hooks should name GTA 6 and what's new, e.g. "GTA 6 cops are actually insane". Still skip menus, loading screens,
+character creator scrolling, reading chat and giveaway talk."""
+
+
 def clip_budget(cfg, seconds):
     """How many candidates to judge and clips to keep, scaled by stream length."""
     c, hours = cfg["clip"], seconds / 3600
@@ -160,6 +170,8 @@ def judge_prompt(cfg, vod, windows, max_picks=None):
         lo, hi = ins["target_seconds"]
         length_note = (f"\nOn this account, clips of {lo}-{hi} seconds have been doing best so far: aim for that "
                        f"unless the moment truly needs more or less.")
+    if (cfg.get("_launch") or {}).get("rush"):
+        playbook = (LAUNCH_NOTE + "\n\n" + playbook).strip()
     st = vod.get("streamer") or {}
     if st.get("picker_notes"):
         playbook = f"RULES FOR THIS STREAMER (a paid campaign; follow them strictly): {st['picker_notes']}\n\n" + playbook
