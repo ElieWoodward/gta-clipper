@@ -299,6 +299,37 @@ from clipper import clipqueue as _kcq  # noqa: E402
 _kpkg = _kcq.package(_kcfg, _kclip, [])
 assert any("https://kick.com/lordkebun" in t for _, t in _kpkg["blocks"]), _kpkg["blocks"]
 print("KICK OK")
+# a dropped TLS connection while uploading to Blotato is retried with a fresh upload link
+import importlib.util as _ilu  # noqa: E402
+import requests as _rq  # noqa: E402
+_spec = _ilu.spec_from_file_location("clipper._svc_fresh", Path(__file__).resolve().parents[1] / "clipper" / "services.py")
+_fs = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(_fs)
+_fs.UPLOAD_WAIT = (0, 0, 0)
+_calls_up = []
+class _R:  # noqa: E302
+    def __init__(self, j=None):
+        self._j = j
+    def raise_for_status(self):
+        pass
+    def json(self):
+        return self._j
+def _fpost(url, **kw):  # noqa: E302
+    _calls_up.append("post")
+    return _R({"presignedUrl": "https://database.blotato.io/up", "publicUrl": "https://database.blotato.io/x.mp4"})
+def _fput(url, **kw):  # noqa: E302
+    _calls_up.append("put")
+    if _calls_up.count("put") == 1:
+        raise _rq.exceptions.SSLError("SSLV3_ALERT_BAD_RECORD_MAC")
+    return _R()
+_op, _oput = _fs.requests.post, _fs.requests.put
+_fs.requests.post, _fs.requests.put = _fpost, _fput  # noqa: E305
+os.environ.setdefault("BLOTATO_API_KEY", "test-key")
+_upf = TMP / "up.mp4"
+_upf.write_bytes(b"x")
+assert _fs.blotato_upload(_upf) == "https://database.blotato.io/x.mp4" and _calls_up == ["post", "put", "post", "put"]
+_fs.requests.post, _fs.requests.put = _op, _oput
+print("UPLOAD RETRY OK")
 
 # ---------- 8. live: spike detection, viewer clip clusters, state merge ----------
 from clipper import live as _live  # noqa: E402

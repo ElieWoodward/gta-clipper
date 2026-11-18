@@ -33,15 +33,36 @@ def blotato_account_id(platform):
     raise RuntimeError(f"No {platform} account connected in Blotato (Accounts > Connect account).")
 
 
+UPLOAD_TRIES = 4
+UPLOAD_WAIT = (5, 20, 60)   # seconds between tries
+
+
 def blotato_upload(path):
-    """Upload a local file; returns its public URL."""
-    r = requests.post(f"{BLOTATO}/media/uploads", headers=_bh(), json={"filename": os.path.basename(path)}, timeout=30)
-    r.raise_for_status()
-    up = r.json()
-    with open(path, "rb") as fh:
-        p = requests.put(up["presignedUrl"], data=fh, headers={"Content-Type": "video/mp4"}, timeout=600)
-    p.raise_for_status()
-    return up["publicUrl"]
+    """Upload a local file; returns its public URL. Network hiccups (a dropped TLS connection while the Mac is busy
+    downloading streams, a timeout) are retried with a fresh upload link before giving up."""
+    import time
+    last = None
+    for i in range(UPLOAD_TRIES):
+        try:
+            r = requests.post(f"{BLOTATO}/media/uploads", headers=_bh(), json={"filename": os.path.basename(path)},
+                              timeout=30)
+            r.raise_for_status()
+            up = r.json()
+            with open(path, "rb") as fh:
+                p = requests.put(up["presignedUrl"], data=fh, headers={"Content-Type": "video/mp4"}, timeout=600)
+            p.raise_for_status()
+            return up["publicUrl"]
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:   # SSLError included
+            last = e
+        except requests.exceptions.HTTPError as e:
+            if e.response is None or e.response.status_code < 500:
+                raise   # a real refusal (bad key, file too big): retrying won't help
+            last = e
+        if i < UPLOAD_TRIES - 1:
+            wait = UPLOAD_WAIT[min(i, len(UPLOAD_WAIT) - 1)]
+            log.warning("Blotato upload failed (%s); trying again in %ds", str(last)[:120], wait)
+            time.sleep(wait)
+    raise last
 
 
 def blotato_post(platform, account_id, media_url, text, title=None, ai_label=False):
