@@ -716,6 +716,9 @@ def cleanup_assets(state):
 def emails_due(cfg, state, now):
     """How many posting emails should have gone out by now today, and how many did."""
     sent = clipqueue.emailed_on(state, now.date().isoformat(), cfg.get("timezone", "UTC"))
+    from . import launch
+    if launch.rush(cfg, state):   # launch days: every post of the day is due now; youtube_ready spaces them out
+        return _quota(cfg), sent
     slots = _slots(cfg, _quota(cfg), state)
     due = sum(1 for sl in slots if now.strftime("%H:%M") >= sl)
     return due, sent

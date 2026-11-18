@@ -17,7 +17,7 @@ from datetime import date, datetime, timedelta
 
 from .common import log, now_utc
 
-DEFAULTS = {"enabled": True, "date": "2026-11-18", "remind_days_before": 7, "remind_hour": 9,
+DEFAULTS = {"enabled": True, "date": "2026-11-18", "rush_days": 3, "rush_gap": 30, "rush_per_day": 6, "remind_days_before": 7, "remind_hour": 9,
             "multiplier": 3, "email_multiplier": 2, "auto_post": True, "watch_top": 4, "claude_usd_per_day": 4.0,
             "boost_days": 8, "clip_top": 6, "campaign_emails": 8,
             "games": ["Grand Theft Auto VI", "Grand Theft Auto 6"]}
@@ -30,6 +30,16 @@ def settings(cfg):
 def _local_now(cfg):
     from zoneinfo import ZoneInfo
     return now_utc().astimezone(ZoneInfo(cfg.get("timezone", "UTC")))
+
+
+def rush(cfg, state=None):
+    """The first launch.rush_days days of GTA 6: clips go out as soon as they're ready (no waiting for the best hours,
+    launch.rush_gap minutes apart) and at least launch.rush_per_day a day. The first clips out get the views."""
+    s = settings(cfg)
+    if not s.get("enabled"):
+        return False
+    today = _local_now(cfg).date()
+    return 0 <= (today - launch_date(cfg, state)).days < int(s.get("rush_days") or 3)
 
 
 def launch_date(cfg, state=None):

@@ -164,6 +164,9 @@ def daily_total(cfg, day=None):
     auto = autolimit.level(cfg)
     if auto is not None and day == _local_day(now_utc().isoformat(), cfg.get("timezone", "UTC")):
         n = auto   # chosen from the channel's own views and likes (autolimit.py)
+    from . import launch
+    if day == _local_day(now_utc().isoformat(), cfg.get("timezone", "UTC")) and launch.rush(cfg):
+        n = max(n, int(launch.settings(cfg).get("rush_per_day") or 6))
     try:
         hold = json.loads(HOLD.read_text())
         if hold.get("day") == day and hold.get("cap"):
@@ -238,6 +241,9 @@ WINDOW_HOURS = 15   # posting day, about 7 AM to 10 PM
 
 def youtube_gap_minutes(cfg):
     """Minutes between any two YouTube posts: the day's posts spread evenly over the posting day (never under 45)."""
+    from . import launch
+    if launch.rush(cfg):
+        return int(launch.settings(cfg).get("rush_gap") or 30)
     return max(45, int(WINDOW_HOURS * 60 / max(1, daily_total(cfg) or 5)))
 
 

@@ -2359,7 +2359,13 @@ _t9 = mac.day_text(_d9)
 assert "3 on YouTube, 1 on TikTok (2 campaign)" in _t9 and "big one" in _t9 and "$0.31" in _t9, _t9
 # YouTube posts are spread out: never closer than the posting day divided by the day's posts (45 min minimum)
 _g = dict(_ccfg, limits=dict(_ccfg.get("limits") or {}, boost_dates=[]),
-          posting=dict(_ccfg["posting"], daily_total_schedule=[]))
+          posting=dict(_ccfg["posting"], daily_total_schedule=[]), launch=dict(_ccfg.get("launch") or {}, enabled=False))
+# GTA 6 launch rush: posts go out as soon as they're ready, 30 min apart, at least 6 a day
+_rush = dict(_g, launch=dict(_ccfg.get("launch") or {}, enabled=True,
+                             date=common.now_utc().date().isoformat()))
+from clipper import launch as _lch  # noqa: E402
+assert _lch.rush(_rush) and crflow.youtube_gap_minutes(_rush) == 30 and crflow.daily_total(_rush) >= 6
+assert not _lch.rush(dict(_rush, launch=dict(_rush["launch"], date="2026-01-01")))
 assert crflow.youtube_gap_minutes(_g) == 180
 _half_hour_ago = (common.now_utc() - __import__("datetime").timedelta(minutes=30)).isoformat()
 assert not crflow.youtube_ready(_g, {"a": {"posts": {"youtube": {"posted_at": _half_hour_ago}}}}, [])
