@@ -1321,7 +1321,8 @@ assert not any("mickey" in m for m in mac.compare(_st, [_camp], {"counts": {"app
 _st2 = {}
 _msgs = mac.compare(_st2, [_camp], {"counts": {}}, ["xQc"])   # joined on the site but not prioritized by the clipper
 assert any("isn't putting its streamer's clips first" in m for m in _msgs), _msgs
-_msgs = mac.compare(_st, [], {"counts": {"approved": 1}}, [])   # dropped off the list: ended, bio can come out
+# dropped off the list (three checks in a row): ended, bio can come out
+_msgs = [m for _ in range(3) for m in mac.compare(_st, [], {"counts": {"approved": 1}}, [])]
 assert len(_msgs) == 1 and "dropped off" in _msgs[0] and "twitch.tv/Lysium" in _msgs[0], _msgs
 assert mac.same_campaign("Lysium/Benji Ramos Clips", "lysium benji ramos clips") and not mac.same_campaign("a", "")
 assert mac.awake(__import__("datetime").datetime(2026, 11, 4, 9)) and not mac.awake(__import__("datetime").datetime(2026, 11, 4, 3))
@@ -2372,6 +2373,44 @@ mac.process_fixes(_fx, None)
 assert _fx["fixes"]["k"]["status"] == "skipped"
 os.environ["CAMPAIGN_RULES_OFF"] = "1"
 print("RETAINER CARDS OK")
+# campaign caption rules: hashtags/mentions from the brief go into every caption of that campaign's clips
+_page = ("Joined\nContent requirements\nClips must be from GTA 6\nBrief\nUse #GTA6 and #RockstarGames in the caption "
+         "and tag @kaicenat. Contact us at team@brand.com\nhttps://x.com/#frag\n")
+_pinfo = _crd.parse_campaign_page(_page)
+assert any("#GTA6" in r for r in _pinfo["requirements"]) and "Clips must be from GTA 6" in _pinfo["requirements"]
+assert common.required_tags(_pinfo["requirements"]) == ["#GTA6", "#RockstarGames", "@kaicenat"], \
+    common.required_tags(_pinfo["requirements"])
+_mj = common.DATA / "mac.json"
+_mj_old = _mj.read_text() if _mj.exists() else None
+_mj.write_text(json.dumps({"campaigns": {"Kai Cenat GTA 6 Clips": {"requirements": _pinfo["requirements"]}}}))
+_rc = {"posting": dict(_ccfg["posting"]), "streamers": [{"name": "kaicenat", "channel": "kaicenat",
+                                                          "campaign": "Kai Cenat GTA 6 Clips"}]}
+common.attach_requirements(_rc)
+assert _rc["streamers"][0]["required_tags"] == ["#GTA6", "#RockstarGames", "@kaicenat"]
+assert "Campaign requirements" in _rc["streamers"][0]["picker_notes"]
+_rclip = {"id": "r1", "streamer": "kaicenat", "title": "kai found the cops", "caption": "bro 😭", "hook": "h",
+          "tags": [], "duration": 20, "score": 8, "why": "w", "created": common.now_utc().isoformat()}
+_rp = dict(_kcq.package(dict(_ccfg, streamers=_rc["streamers"]), _rclip, [])["blocks"])
+assert "#GTA6" in _rp["YouTube title"] and "#RockstarGames" in _rp["YouTube description"], _rp
+assert "@kaicenat" in _jobs._caption(dict(_ccfg, streamers=_rc["streamers"]), _rclip, "tiktok")
+if _mj_old is None:
+    _mj.unlink()
+else:
+    _mj.write_text(_mj_old)
+# a campaign joined under its page title but listed under a slightly different name isn't "dropped"
+_st = {"listed_once": True, "campaigns": {"Kai Cenat GTA 6 Clips | Content Rewards": {
+    "approved": True, "joined_at": "2026-01-01T00:00:00+00:00"}}}
+_live = [{"name": "Kai Cenat GTA 6 Clips", "status": "approved", "approved": True}]
+assert not [m for m in mac.compare(_st, _live, {"counts": {}}, ["Kai Cenat GTA 6 Clips"]) if "dropped" in str(m)]
+# just joined and not listed yet: no "dropped"; 3 checks missing after a day: dropped
+_st2 = {"listed_once": True, "campaigns": {"NYZ GTA": {"approved": True, "joined_at": common.now_utc().isoformat()}}}
+for _ in range(4):
+    assert not [m for m in mac.compare(_st2, [], {"counts": {}}, []) if "dropped" in str(m)]
+_st2["campaigns"]["NYZ GTA"]["joined_at"] = "2026-01-01T00:00:00+00:00"
+_st2["campaigns"]["NYZ GTA"]["missing"] = 0
+_drops = [str(m) for _ in range(3) for m in mac.compare(_st2, [], {"counts": {}}, []) if "dropped" in str(m)]
+assert len(_drops) == 1, _drops
+print("CAMPAIGN RULES TAGS OK")
 # and the Claude budget steps up with them
 _bs = {"limits": {"claude_usd_per_month": 5.0, "claude_usd_day_max": 0.5,
                   "budget_schedule": [{"from": "2000-01-01", "per_month": 30.0, "day_max": 1.5}]}}
@@ -2393,7 +2432,7 @@ _g = dict(_ccfg, limits=dict(_ccfg.get("limits") or {}, boost_dates=[]),
           posting=dict(_ccfg["posting"], daily_total_schedule=[]), launch=dict(_ccfg.get("launch") or {}, enabled=False))
 # GTA 6 launch rush: posts go out as soon as they're ready, 30 min apart, at least 6 a day
 _rush = dict(_g, launch=dict(_ccfg.get("launch") or {}, enabled=True,
-                             date=common.now_utc().date().isoformat()))
+                             date=common.now_local(_g).date().isoformat()))
 from clipper import launch as _lch  # noqa: E402
 assert _lch.rush(_rush) and crflow.youtube_gap_minutes(_rush) == 30
 assert [crflow.daily_total(_rush, d) for d in ("2026-11-18", "2026-11-19", "2026-11-20", "2026-11-21")] == [8, 8, 10, 10]

@@ -1,5 +1,6 @@
 """Shared helpers: config, state file, paths, logging, time."""
 import json
+import re
 import logging
 import os
 import subprocess
@@ -30,6 +31,45 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger("clipper")
 
 
+TAG_RE = re.compile(r"(?<![\w/.@])[#@][A-Za-z][A-Za-z0-9_.]{1,29}")
+
+
+def required_tags(lines):
+    """The #hashtags and @mentions a campaign's requirements ask for, in order (emails and URLs left out)."""
+    out = []
+    for ln in lines or []:
+        for t in TAG_RE.findall(re.sub(r"\S+@\S+\.\w+|https?://\S+", " ", ln)):
+            t = t.rstrip(".")
+            if t.lower() not in [x.lower() for x in out]:
+                out.append(t)
+    return out
+
+
+def attach_requirements(cfg):
+    """Campaign requirements read from Content Rewards (the Mac's data/mac.json) go onto that campaign's streamers:
+    `requirements` (the lines), `required_tags` (added to every caption) and, unless config.yaml has its own,
+    `picker_notes` so the judge writes hooks and captions that follow them."""
+    path = DATA / "mac.json"
+    if not path.exists():
+        return
+    book = (json.loads(path.read_text()).get("campaigns") or {})
+
+    def norm(x):
+        return re.sub(r"[^a-z0-9]", "", (x or "").lower())
+    for s in cfg.get("streamers") or []:
+        if not s.get("campaign"):
+            continue
+        a = norm(s["campaign"])
+        rec = next((r for n, r in book.items() if a and norm(n) and (a in norm(n) or norm(n) in a)), None)
+        req = [str(x) for x in (rec or {}).get("requirements") or [] if str(x).strip()]
+        if not req:
+            continue
+        s["requirements"] = req
+        s["required_tags"] = required_tags(req)
+        if not s.get("picker_notes"):
+            s["picker_notes"] = "Campaign requirements: " + " | ".join(req)[:800]
+
+
 def load_config():
     with open(ROOT / "config.yaml") as f:
         cfg = yaml.safe_load(f)
@@ -49,6 +89,10 @@ def load_config():
                 cfg.setdefault("streamers", []).append(s)
     except Exception as e:
         log.warning("couldn't add campaign streamers: %s", e)
+    try:
+        attach_requirements(cfg)
+    except Exception as e:
+        log.warning("couldn't read campaign requirements: %s", e)
     if not os.environ.get("CAMPAIGN_RULES_OFF"):   # tests of the campaign flow turn this off
         try:
             from .campaigns import apply_rules

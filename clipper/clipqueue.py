@@ -155,14 +155,27 @@ def _ts(seconds):
     return f"{s // 3600}h{s % 3600 // 60}m{s % 60}s"
 
 
+def campaign_tags(cfg, streamer):
+    """#hashtags and @mentions this streamer's campaign requires in every caption (common.attach_requirements)."""
+    for s in cfg.get("streamers") or []:
+        if s.get("name") == streamer and s.get("campaign"):
+            return list(s.get("required_tags") or [])
+    return []
+
+
 def package(cfg, clip, queue_now, state=None):
     """Everything to paste into TikTok and YouTube for one clip: {subject, blocks: [(label, text)]}."""
     from . import jobs
     tiktok_caption = jobs._caption(cfg, clip, "tiktok")
     channel = streamer_channel(cfg, clip["streamer"])
     title = clip["title"].strip()
-    yt_title = (title if "#shorts" in title.lower() else f"{title} #shorts")[:100]
-    hashtags = " ".join(dict.fromkeys(list(cfg["posting"]["hashtags"]) + ["#" + re.sub(r"[^a-z0-9]", "", channel)]))
+    req = campaign_tags(cfg, clip["streamer"])
+    yt_title = title if "#shorts" in title.lower() else f"{title} #shorts"
+    need = [t for t in req if t.lower() not in yt_title.lower()]
+    if need and len(yt_title) + len(" ".join(need)) + 1 <= 100:   # the campaign's tags in the title too, if they fit
+        yt_title = f"{yt_title} {' '.join(need)}"
+    yt_title = yt_title[:100]
+    hashtags = " ".join(dict.fromkeys(req + list(cfg["posting"]["hashtags"]) + ["#" + re.sub(r"[^a-z0-9]", "", channel)]))
     plat = next((x.get("platform") for x in cfg.get("streamers") or [] if x.get("name") == clip["streamer"]), "twitch")
     home = f"https://kick.com/{channel}" if plat == "kick" else f"https://twitch.tv/{channel}"
     yt_desc = (f"{clip['caption']}\n\nStreamer: {clip['streamer']} ({home})\n\n{hashtags} #shorts")

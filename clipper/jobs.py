@@ -578,7 +578,7 @@ def _caption(cfg, clip, platform):
     from . import clean
     if clean.enabled(cfg):
         clip = dict(clip, caption=clean.mask(clip.get("caption") or ""))
-    tags = list(cfg["posting"]["hashtags"])
+    tags = clipqueue.campaign_tags(cfg, clip["streamer"]) + list(cfg["posting"]["hashtags"])   # campaign's first
     if clip["streamer"] not in ("manual", "test"):
         tags.append("#" + "".join(ch for ch in clip["streamer"].lower() if ch.isalnum()))
     tags = " ".join(dict.fromkeys(tags))

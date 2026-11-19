@@ -64,6 +64,11 @@ def parse_campaign_page(text):
             if ln in ("Top clippers", "Reference materials", "Brief") or ln.startswith("Rank"):
                 break
             info["requirements"].append(ln)
+    for ln in ls:   # caption rules can sit anywhere in the brief ("Use #GTA6 and tag @brand in the caption")
+        if (len(ln) <= 300 and re.search(r"(?<![\w/.])[#@][A-Za-z]", ln)
+                and re.search(r"hashtag|caption|include|tag|mention|title|description|must|required", ln, re.I)
+                and ln not in info["requirements"] and not any(ln == b or b in ln for b in info["bio"])):
+            info["requirements"].append(ln)
     m = re.search(r"Budget\s*\n\s*\$([\d,.]+K?)\s*/\s*\$([\d,.]+K?)", full)
     if m:
         info["budget_used"], info["budget_total"] = _money(m.group(1)), _money(m.group(2))

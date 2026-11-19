@@ -186,9 +186,29 @@ def compare(st, camps, drafts, prioritized):
         book[name] = rec
     if camps or st.get("listed_once"):
         for name, rec in book.items():
-            if name not in live_names and not rec.get("ended") and rec.get("approved"):
-                rec["ended"] = True
-                msgs.append(_ended_text(name, rec, book, gone=True))
+            twin = next((ln for ln in live_names if ln != name and same_campaign(name, ln)), None)
+            if twin and not book.get(twin, {}).get("ended"):
+                # the same campaign listed under a slightly different name (the join page title vs the list):
+                # it's still there; undo a "dropped off" that came from the mismatch
+                rec["missing"] = 0
+                if rec.get("ended"):   # only the "dropped off" path ends a record whose twin is still listed
+                    rec.update(ended=False, gone=False)
+                continue
+            if name in live_names:
+                rec["missing"] = 0
+                continue
+            if rec.get("ended") or not rec.get("approved"):
+                continue
+            try:
+                fresh = (now_utc() - datetime.fromisoformat(rec.get("joined_at") or "2000-01-01T00:00:00+00:00")
+                         ).total_seconds() < 24 * 3600
+            except ValueError:
+                fresh = False
+            rec["missing"] = rec.get("missing", 0) + 1
+            if fresh or rec["missing"] < 3:   # just joined (the list can lag), or one odd page load: wait
+                continue
+            rec.update(ended=True, gone=True)
+            msgs.append(_ended_text(name, rec, book, gone=True))
     st["listed_once"] = True
 
     counts = drafts.get("counts") or {}
@@ -827,11 +847,18 @@ def process_joins(st):
             bio = res.get("bio") or []
             book = st.setdefault("campaigns", {})
             name = j["cr_name"]
+            req = [r for r in res.get("requirements") or [] if str(r).strip()]
             book[name] = dict(book.get(name) or {}, name=name, url=res.get("url"), approved=True, bio=bio,
-                              bio_told=bio, bio_wait=bool(bio), status="joined", ended=False,
-                              seen=now_utc().isoformat())
+                              bio_told=bio, bio_wait=bool(bio), status="joined", ended=False, gone=False,
+                              requirements=req, seen=now_utc().isoformat(), joined_at=now_utc().isoformat())
             extra = ("\n\nIts clips go to the brand for approval first. I upload them as drafts and send you the "
                      "post package once they're approved." if res.get("preapproval") else "")
+            if req:
+                from .common import required_tags
+                tags = required_tags(req)
+                extra += ("\n\nIts rules:\n" + "\n".join(f"- {r}" for r in req[:8]) +
+                          (f"\n\nI add {' '.join(tags)} to every caption for its clips, and the judge follows "
+                           "the rest." if tags else "\n\nThe judge follows these when picking and writing its clips."))
             if bio:
                 j["status"] = "bio_wait"
                 tg.send(f"✅ Joined {name} on Content Rewards.\n\nOne thing before its clips count: put this in your "
