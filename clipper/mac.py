@@ -1336,6 +1336,8 @@ def submit_directs(st):
     from . import crflow, contentrewards as cr
     items = crflow.direct_load()
     for e in crflow.direct_due(items):
+        if (e.get("retry_at") or "") > now_utc().isoformat():
+            continue   # tried a moment ago; give the page a few minutes
         rec = next((r for n, r in (st.get("campaigns") or {}).items() if same_campaign(n, e["campaign"])), {})
         page = rec.get("url")
         try:
@@ -1344,9 +1346,15 @@ def submit_directs(st):
             with cr.Site() as s:
                 s.submit_direct(page, e["url"], [e.get("title"), e.get("caption"), e.get("hook")])
         except Exception as ex:
-            crflow.direct_update(e["id"], e["platform"], status="manual", error=str(ex)[:200])
             left = max(0, crflow.DIRECT_MINUTES - int((now_utc() - datetime.fromisoformat(e["posted_at"]))
                                                       .total_seconds() // 60))
+            tries = e.get("tries", 0) + 1
+            log.warning("direct submit to %s failed (try %d): %s", e["campaign"], tries, ex)
+            if page and tries < 4 and left > 8:   # a slow page or a popup: try again on the next pass
+                crflow.direct_update(e["id"], e["platform"], tries=tries, error=str(ex)[:200],
+                                     retry_at=(now_utc() + timedelta(minutes=3)).isoformat())
+                continue
+            crflow.direct_update(e["id"], e["platform"], status="manual", tries=tries, error=str(ex)[:200])
             tg.send(f"⏰ Submit this now ({left} min left): I couldn't submit your post to {e['campaign']} "
                     f"({str(ex)[:150]}).\n\nOn Content Rewards: open the campaign > Submit clip > paste:\n{e['url']}"
                     + (f"\n\nCampaign page: {page}" if page else ""))

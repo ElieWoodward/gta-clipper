@@ -497,6 +497,16 @@ def youtube_uploads(channel_id, handle=None):
     return out
 
 
+def _cr_url(rec):
+    """The campaign's Content Rewards page if the Mac joined it there (data/cr_joins.json)."""
+    try:
+        from .mac import joins_load, same_campaign
+        return next((j.get("cr_url") or "" for j in joins_load() if same_campaign(j.get("name"), rec.get("name"))
+                     and "contentrewards.com" in (j.get("cr_url") or "")), "")
+    except Exception:
+        return ""
+
+
 def claim_email(cfg, state, clip, platform):
     """If the clip belongs to a joined campaign, email the exact link to submit for payment (once per platform)."""
     from . import campaigns, mail
@@ -507,6 +517,10 @@ def claim_email(cfg, state, clip, platform):
     from . import crflow
     if crflow.applies(cfg, clip) and any(e.get("id") == clip.get("id") for e in crflow.load()):
         clip["claim_sent"][platform] = "mac submits it"   # the Mac submits this link itself (crflow)
+        return
+    on_cr = "contentrewards.com" in f"{rec.get('url') or ''} {_cr_url(rec)}"
+    if os.environ.get("MAC_RUNS_CLIPPER") == "1" and crflow.campaign_name(cfg, clip) and on_cr:
+        clip["claim_sent"][platform] = "mac submits it"   # Content Rewards: the Mac submits posted links itself
         return
     text = "\n".join([f"Your {platform} post of \"{clip['hook']}\" is live. Submit it to get paid:", "",
                       f"1. Open the campaign: {rec.get('join_url') or rec['url']}",

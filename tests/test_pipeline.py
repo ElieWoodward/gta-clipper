@@ -1708,7 +1708,7 @@ _tgcalls2.clear()
 _now_iso = common.now_utc().isoformat()
 _base = {k: v for k, v in dict(_q2[0], links={}, campaign="Lysium/Benji Ramos Clips").items()
          if k not in ("submitted_at", "approved_at", "posted_at", "packaged_at")}
-crflow.save([dict(_base, id=f"d{i}", token=f"dt{i}", status="queued", score=s_, queued_at=_now_iso, file=str(_vid))
+crflow.save(replace=True, entries=[dict(_base, id=f"d{i}", token=f"dt{i}", status="queued", score=s_, queued_at=_now_iso, file=str(_vid))
              for i, s_ in enumerate([6, 9, 7, 8, 6.5, 5, 7.5])])
 _FakeSite.drafts_sent.clear()
 for _ in range(4):
@@ -1724,7 +1724,7 @@ mac.process_drafts(_mst)
 assert crflow.by_token(crflow.load(), "st0")["status"] == "dropped" and len(_FakeSite.drafts_sent) == 5
 _ap = [dict(_base, id=f"a{i}", token=f"at{i}", status="approved", score=s_, approved_at=_now_iso)
        for i, s_ in enumerate([6, 9, 7, 8, 5, 7.5])]
-crflow.save(_ap)
+crflow.save(_ap, replace=True)
 _mst["pkg_migrated"] = True
 _mrc8 = os.environ.get("MAC_RUNS_CLIPPER")
 os.environ["MAC_RUNS_CLIPPER"] = "1"
@@ -1732,7 +1732,7 @@ assert jobs._quota(_ccfg) == 0                      # 6 approved waiting claim t
 assert mac.send_packages_due(_mst) == 5
 assert sorted(e["score"] for e in crflow.load() if e.get("packaged_at")) == [6, 7, 7.5, 8, 9]
 assert mac.send_packages_due(_mst) == 0             # the 6th waits for tomorrow
-crflow.save(_ap[:2])
+crflow.save(_ap[:2], replace=True)
 assert jobs._quota(_ccfg) == 3                      # 2 campaign clips today: 3 regular posting times left
 os.environ.pop("MAC_RUNS_CLIPPER", None)
 assert jobs._quota(_ccfg) >= 3                      # GitHub: the ramp as before
@@ -1784,7 +1784,7 @@ _real_tgsv, tg.send_video = tg.send_video, lambda *a, **k: None
 _e6 = dict(_base, id="cy", token="cy1", status="approved", approved_at=_now_iso, file=str(_vid), platforms=["tiktok", "youtube"],
            draft_id="d-cy",
            blocks=[("TikTok caption", "bro froze"), ("YouTube title", "He froze #shorts"), ("YouTube description", "desc")])
-crflow.save([_e6])
+crflow.save(replace=True, entries=[_e6])
 _tgcalls2.clear()
 mac.send_post_package(crflow.load()[0], st=_mst)
 assert _links6 == [("youtube", "https://youtube.com/shorts/AUTO1")] and crflow.load()[0]["links"]["youtube"].endswith("AUTO1")
@@ -1801,7 +1801,7 @@ if _mrc6 is None:
 # no Posted tap: an approved draft whose package went out is still watched, and its post gets submitted
 _FakeSite.picks = ["he wanted one drive-by and got zero kills 😭 Streamer: twitch.tv/Lysium #gta6, @wantedlevelclips8, "
                    "Posted 3 min ago, 26 min left"]
-crflow.save([dict(_base, id="w1", token="w1", status="approved", approved_at=_now_iso, packaged_at=_now_iso,
+crflow.save(replace=True, entries=[dict(_base, id="w1", token="w1", status="approved", approved_at=_now_iso, packaged_at=_now_iso,
                   platforms=["tiktok"], links={}, caption="he wanted one drive-by and got zero kills 😭 Streamer: twitch.tv/Lysium",
                   title="He wanted one drive-by", hook="zero kills")])
 mac.hunt(_mst)
@@ -1809,14 +1809,14 @@ _w1 = crflow.by_token(crflow.load(), "w1")
 assert _w1["status"] == "done" and _w1["links"]["tiktok"].startswith("picked:"), _w1
 crflow.DIRECT.unlink(missing_ok=True)   # direct campaign posts from earlier sections
 assert mac.hunt_every() == 300
-crflow.save([dict(_w1, status="approved", links={}, packaged_at=(common.now_utc() - __import__("datetime").timedelta(hours=30)).isoformat())])
+crflow.save(replace=True, entries=[dict(_w1, status="approved", links={}, packaged_at=(common.now_utc() - __import__("datetime").timedelta(hours=30)).isoformat())])
 assert not crflow.watching(crflow.load())   # stops looking after a day
 assert _cr.pick_card([{"campaign": "Lysium/Benji Ramos Clips", "duration": 23.0, "posted": 0, "of": 2}],
                      "Lysium/Benji Ramos Clips", 26.9) == 0                       # a sped-up render still matches
 assert _cr.pick_card([{"campaign": "Lysium/Benji Ramos Clips", "duration": 23.0, "posted": 0, "of": 2}],
                      "Lysium/Benji Ramos Clips", 31.0) is None
 # "resend": every approved clip's package again, watched for a day
-crflow.save([dict(_base, id=f"r{i}", token=f"rs{i}", status=st_, approved_at=_now_iso, file=str(_vid), score=7, links={},
+crflow.save(replace=True, entries=[dict(_base, id=f"r{i}", token=f"rs{i}", status=st_, approved_at=_now_iso, file=str(_vid), score=7, links={},
                   blocks=[("TikTok caption", "c"), ("YouTube title", "t")]) for i, st_ in enumerate(["approved", "approved", "done"])])
 _real_tgsv7, tg.send_video = tg.send_video, lambda *a, **k: None
 _tgcalls2.clear()
@@ -1828,7 +1828,7 @@ tg.send_video = _real_tgsv7
 _yt7 = []
 _real_ay7, mac._auto_youtube = mac._auto_youtube, lambda st, e: (_yt7.append(e["token"]), True)[1]
 _real_ap7, jobs.auto_platforms = jobs.auto_platforms, lambda cfg: ["youtube"]
-crflow.save([dict(_base, id=f"y{i}", token=f"yt{i}", status="approved", approved_at=_now_iso, file=str(_vid), score=sc,
+crflow.save(replace=True, entries=[dict(_base, id=f"y{i}", token=f"yt{i}", status="approved", approved_at=_now_iso, file=str(_vid), score=sc,
                   platforms=["tiktok", "youtube"], links={}, draft_id=f"d{i}") for i, sc in enumerate([6, 9, 7])]
             + [dict(_base, id="y9", token="yt9", status="approved", file=str(_vid), score=10, links={},
                     platforms=["tiktok", "youtube"])])   # no draft id: never posted (its link couldn't be matched)
@@ -1904,7 +1904,7 @@ jobs.send_package, jobs.save_state, jobs.ensure_speed = _real_sp6, _real_ss6, _r
 _svc6.blotato_upload, _svc6.blotato_account_id, _svc6.blotato_post, _svc6.blotato_wait = _real6
 # a clip queued before TikTok went once-a-day is still uploaded for YouTube only (no TikTok tick on the draft)
 os.environ.update(BLOTATO_API_KEY="k", MAC_RUNS_CLIPPER="1")
-crflow.save([dict(_base, id="pt", token="pt1", status="queued", score=9, queued_at=common.now_utc().isoformat(),
+crflow.save(replace=True, entries=[dict(_base, id="pt", token="pt1", status="queued", score=9, queued_at=common.now_utc().isoformat(),
                   file=str(_vid), platforms=["tiktok", "youtube"], links={})])
 _FakeSite.drafts_sent.clear()
 mac.process_drafts(_mst)
@@ -1913,7 +1913,7 @@ os.environ.pop("BLOTATO_API_KEY", None)
 if _mrc6 is None:
     os.environ.pop("MAC_RUNS_CLIPPER", None)
 # a campaign whose page isn't known: after 3 tries it's handed over with the manual steps
-crflow.save([dict(_q2[0], id="camp3", token="tok3", status="queued", campaign="Unknown Campaign", tries=2, links={})])
+crflow.save(replace=True, entries=[dict(_q2[0], id="camp3", token="tok3", status="queued", campaign="Unknown Campaign", tries=2, links={})])
 mac.process_drafts(_mst)
 assert crflow.by_token(crflow.load(), "tok3")["status"] == "manual_draft"
 assert any("submitted by hand" in (c[1] or {}).get("text", "") for c in _tgcalls2 if c[0] == "sendMessage")
@@ -1923,7 +1923,7 @@ _real_cf = _camps.campaign_for
 _camps.campaign_for = lambda state, streamer, joined_only=False: {"name": "Lysium/Benji Ramos Clips", "url": "u"}
 _tgcalls2.clear()
 _cclip2 = dict(_cclip, posts={"tiktok": {"url": _tt_url}})
-crflow.save([dict(_q2[0], id="camp1", token="t1", status="done")])
+crflow.save(replace=True, entries=[dict(_q2[0], id="camp1", token="t1", status="done")])
 _cq2.claim_email(_ccfg, {"clips": {}}, _cclip2, "tiktok")
 assert not _tgcalls2 and _cclip2["claim_sent"]["tiktok"] == "mac submits it"
 _camps.campaign_for = _real_cf
@@ -2033,7 +2033,7 @@ _note = {"who": "Brand reviewer", "when": "Nov 3, 6:48 AM", "note": "start it 5 
 _fm = mac.compare(_fst, [], {"counts": {}, "needs_changes": [_note]}, [])
 assert len(_fm) == 1 and "5 seconds later" in _fm[0] and _fm[0].rows[0][0][1].startswith("fx:")
 _fkey = _fm[0].rows[0][0][1][3:]
-crflow.save([{"id": "fixclip", "token": "ftok", "campaign": "Lysium/Benji Ramos Clips", "status": "submitted",
+crflow.save(replace=True, entries=[{"id": "fixclip", "token": "ftok", "campaign": "Lysium/Benji Ramos Clips", "status": "submitted",
               "submitted_at": "2026-11-03T10:00:00+00:00", "platforms": ["tiktok", "youtube"], "links": {}}])
 
 
@@ -2672,3 +2672,85 @@ jobs.DRY_RUN = _wdry
 jobs.auto_platforms, jobs.auto_post_clip, jobs.save_state, tg.problem = _saved_w
 crflow.load = _saved_load
 print("BLOTATO LIMIT OK")
+
+# ---------- audit fixes: queue saves never drop clips, slow Blotato posts get followed up, retries, no stray messages ----------
+_qsaved = crflow.load()
+crflow.save(replace=True, entries=[])
+crflow.save(replace=True, entries=[{"id": "a", "token": "t1", "queued_at": "2026-11-19T01:00:00"}])
+_stale = crflow.load()   # the Mac loop's copy, taken before a long upload
+crflow.save(_stale + [{"id": "b", "token": "t2", "queued_at": "2026-11-19T02:00:00"}])   # the post job queues one
+_stale[0]["status"] = "submitted"
+crflow.save(_stale)   # the loop saves its old copy: "b" must survive, "a" keeps the loop's change
+assert [(e["id"], e.get("status")) for e in crflow.load()] == [("a", "submitted"), ("b", None)], crflow.load()
+crflow.save(replace=True, entries=[{"id": "a", "token": "t9", "queued_at": "2026-11-19T03:00:00"}, {"id": "b", "token": "t2"}])
+assert [e["token"] for e in crflow.load()] == ["t2", "t9"] or [e["token"] for e in crflow.load()] == ["t9", "t2"]
+crflow.save(_qsaved, replace=True)
+# a Blotato post still processing after the 3-minute wait: its link is picked up later and submitted
+_bcfg2 = common.load_config()
+_bcfg2["streamers"] = [{"name": "kreekcraft", "channel": "kreekcraft", "campaign": "KreekCraft GTA 6 Clipping"}]
+_pst = {"clips": {"s1": {"id": "s1", "streamer": "kreekcraft", "hook": "h", "posts": {"youtube": {
+    "via": "blotato", "submission": "sub1", "status": "in-progress", "url": None,
+    "posted_at": common.now_utc().isoformat()}}}}}
+_saved_bs, services.blotato_status = getattr(services, "blotato_status"), lambda sub: ("published", "https://youtu.be/late")
+_qd = []
+_saved_qd, jobs._queue_direct = jobs._queue_direct, lambda cfg, clip, platform="youtube": _qd.append((clip["id"], platform))
+_saved_ss, jobs.save_state = jobs.save_state, lambda s: None
+assert jobs.refresh_blotato(_bcfg2, _pst) == 1
+assert _pst["clips"]["s1"]["posts"]["youtube"]["url"] == "https://youtu.be/late" and _qd == [("s1", "youtube")]
+assert jobs.refresh_blotato(_bcfg2, _pst) == 0   # done once
+services.blotato_status, jobs._queue_direct, jobs.save_state = _saved_bs, _saved_qd, _saved_ss
+# a pre-approval clip made without its required overlay is dropped, never sent as a package
+_pcfg = common.load_config()
+_pcfg["streamers"] = [{"name": "x", "campaign": "C", "needs_overlay": True}]
+_pclip = {"id": "pp", "streamer": "x", "preapproval": True, "status": "approved", "hook": "h"}
+_sent_pkg = []
+_saved_sp, jobs.send_package = jobs.send_package, lambda *a, **k: _sent_pkg.append(a)
+_saved_ss, jobs.save_state = jobs.save_state, lambda s: None
+jobs.deliver(_pcfg, {"clips": {"pp": _pclip}}, _pclip)
+assert _pclip["status"] == "skipped" and not _sent_pkg, _pclip
+jobs.send_package, jobs.save_state = _saved_sp, _saved_ss
+# no "Claim" message for a Content Rewards campaign the Mac submits itself
+from clipper import clipqueue as _cq  # noqa: E402
+_csent = []
+_saved_ms, _saved_mc = mail.send if hasattr(mail, "send") else None, mail.configured
+from clipper import mail as _cml  # noqa: E402
+_saved_cs, _saved_cc = _cml.send, _cml.configured
+_cml.send, _cml.configured = (lambda *a, **k: _csent.append(a)), (lambda: True)
+_ccst = {"campaigns": {"k": {"name": "KreekCraft GTA 6 Clipping", "status": "joined", "twitch_login": "kreekcraft",
+                             "url": "https://contentrewards.com/c/campaigns/2e", "join_url": "https://clippingalpha.com/go/1"}}}
+_mrc = os.environ.get("MAC_RUNS_CLIPPER")
+os.environ["MAC_RUNS_CLIPPER"] = "1"
+_cc = {"id": "c1", "streamer": "kreekcraft", "hook": "h", "posts": {"youtube": {"url": "https://youtu.be/c"}}}
+_cq.claim_email(_bcfg2, _ccst, _cc, "youtube")
+assert not _csent and _cc["claim_sent"]["youtube"] == "mac submits it", _cc
+_ccst["campaigns"]["k"]["url"] = "https://www.clipster.com/x"   # a site the Mac can't submit on: Elie still gets it
+_cc2 = {"id": "c2", "streamer": "kreekcraft", "hook": "h", "posts": {"youtube": {"url": "https://youtu.be/d"}}}
+_saved_jl, mac.joins_load = mac.joins_load, lambda: []
+_cq.claim_email(_bcfg2, _ccst, _cc2, "youtube")
+assert len(_csent) == 1
+mac.joins_load = _saved_jl
+_cml.send, _cml.configured = _saved_cs, _saved_cc
+if _mrc is None:
+    os.environ.pop("MAC_RUNS_CLIPPER", None)
+else:
+    os.environ["MAC_RUNS_CLIPPER"] = _mrc
+# direct submit: a failure with time left is retried a few minutes later, not handed to Elie
+crflow.DIRECT.unlink(missing_ok=True)
+crflow.direct_add({"id": "d1", "campaign": "KreekCraft GTA 6 Clipping", "url": "https://youtu.be/d1", "platform": "youtube",
+                   "posted_at": common.now_utc().isoformat(), "status": "todo"})
+class _FailSite:  # noqa: E302
+    def __enter__(self): return self  # noqa: E704
+    def __exit__(self, *a): return False  # noqa: E704
+    def submit_direct(self, *a, **k): raise RuntimeError("page didn't load")  # noqa: E704
+_saved_site, _cr.Site = _cr.Site, _FailSite
+_dmsgs = []
+_saved_send, tg.send = tg.send, lambda *a, **k: _dmsgs.append(a[0])
+_dst = {"campaigns": {"KreekCraft GTA 6 Clipping": {"url": "https://contentrewards.com/c/campaigns/2e"}}}
+mac.submit_directs(_dst)
+_d = crflow.direct_load()[0]
+assert _d["status"] == "todo" and _d["tries"] == 1 and _d["retry_at"] and not _dmsgs, (_d, _dmsgs)
+mac.submit_directs(_dst)   # too soon: not tried again yet
+assert crflow.direct_load()[0]["tries"] == 1
+_cr.Site, tg.send = _saved_site, _saved_send
+crflow.DIRECT.unlink(missing_ok=True)
+print("AUDIT FIXES OK")

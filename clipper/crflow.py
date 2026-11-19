@@ -30,11 +30,26 @@ def load():
         return []
 
 
-def save(entries):
+def save(entries, replace=False):
+    """Write the queue (replace=True: exactly this list, for resets). The post job adds clips while the Mac's loop works on older ones (an upload can take
+    minutes), so this merges under a lock: an entry on disk that the caller's copy doesn't have (a clip queued
+    meanwhile) is kept, not wiped. A clip re-queued under a new token replaces its old entry (same id)."""
+    import fcntl
     QUEUE.parent.mkdir(parents=True, exist_ok=True)
-    tmp = QUEUE.with_suffix(".tmp")
-    tmp.write_text(json.dumps(entries[-200:], indent=2))
-    tmp.replace(QUEUE)
+    lock = open(str(QUEUE) + ".lock", "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        mine_tokens = {e.get("token") for e in entries}
+        mine_ids = {e.get("id") for e in entries}
+        extra = [] if replace else [e for e in load()
+                                    if e.get("token") not in mine_tokens and e.get("id") not in mine_ids]
+        out = sorted(list(entries) + extra, key=lambda e: e.get("queued_at") or "") if extra else list(entries)
+        tmp = QUEUE.with_suffix(f".{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(out[-200:], indent=2))
+        tmp.replace(QUEUE)
+    finally:
+        fcntl.flock(lock, fcntl.LOCK_UN)
+        lock.close()
 
 
 def campaign_name(cfg, clip):
@@ -408,7 +423,9 @@ def _direct_locked(fn):
         except (OSError, ValueError):
             items = []
         out = fn(items)
-        DIRECT.write_text(json.dumps(items[-200:], indent=1))
+        tmp = DIRECT.with_suffix(f".{os.getpid()}.tmp")
+        tmp.write_text(json.dumps(items[-200:], indent=1))
+        tmp.replace(DIRECT)
         return out
     finally:
         fcntl.flock(lock, fcntl.LOCK_UN)

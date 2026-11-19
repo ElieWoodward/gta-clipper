@@ -883,6 +883,35 @@ def blotato_room(cfg, state, platform, now=None):
     return limit - n
 
 
+def refresh_blotato(cfg, state):
+    """Posts Blotato hadn't finished after its 3-minute wait (YouTube processing can take longer): look again.
+    Once published, the link is recorded and a campaign clip is queued for submitting; it's still inside
+    Content Rewards' 30 minutes because posted_at is when it was sent. Returns how many were updated."""
+    since = (now_utc() - timedelta(days=2)).isoformat()
+    n = 0
+    for clip in (state.get("clips") or {}).values():
+        for platform, post in list((clip.get("posts") or {}).items()):
+            if post.get("via") != "blotato" or post.get("url") or not post.get("submission") \
+                    or post.get("status") not in ("in-progress", "pending", "processing", None) \
+                    or (post.get("posted_at") or "") < since:
+                continue
+            try:
+                status, info = services.blotato_status(post["submission"])
+            except Exception as e:
+                log.info("couldn't check Blotato post %s: %s", post["submission"], e)
+                continue
+            if status == "published" and info:
+                post.update(status="published", url=info)
+                n += 1
+                _queue_direct(cfg, clip, platform)
+            elif status == "failed":
+                post.update(status="failed", error=str(info)[:200])
+                n += 1
+    if n:
+        save_state(state)
+    return n
+
+
 AUTO_TRIES = 3   # a clip Blotato refuses this many times is dropped so the next clip gets its turn
 
 
@@ -920,6 +949,11 @@ def deliver(cfg, state, clip):
         except Exception as e:
             log.exception("automatic post failed: %s", e)
             print(f"::warning::automatic post failed ({str(e)[:150]}); emailing the clip instead", flush=True)
+    if clip.get("preapproval") and missing_overlay(cfg, clip):
+        clip.update(status="skipped", skip_reason="made without the campaign's required overlay")
+        print(f"::notice::{clip['id']} skipped: its campaign needs an overlay it was made without", flush=True)
+        save_state(state)
+        return None
     auto = auto_platforms(cfg) if not clip.get("preapproval") else []
     test_day = str((cfg.get("posting") or {}).get("hand_youtube_test") or "")
     if "youtube" in auto and test_day == now_local(cfg).date().isoformat() and not os.environ.get("HAND_TEST_OFF") \
@@ -1174,6 +1208,10 @@ def email_post(cfg):
     em = state.setdefault("email", {})
     _ramp_guard(cfg, state, now)
     _budget_alert(cfg, state, now)
+    try:
+        refresh_blotato(cfg, state)
+    except Exception as e:
+        log.warning("Blotato follow-up: %s", e)
     try:
         tiktok_daily_post(cfg, state)
     except Exception as e:

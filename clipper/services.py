@@ -100,6 +100,15 @@ def blotato_wait(submission_id, limit=180):
     return "in-progress", None
 
 
+def blotato_status(submission_id):
+    """One look at a Blotato post: (status, url_or_error)."""
+    r = requests.get(f"{BLOTATO}/posts/{submission_id}", headers=_bh(), timeout=30)
+    r.raise_for_status()
+    d = r.json()
+    st = d.get("status") or "in-progress"
+    return st, d.get("publicUrl") if st == "published" else d.get("errorMessage")
+
+
 def blotato_post_file(platform, path, text, title=None, ai_label=False, wait=300):
     """Upload a local video and post it to one platform. Returns (status, url_or_error); raises if Blotato says no."""
     media = blotato_upload(path)
