@@ -7,6 +7,26 @@ captions, and gets them posted. Everything runs on GitHub Actions so Elie's comp
 The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/clipqueue.py`, `clipper/mail.py`,
 `clipper/health.py`). Use that file's definition of done when checking or extending it.
 
+## How it runs now (Nov 2026, branch `mac-server`)
+
+- It runs on Elie's old MacBook (launchd `com.wantedlevel.clipbot`, repo at `~/projects/gta-clipper`, work files on the
+  Work SSD at `/Volumes/Work/clipper`). The Mac pulls `mac-server` every 30 minutes and restarts itself. Push there.
+  Logs: `~/Library/Logs/clipbot/bot.log` and `~/projects/gta-clipper/logs/<job>.log`. Keys live in the Mac's `.env`.
+- All messages go to Telegram (`tg.py`). Elie only wants errors, things needing his decision, the 10:30 PM day summary,
+  the weekly review and the weekly video. `tg.info` is quiet; `tg.send` always reaches him.
+- YouTube posts go out automatically through Blotato. TikTok gets one post a day at 11:00 (shadowban recovery).
+- Posts a day: `autolimit.py` decides each morning from views and likes (2 to 8). GTA 6 launch rush (Nov 18-21):
+  post as soon as ready, caps 8/8/10/10 (`launch.rush_max`), judge told GTA 6 just came out, bar 6.
+- Content Rewards runs through Playwright on the Mac (`contentrewards.py`, `mac.py`, `crflow.py`): drafts for
+  pre-approval campaigns, link submission for approved drafts, and direct submission for post-first campaigns
+  (`cr_direct.json`, `mac.submit_directs`, 30-minute window; untested on the live site as of Nov 19).
+- Campaign rules: `campaigns.avoid` (Lysium), required #hashtags/@mentions from each brief go into captions
+  (`common.attach_requirements`). Kick streamers are supported (LordKebun, AdinRoss).
+- Claude budget (`limits.budget_schedule`): launch week up to $4/day, then $30 per 30 days from Nov 27, $40 from Dec 3.
+  When it runs out and the queue is empty, Elie gets a Telegram warning.
+- The sandbox can't reach the Mac. To see what the bot is doing, give Elie a Terminal command and ask for the output.
+  Apply a push right away: `cd ~/projects/gta-clipper && git pull -q && launchctl kickstart -k gui/$(id -u)/com.wantedlevel.clipbot`
+
 ## How it is laid out
 
 - `clipper/` is the Python package. Entry point: `python -m clipper <job>`.
