@@ -146,6 +146,8 @@ posting:
     min_samples: 2                # posts per time before it's judged
     min_gap_hours: 3              # two emails on the same day are at least this far apart
   hashtags: ["#gta6", "#gtarp", "#gta", "#funny", "#fyp"]   # the streamer's tag is added automatically
+  blotato_per_24h: 10             # Blotato's plan limit: posts per account in any 24 hours. The bot never goes over
+                                  # it (extra clips wait for room). Raise it only if you upgrade the Blotato plan.
   label_ai_generated: false       # set true only if you add AI voiceover
 
 prune:

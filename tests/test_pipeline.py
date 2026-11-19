@@ -2643,3 +2643,32 @@ if _mrc is None:
 else:
     os.environ["MAC_RUNS_CLIPPER"] = _mrc
 print("CAMPAIGN SAFEGUARDS OK")
+
+# ---------- Blotato's 24-hour cap (10 posts per account): clips wait for room instead of failing and being dropped ----------
+from datetime import timedelta as _td  # noqa: E402
+_now = common.now_utc()
+_lcfg = common.load_config()
+_lst = {"clips": {f"p{i}": {"id": f"p{i}", "posts": {"youtube": {"via": "blotato",
+        "posted_at": (_now - _td(hours=h)).isoformat()}}} for i, h in enumerate([1, 2, 3, 5, 8, 10, 12, 15, 20, 23, 30])}}
+_saved_load, crflow.load = crflow.load, lambda: []
+assert jobs.blotato_room(_lcfg, _lst, "youtube") == 0   # 10 in the last 24 h (the 30 h one doesn't count)
+_wclip = {"id": "w", "hook": "h", "status": "approved", "score": 7, "streamer": "x"}
+_lst["clips"]["w"] = _wclip
+_saved_w = (jobs.auto_platforms, jobs.auto_post_clip, jobs.save_state, tg.problem)
+_wcalls, _wprob = [], []
+jobs.auto_platforms = lambda cfg: ["youtube"]
+jobs.auto_post_clip = lambda *a, **k: _wcalls.append(a)
+jobs.save_state = lambda s: None
+tg.problem = lambda *a: _wprob.append(a)
+_wdry, jobs.DRY_RUN = jobs.DRY_RUN, False
+jobs.deliver(_lcfg, _lst, _wclip)
+assert not _wcalls and not _wclip.get("emailed_at") and not _wprob   # full: waits quietly, nothing tried
+del _lst["clips"]["p0"]   # an hour later one drops out of the window
+def _limit(*a, **k): raise RuntimeError("You have reached the maximum number of 10 posts for the last 24 hours")  # noqa: E302,E501,E704
+jobs.auto_post_clip = _limit   # Blotato counts one we didn't: still no failure, no message, no drop
+jobs.deliver(_lcfg, _lst, _wclip)
+assert not _wclip.get("auto_fails") and _wclip["status"] == "approved" and not _wprob, _wclip
+jobs.DRY_RUN = _wdry
+jobs.auto_platforms, jobs.auto_post_clip, jobs.save_state, tg.problem = _saved_w
+crflow.load = _saved_load
+print("BLOTATO LIMIT OK")

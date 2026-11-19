@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import re
 import shutil
 import statistics
 from collections import defaultdict
@@ -862,6 +863,26 @@ def _queue_direct(cfg, clip, platform="youtube"):
     print(f"::notice::campaign post for {camp}: queued for submitting on Content Rewards", flush=True)
 
 
+LIMIT_RE = r"maximum number of \d+ posts|posts? for the last 24 hours|upgrade your plan"
+
+
+def blotato_room(cfg, state, platform, now=None):
+    """Posts Blotato will still take on this platform's account right now. Its plan allows posting.blotato_per_24h
+    posts per account in any 24 hours; going over just fails, so the bot waits for room instead."""
+    from . import crflow
+    limit = int((cfg.get("posting") or {}).get("blotato_per_24h") or 10)
+    since = ((now or now_utc()) - timedelta(hours=24)).isoformat()
+    n = sum(1 for c in (state.get("clips") or {}).values()
+            for p, post in (c.get("posts") or {}).items()
+            if p == platform and post.get("via") == "blotato" and (post.get("posted_at") or "") >= since)
+    if platform == "youtube":   # campaign clips posted on YouTube by the Mac (not in the clip list)
+        try:
+            n += sum(1 for e in crflow.load() if (e.get("yt_auto_at") or "") >= since)
+        except Exception:
+            pass
+    return limit - n
+
+
 AUTO_TRIES = 3   # a clip Blotato refuses this many times is dropped so the next clip gets its turn
 
 
@@ -869,6 +890,10 @@ def _auto_failed(cfg, state, clip, platforms, err):
     """Blotato refused a post: keep the clip in the queue (the next post run, ~15 min later, tries again) and tell
     Elie once a day. Nothing comes to him to post by hand."""
     from . import tg
+    if re.search(LIMIT_RE, str(err), re.I):   # Blotato's 24-hour cap: not the clip's fault, it just waits
+        print(f"::notice::Blotato's 24-hour post limit is reached; {clip['id']} waits for room", flush=True)
+        save_state(state)
+        return
     clip["auto_fails"] = clip.get("auto_fails", 0) + 1
     dropped = clip["auto_fails"] >= AUTO_TRIES
     if dropped:
@@ -907,6 +932,10 @@ def deliver(cfg, state, clip):
         tg.send("✋ Test for the views problem: upload the next clip on YouTube yourself, from the YouTube app, with "
                 "the title and description in its message. Today's other clips go through Blotato, so in 2 days we "
                 "can see if the hand-uploaded one does better.")
+    full = [p for p in auto if blotato_room(cfg, state, p) <= 0]
+    if full:   # Blotato's 24-hour limit: the clip waits in the queue for the next free spot
+        log.info("Blotato's 24-hour limit is used up on %s; the clip waits", ", ".join(full))
+        return None
     if auto:   # e.g. YouTube through Blotato; TikTok still comes to Elie
         try:
             auto_post_clip(cfg, state, clip, platforms=auto, finish=False)

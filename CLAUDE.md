@@ -16,7 +16,7 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
   the weekly review and the weekly video. `tg.info` is quiet; `tg.send` always reaches him.
 - YouTube posts go out automatically through Blotato. TikTok gets one post a day at 11:00 (shadowban recovery).
 - Posts a day: `autolimit.py` decides each morning from views and likes (2 to 8). GTA 6 launch rush (Nov 18-21):
-  post as soon as ready, caps 8/8/10/10 (`launch.rush_max`), judge told GTA 6 just came out, bar 6.
+  post as soon as ready, caps 8 a day (`launch.rush_max`), judge told GTA 6 just came out, bar 6.
 - Content Rewards runs through Playwright on the Mac (`contentrewards.py`, `mac.py`, `crflow.py`): drafts for
   pre-approval campaigns, link submission for approved drafts, and direct submission for post-first campaigns
   (`cr_direct.json`, `mac.submit_directs`, 30-minute window; untested on the live site as of Nov 19).
@@ -29,6 +29,8 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
   submitted. If the rules or the overlay can't be read, Elie gets one problem message (`mac.rules_problems`).
 - Blotato refusing a post never sends Elie a hand-posting package: the clip stays queued and is retried
   (`jobs._auto_failed`, dropped after 3 tries) with one problem message a day.
+- Blotato's plan allows 10 posts per account in any 24 hours (`posting.blotato_per_24h`). `jobs.blotato_room` counts
+  the bot's own Blotato posts; when full, clips wait in the queue (no failure, no message).
 - Claude budget (`limits.budget_schedule`): launch week up to $4/day, then $30 per 30 days from Nov 27, $40 from Dec 3.
   When it runs out and the queue is empty, Elie gets a Telegram warning.
 - The sandbox can't reach the Mac. To see what the bot is doing, give Elie a Terminal command and ask for the output.

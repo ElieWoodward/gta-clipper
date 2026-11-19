@@ -962,6 +962,8 @@ def _auto_youtube(st, e):
                                                  ai_label=(cfg.get("posting") or {}).get("label_ai_generated"))
     except Exception as ex:
         e["yt_retry"] = True
+        if re.search(jobs.LIMIT_RE, str(ex), re.I):
+            return False   # Blotato's 24-hour limit: back in the queue, no message
         tg.problem(st, "blotato", f"Blotato didn't post \"{e.get('hook')}\" on YouTube ({str(ex)[:150]}). "
                    "The bot tries again by itself in 30 minutes.",
                    "1. In Blotato, check Accounts shows your YouTube channel connected.\n"
@@ -1066,6 +1068,13 @@ def process_youtube_queue(st):
             clips = {}
         if not crflow.youtube_ready(load_config(), clips, entries):
             return   # too soon after the last YouTube post; its turn comes at the next spaced-out time
+    if due:
+        from . import jobs
+        try:
+            if jobs.blotato_room(load_config(), load_state(), "youtube") <= 0:
+                return   # Blotato's 24-hour limit: the campaign clip waits (it still goes before regular clips)
+        except Exception as ex:
+            log.info("couldn't count Blotato posts: %s", ex)
     for e in sorted(due, key=lambda x: (x["yt_at"], -(x.get("score") or 0)))[:1]:
         e.pop("yt_at", None)
         crflow.save(entries)
