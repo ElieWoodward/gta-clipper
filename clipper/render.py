@@ -16,6 +16,10 @@ EMOJI_FONT_CANDIDATES = ["/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf",
 W, H = 1080, 1920
 YELLOW = "&H0000E5FF&"  # ASS colors are &HAABBGGRR
 
+OVERLAY_POS = {   # where a campaign overlay goes (x, y), kept clear of TikTok's top bar and bottom buttons
+    "center": ("(W-w)/2", "(H-h)/2"), "top": ("(W-w)/2", "140"), "bottom": ("(W-w)/2", "H-h-320"),
+    "top-left": ("40", "140"), "top-right": ("W-w-40", "140"),
+    "bottom-left": ("40", "H-h-320"), "bottom-right": ("W-w-160", "H-h-320")}
 HOOK_TOP = 250          # px from the top: clear of TikTok's top bar
 HOOK_MAX_W = 980
 CAP_FROM_BOTTOM = 470   # captions sit above TikTok's caption/username area
@@ -235,7 +239,7 @@ def speed_up(src, dest, speed, ffmpeg="ffmpeg"):
 
 
 def render(src, src_offset, pick, words, out, facecam=None, commentary=False, layout="fill", focus_x=0.5, speed=1.0,
-           handle=None):
+           handle=None, overlay=None):
     """src: downloaded section; src_offset: seconds into src where the clip starts.
     layout: fill (gameplay fills the screen, cropped around focus_x), wide (more of the frame visible),
     blur (whole frame over a blurred copy). With a facecam box the cam goes on top and gameplay below.
@@ -266,11 +270,20 @@ def render(src, src_offset, pick, words, out, facecam=None, commentary=False, la
         top = HOOK_TOP
     speed = float(speed or 1.0)
     fast = f"setpts=PTS/{speed}," if speed != 1.0 else ""
-    vf = (f"{base};[base][1:v]overlay=(W-w)/2:{top}[hk];"
-          f"[hk]ass='{ass_arg}',{fast}fps=30,format=yuv420p[v]")
+    extra = []
+    if overlay:   # a campaign's required overlay or logo, kept fully visible above the captions
+        ow = int(W * float(overlay.get("width") or 1.0)) // 2 * 2
+        x, y = OVERLAY_POS.get(overlay.get("pos") or "center", OVERLAY_POS["center"])
+        vf = (f"{base};[base][1:v]overlay=(W-w)/2:{top}[hk0];[hk0]ass='{ass_arg}'[hk];"
+              f"[2:v]scale={ow}:-2,format=rgba[ov];[hk][ov]overlay={x}:{y}:eof_action=repeat,"
+              f"{fast}fps=30,format=yuv420p[v]")
+        extra = ["-i", str(overlay["file"])]
+    else:
+        vf = (f"{base};[base][1:v]overlay=(W-w)/2:{top}[hk];"
+              f"[hk]ass='{ass_arg}',{fast}fps=30,format=yuv420p[v]")
     dur = (pick["end"] - pick["start"]) / speed
     af = (f"atempo={speed}," if speed != 1.0 else "") + "loudnorm=I=-14:TP=-1.5:LRA=11"
-    run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{src_offset:.2f}", "-i", src, "-i", hook_png,
+    run(["ffmpeg", "-y", "-loglevel", "error", "-ss", f"{src_offset:.2f}", "-i", src, "-i", hook_png, *extra,
          "-t", f"{dur:.2f}", "-filter_complex", vf, "-map", "[v]", "-map", "0:a?",
          "-af", af,
          "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",

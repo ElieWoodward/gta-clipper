@@ -2515,3 +2515,38 @@ assert not _bclip.get("emailed_at") and _bclip["auto_fails"] == 3 and _bclip["st
 jobs.DRY_RUN = _bdry
 jobs.auto_platforms, jobs.auto_post_clip, jobs.send_package, jobs.save_state, tg.problem = _saved_b
 print("BLOTATO RETRY OK")
+
+# ---------- campaign rules: overlay burned into the clip, caption sends viewers to the stream, logo campaigns ----------
+from clipper import render as _rnd, campaigns as _cps  # noqa: E402
+from PIL import Image as _Img  # noqa: E402
+_osrc = TMP / "ov_src.mp4"
+subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=blue:s=1280x720:d=3",
+                "-f", "lavfi", "-i", "sine=d=3", "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p", str(_osrc)],
+               check=True)
+_opng = TMP / "ov.png"
+_Img.new("RGBA", (200, 200), (255, 0, 0, 255)).save(_opng)
+_oout = TMP / "ov_out.mp4"
+_rnd.render(str(_osrc), 0.0, {"start": 0.0, "end": 2.0, "hook": "overlay test"}, [], _oout,
+            overlay={"file": str(_opng), "width": 0.2, "pos": "top-left"})
+_ojpg = TMP / "ov.jpg"
+subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-ss", "1", "-i", str(_oout), "-frames:v", "1", str(_ojpg)], check=True)
+_px = _Img.open(_ojpg).convert("RGB").getpixel((100, 200))
+assert _px[0] > 200 and _px[2] < 80, _px   # red overlay where top-left puts it (x 40.., y 140..)
+assert _Img.open(_ojpg).convert("RGB").getpixel((900, 1700))[2] > 120   # gameplay still under the rest
+_ocfg = dict(common.load_config())
+_ocfg["campaigns"] = dict(_ocfg.get("campaigns") or {}, overlays={"kreekcraft": {"file": str(_opng), "pos": "top"}})
+assert jobs.campaign_overlay(_ocfg, {"name": "KreekCraft"})["file"] == str(_opng)
+assert jobs.campaign_overlay(_ocfg, {"name": "someone"}) is None
+_ocfg["streamers"] = list(_ocfg.get("streamers") or []) + [
+    {"name": "kreekcraft", "channel": "kreekcraft", "campaign": "KreekCraft GTA 6 Clipping"},
+    {"name": "plainguy", "channel": "plainguy"}]
+_cap = jobs._caption(_ocfg, {"caption": "LADY IM SORRY", "streamer": "kreekcraft"}, "tiktok")
+assert "Watch kreekcraft live: twitch.tv/kreekcraft" in _cap, _cap
+assert "live:" not in jobs._caption(_ocfg, {"caption": "x", "streamer": "plainguy"}, "youtube")
+_jack = {"name": "Jack [GTA LOGO]", "status": "notified", "auto_clip": True, "twitch_login": "jack",
+         "brief": "Jack logo campaign 2"}
+_kreek = {"name": "KreekCraft GTA 6 Clipping", "status": "joined", "auto_clip": True, "twitch_login": "kreekcraft",
+          "brief": "KreekCraft GTA 6 clipping campaign", "id": "k"}
+assert _cps.is_logo(_jack) and not _cps.is_logo(_kreek)
+assert [s["name"] for s in _cps.joined_streamers({"campaigns": {"j": _jack, "k": _kreek}})] == ["kreekcraft"]
+print("CAMPAIGN OVERLAY OK")

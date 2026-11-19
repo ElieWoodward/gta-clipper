@@ -10,7 +10,7 @@ from pathlib import Path
 
 from . import clipqueue, fetch, highlights, render, services, vision
 from .common import (log, load_config, load_state, save_state, now_utc, now_local, days_since_start,
-                     WORK, PLAYBOOK_FILE, INSIGHTS_FILE, load_json)
+                     WORK, PLAYBOOK_FILE, INSIGHTS_FILE, load_json, ROOT)
 
 FORCE = os.environ.get("FORCE") == "1"
 DRY_RUN = os.environ.get("DRY_RUN") == "1"
@@ -465,7 +465,8 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         p = dict(p, commentary=[{"at": 0.0, "text": p["context"].strip()[:70]}])
         commentary = True
     render.render(src, src_offset, p, words, out, facecam=facecam, focus_x=look["focus_x"],
-                  commentary=commentary, layout=layout, speed=speed, handle=st.get("handle"))
+                  commentary=commentary, layout=layout, speed=speed, handle=st.get("handle"),
+                  overlay=campaign_overlay(cfg, st))
     if facecam:  # remember which streamers show their face; their clips get priority
         state.setdefault("streamers", {}).setdefault(vod["streamer"]["name"], {})["facecam"] = True
     asset_id = None
@@ -573,6 +574,45 @@ def _slots(cfg, n, state=None):
     return sorted(slots[:n])
 
 
+def campaign_overlay(cfg, streamer):
+    """campaigns.overlays in config.yaml: {streamer: {file, width, pos}}. The file lives on the Mac (relative paths
+    are from the repo folder). None if this streamer has no overlay. A missing file is a problem worth a message:
+    the campaign's clips don't count without it."""
+    name = (streamer.get("name") or "").lower()
+    ov = ((cfg.get("campaigns") or {}).get("overlays") or {}).get(name)
+    if not ov:
+        return None
+    ov = dict(ov) if isinstance(ov, dict) else {"file": ov}
+    f = Path(os.path.expanduser(str(ov.get("file") or "")))
+    if not f.is_absolute():
+        f = ROOT / f
+    if not f.is_file():
+        print(f"::warning::campaign overlay for {name} not found at {f}; rendering without it", flush=True)
+        try:
+            from . import tg
+            tg.problem(load_state(), f"overlay:{name}", f"The overlay image for {name}'s campaign isn't on the Mac "
+                       f"({f}), so their clips are being made without it and won't count for the campaign.",
+                       f"Put the overlay image at {f} (send it to Claude if you're not sure how).")
+        except Exception:
+            pass
+        return None
+    ov["file"] = str(f)
+    return ov
+
+
+def live_line(cfg, clip):
+    """Campaign clips send viewers back to the streamer's channel (campaigns ask for this)."""
+    streamer = clip.get("streamer") or ""
+    if streamer in ("manual", "test", ""):
+        return ""
+    s = next((x for x in cfg.get("streamers") or [] if x.get("name") == streamer), {})
+    if not s.get("campaign"):
+        return ""
+    ch = clipqueue.streamer_channel(cfg, streamer)
+    home = f"kick.com/{ch}" if s.get("platform") == "kick" else f"twitch.tv/{ch}"
+    return f"🔴 Watch {s.get('handle') or streamer} live: {home}"
+
+
 def _caption(cfg, clip, platform):
     """Viral-style description: one casual reaction line, a credit, then 4-6 hashtags incl. the streamer's."""
     from . import clean
@@ -585,6 +625,9 @@ def _caption(cfg, clip, platform):
     credit = f"Streamer: {clip['streamer']}" if clip["streamer"] not in ("manual", "test") else ""
     if clip.get("handle"):
         credit = f"Streamer: {clip['handle']}"
+    live = live_line(cfg, clip)
+    if live:
+        credit = live
     if platform == "tiktok":
         return f"{clip['caption']}\n\n{credit}\n{tags}".strip()
     return f"{clip['caption']}\n\n{credit}\n{tags} #shorts".strip()

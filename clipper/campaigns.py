@@ -221,7 +221,7 @@ def evaluate(card, game_re):
         d["twitch"] = [named_after] + [t for t in dict.fromkeys(d["twitch"]) if t != named_after]
     gta_text = gta_text or bool(GTA_RE.search(d["brief"]))
     login, why = None, ""
-    for cand in d["twitch"] + login_guesses(card["name"]):
+    for cand in ([] if is_logo(card) else d["twitch"] + login_guesses(card["name"])):
         ok, why = streams_gta(cand, game_re)
         if ok:
             login = cand
@@ -469,13 +469,20 @@ def apply_reply(state, ref, verdict):
 ACTIVE = ("found", "notified", "joined")   # campaigns whose streamer is being clipped
 
 
+def is_logo(rec):
+    """A logo/brand campaign (a brand's logo on GTA videos): it pays for the logo, not for a streamer's clips, so a
+    name like "Jack [GTA LOGO]" must never turn into the Twitch channel "jack"."""
+    text = f"{rec.get('name') or ''} {(rec.get('brief') or '')[:600]}"
+    return rec.get("kind") == "LOGO" or bool(re.search(r"\blogo\b", text, re.I))
+
+
 def joined_streamers(state):
     """Streamer entries (config format) for campaigns that pay for a GTA streamer's clips. They're clipped as soon as
     they're found, so clips are ready by the time you join; joined ones go first."""
     out = []
     recs = sorted((state.get("campaigns") or {}).values(), key=lambda r: r.get("status") != "joined")
     for rec in recs:
-        if rec.get("status") in ACTIVE and rec.get("auto_clip") and rec.get("twitch_login"):
+        if rec.get("status") in ACTIVE and rec.get("auto_clip") and rec.get("twitch_login") and not is_logo(rec):
             out.append({"name": rec["twitch_login"], "platform": "twitch", "channel": rec["twitch_login"],
                         "enabled": True, "campaign": clean_name(rec["name"]), "campaign_id": rec["id"],
                         "campaign_joined": rec.get("status") == "joined", "followers": rec.get("followers"),

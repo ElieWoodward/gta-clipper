@@ -239,6 +239,11 @@ campaigns:
   pause_until: "2026-11-18"       # until GTA 6 launch: no campaign clips (build the account with what gets views),
                                   # except a really popular streamer's campaign (popular_followers on Twitch)
   popular_followers: 1000000
+  overlays: {}                    # campaign overlay/logo burned into every clip of that streamer, e.g.
+                                  #   kreekcraft: {file: overlays/kreekcraft.png, width: 1.0, pos: center}
+                                  # file is on the Mac (relative = inside ~/projects/gta-clipper); width is the share
+                                  # of the screen width (1.0 = full-frame overlay); pos: center, top, bottom,
+                                  # top-left, top-right, bottom-left, bottom-right
   auto_join: true                 # Mac: join Content Rewards campaigns that are certainly GTA by itself (GTA named in the
                                   # campaign, or a streamer whose recent streams are mostly GTA). Others aren't sent.
                                   # You only hear about a campaign when it needs something from you (bio, another site).
