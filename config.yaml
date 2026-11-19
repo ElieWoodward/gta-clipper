@@ -244,7 +244,9 @@ campaigns:
       tags: ["#GTA6", "#KreekCraft", "#GrandTheftAutoVI"]
       caption: ["Watch KreekCraft on YouTube and Twitch"]
       notes: ["Strong hook in the first 1-2 seconds; no misleading titles or fabricated context."]
-  overlays: {}                    # campaign overlay/logo burned into every clip of that streamer, e.g.
+      needs_overlay: true
+  overlays: {}                    # The Mac downloads each campaign's overlay/logo by itself (overlays/ folder) and
+                                  # puts it on that streamer's clips. Only list one here to override it, e.g.
                                   #   kreekcraft: {file: overlays/kreekcraft.png, width: 1.0, pos: center}
                                   # file is on the Mac (relative = inside ~/projects/gta-clipper); width is the share
                                   # of the screen width (1.0 = full-frame overlay); pos: center, top, bottom,

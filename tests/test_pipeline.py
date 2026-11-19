@@ -1612,7 +1612,7 @@ class _FakeSite:  # noqa: E302
     def submit_draft(self, url, video, platforms=("tiktok", "youtube"), dry_run=False):
         _FakeSite.drafts_sent.append((url, video, tuple(platforms)))
         return True
-    def campaigns(self):
+    def campaigns(self, known=None):
         return [dict(_info, name="Lysium/Benji Ramos Clips", status="approved",
                      url="https://contentrewards.com/c/campaigns/x")]
     def drafts(self): return {"counts": {"approved": 1, "posted": 2}}  # noqa: E704
@@ -2585,3 +2585,61 @@ for _plat in ("tiktok", "youtube"):
     assert all(t in _kc for t in ("#GTA6", "#KreekCraft", "#GrandTheftAutoVI")), _kc
     assert "#gta6 " not in _kc + " " and "#kreekcraft" not in _kc, _kc   # no lowercase duplicates
 print("CAMPAIGN BRIEF RULES OK")
+
+# ---------- never again: "Joined" campaigns are read, overlays are fetched and required, gaps are reported ----------
+import io as _io  # noqa: E402
+_list_txt = ("Your\nCampaigns\nWanted Level\nJoined\nClipLaunch\n·\ntoday\nKreekCraft GTA 6 Clipping\n$0\n/$6,825\n0\n"
+             "$1/1K\nSubmit clip\nApproved\nLysium\n·\n1mo ago\nLysium/Benji Ramos Clips\n$573\n/$1,000\n86\n$1.50/1K")
+_listed = _crp.parse_campaign_list(_list_txt)
+assert [(c["name"], c["status"]) for c in _listed] == [("KreekCraft GTA 6 Clipping", "joined"),
+                                                       ("Lysium/Benji Ramos Clips", "approved")], _listed
+_kinfo["refs"] = [{"text": "KreekCraft Overlay", "href": "https://drive.google.com/file/d/1AbCdEfGhIjKlMnOpQrStUvWx/view"}]
+assert _crp.needs_overlay(_kinfo) and not _crp.needs_overlay({"requirements": ["Every post must include #GTA6"]})
+assert _crp.drive_direct(_kinfo["refs"][0]["href"]) == \
+    "https://drive.google.com/uc?export=download&id=1AbCdEfGhIjKlMnOpQrStUvWx"
+def _png(size, alpha):  # noqa: E302
+    b = _io.BytesIO(); _Img.new("RGBA", size, (255, 255, 255, alpha)).save(b, "PNG"); return b.getvalue()  # noqa: E702
+assert _crp.save_overlay(_png((600, 200), 200), TMP / "ov_logo.png")          # a logo
+assert _crp.save_overlay(_png((1080, 1920), 0), TMP / "ov_frame.png")         # a see-through full-screen frame
+assert not _crp.save_overlay(_png((1080, 1920), 255), TMP / "ov_shot.png")    # an opaque screenshot: not an overlay
+assert not _crp.save_overlay(b"<html>sign in</html>", TMP / "ov_html.png")
+# "Joined" counts as in, and the overlay it downloaded is kept on the record
+_jst = {"campaigns": {}}
+mac.compare(_jst, [dict(_listed[0], url="https://contentrewards.com/c/campaigns/k", needs_overlay=True,
+                        overlay_file=str(TMP / "ov_logo.png"), **{k: v for k, v in _kinfo.items() if k != "refs"})],
+            {"counts": {}}, ["KreekCraft GTA 6 Clipping"])
+_krec = _jst["campaigns"]["KreekCraft GTA 6 Clipping"]
+assert _krec["approved"] and not _krec["ended"] and _krec["needs_overlay"] and _krec["overlay_file"], _krec
+# a needed overlay it couldn't get, or a page with no rules: one problem message each
+_probs = []
+_saved_prob, tg.problem = tg.problem, lambda st, key, what, fix: _probs.append(key)
+mac.rules_problems({}, [dict(_listed[0], url="u", needs_overlay=True, refs=_kinfo["refs"], requirements=["x"]),
+                        dict(_listed[1], url="u2", requirements=[])])
+tg.problem = _saved_prob
+assert _probs == ["overlay:KreekCraft GTA 6 Clipping", "rules:Lysium/Benji Ramos Clips"], _probs
+# the streamer gets the downloaded logo, placed on the right; a clip without it is never submitted
+_acfg = common.load_config()
+_acfg["streamers"] = [{"name": "kreekcraft", "channel": "kreekcraft", "campaign": "KreekCraft GTA 6 Clipping",
+                       "needs_overlay": True, "overlay": {"file": str(TMP / "ov_logo.png")}}]
+_aov = jobs.campaign_overlay(_acfg, _acfg["streamers"][0])
+assert _aov["pos"] == "right" and _aov["width"] == 0.24, _aov
+_acfg["streamers"][0]["overlay"] = {"file": str(TMP / "ov_frame.png")}
+assert jobs.campaign_overlay(_acfg, _acfg["streamers"][0])["pos"] == "center"
+assert jobs.missing_overlay(_acfg, {"streamer": "kreekcraft"})
+assert not jobs.missing_overlay(_acfg, {"streamer": "kreekcraft", "overlay": True})
+_dadds = []
+_saved_da, crflow.direct_add = crflow.direct_add, lambda e: _dadds.append(e)
+_mrc = os.environ.get("MAC_RUNS_CLIPPER")
+os.environ["MAC_RUNS_CLIPPER"] = "1"
+_yt = {"youtube": {"url": "https://youtu.be/x", "posted_at": "2026-11-19T10:00:00+00:00"}}
+jobs._queue_direct(_acfg, {"id": "a", "streamer": "kreekcraft", "posts": _yt})
+assert not _dadds   # no overlay: posted, never submitted
+jobs._queue_direct(_acfg, {"id": "b", "streamer": "kreekcraft", "posts": _yt, "overlay": True})
+assert len(_dadds) == 1 and _dadds[0]["campaign"] == "KreekCraft GTA 6 Clipping"
+assert not crflow.applies(_acfg, {"streamer": "kreekcraft", "preapproval": True})
+crflow.direct_add = _saved_da
+if _mrc is None:
+    os.environ.pop("MAC_RUNS_CLIPPER", None)
+else:
+    os.environ["MAC_RUNS_CLIPPER"] = _mrc
+print("CAMPAIGN SAFEGUARDS OK")

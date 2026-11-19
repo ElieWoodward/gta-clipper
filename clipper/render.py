@@ -18,7 +18,7 @@ YELLOW = "&H0000E5FF&"  # ASS colors are &HAABBGGRR
 
 OVERLAY_POS = {   # where a campaign overlay goes (x, y), kept clear of TikTok's top bar and bottom buttons
     "center": ("(W-w)/2", "(H-h)/2"), "top": ("(W-w)/2", "140"), "bottom": ("(W-w)/2", "H-h-320"),
-    "top-left": ("40", "140"), "top-right": ("W-w-40", "140"),
+    "right": ("W-w-40", "420"), "top-left": ("40", "140"), "top-right": ("W-w-40", "140"),
     "bottom-left": ("40", "H-h-320"), "bottom-right": ("W-w-160", "H-h-320")}
 HOOK_TOP = 250          # px from the top: clear of TikTok's top bar
 HOOK_MAX_W = 980

@@ -81,6 +81,13 @@ def attach_requirements(cfg):
         req += [str(x) for x in fixed.get("notes") or [] if str(x) not in req]
         tags = list(dict.fromkeys(list(fixed.get("tags") or []) + required_tags(req)))
         lines = list(dict.fromkeys(list(fixed.get("caption") or []) + required_caption(req)))
+        need = bool(fixed.get("needs_overlay") or (rec or {}).get("needs_overlay") or
+                    re.search(r"\b(overlay|logo|watermark)\b", " ".join(req), re.I))
+        f = (rec or {}).get("overlay_file")
+        if need:
+            s["needs_overlay"] = True
+        if f and os.path.isfile(f) and not s.get("overlay"):
+            s["overlay"] = {"file": f}
         if not (req or tags or lines):
             continue
         s["requirements"] = req

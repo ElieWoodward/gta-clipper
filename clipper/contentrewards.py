@@ -19,7 +19,45 @@ from .common import log
 
 SITE = "https://contentrewards.com"
 PROFILE = Path.home() / ".clipper" / "chrome-profile"   # the bot's own Chrome profile (separate from Elie's)
-STATUS_WORDS = ("Approved", "Pending", "Rejected", "Applied", "Under review", "Waitlisted", "Ended", "Paused")
+STATUS_WORDS = ("Approved", "Joined", "Pending", "Rejected", "Applied", "Under review", "Waitlisted", "Ended", "Paused")
+OVERLAY_RE = re.compile(r"\b(overlay|logo|watermark)\b", re.I)
+
+
+def needs_overlay(info):
+    """The campaign wants its overlay/logo on screen (its rules say so, or it hands one out under Reference materials)."""
+    text = " ".join(str(x) for x in (info.get("requirements") or []))
+    return bool(re.search(r"\b(overlay|logo|watermark)\b.{0,80}\b(must|visible|include|required|on screen)\b|"
+                          r"\b(must|include|required)\b.{0,80}\b(overlay|logo|watermark)\b", text, re.I)
+                or any(OVERLAY_RE.search(r.get("text") or "") for r in info.get("refs") or []))
+
+
+def drive_direct(url):
+    """A Google Drive file link -> its direct download link (folders and other links come back unchanged)."""
+    m = re.search(r"drive\.google\.com/(?:file/d/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]{20,})", url or "")
+    return f"https://drive.google.com/uc?export=download&id={m.group(1)}" if m else url
+
+
+def save_overlay(data, dest):
+    """Keep an image as the campaign overlay (PNG). Refuses things that aren't usable overlays: not an image, tiny,
+    or a full-screen picture with no transparency (that's an example screenshot, and would cover the whole clip)."""
+    import io
+    from PIL import Image
+    try:
+        im = Image.open(io.BytesIO(data))
+        im.load()
+    except Exception:
+        return False
+    w, h = im.size
+    if w < 64 or h < 32:
+        return False
+    im = im.convert("RGBA")
+    see_through = im.getchannel("A").getextrema()[0] < 250
+    if h / w > 1.4 and not see_through:
+        return False
+    dest = Path(dest)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    im.save(dest, "PNG")
+    return True
 DRAFT_TABS = ("Needs changes", "Pending", "Approved", "Posted", "Rejected")
 
 
@@ -289,23 +327,85 @@ class Site:
         self.dismiss_popups()
         return self.page.inner_text("main") if self.page.locator("main").count() else self.page.inner_text("body")
 
-    def campaigns(self):
-        """Joined campaigns with their page details: [{"name", "status", "url", **parse_campaign_page}]."""
+    def campaigns(self, known=None):
+        """Joined campaigns with their page details: [{"name", "status", "url", "refs", **parse_campaign_page}].
+        known: {name: page url} from earlier checks, used when the list has no Preview button for a campaign."""
+        from .mac import same_campaign
         out = []
         listed = parse_campaign_list(self.go("/c/campaigns"))
         for c in listed:
+            url = next((u for n, u in (known or {}).items() if u and same_campaign(n, c["name"])), None)
             self.go("/c/campaigns")
             btn = self.page.get_by_role("button", name=f"Preview {c['name']}")
-            if not btn.count():
+            if btn.count():
+                btn.first.click()
+                self.page.wait_for_url(re.compile(r"/c/campaigns/[0-9a-f-]{20,}"), timeout=30000)
+                self._pause()
+                c["url"] = self.page.url
+                text = self.page.inner_text("main")
+            elif url:   # straight to the page we already know
+                c["url"] = url
+                text = self.go(url)
+            else:
                 out.append(c)
                 continue
-            btn.first.click()
-            self.page.wait_for_url(re.compile(r"/c/campaigns/[0-9a-f-]{20,}"), timeout=30000)
-            self._pause()
-            c["url"] = self.page.url
-            c.update(parse_campaign_page(self.page.inner_text("main")))
+            c.update(parse_campaign_page(text))
+            c["refs"] = self.reference_links()
             out.append(c)
         return out
+
+    def reference_links(self):
+        """Links on the open campaign page: [{"text", "href"}] (overlays and logos sit under Reference materials)."""
+        try:
+            return self.page.evaluate("""() => Array.from(document.querySelectorAll('main a, a'))
+                .map(a => ({text: (a.innerText || a.getAttribute('aria-label') || '').trim().slice(0, 120),
+                            href: a.href})).filter(a => a.href && a.href.startsWith('http'))""")[:80]
+        except Exception as e:
+            log.info("couldn't list the page's links: %s", e)
+            return []
+
+    def fetch_overlay(self, refs, dest):
+        """Download the campaign's overlay/logo from its Reference materials into dest. Tries the link itself (a
+        file or a Google Drive file), then images and file links on the page it opens (Notion, Drive). True if
+        an overlay was saved."""
+        import requests
+        cands = [r["href"] for r in refs or [] if OVERLAY_RE.search(r.get("text") or "")]
+        tried = set()
+
+        def grab(url):
+            url = drive_direct(url)
+            if url in tried or len(tried) > 25:
+                return False
+            tried.add(url)
+            try:
+                r = requests.get(url, timeout=60, headers={"User-Agent": "Mozilla/5.0"})
+            except Exception as e:
+                log.info("overlay download failed (%s): %s", url[:80], e)
+                return False
+            if r.ok and r.headers.get("content-type", "").startswith("image/"):
+                return save_overlay(r.content, dest)
+            return False
+        for url in cands:
+            if grab(url):
+                return True
+        for url in cands:   # a page (Notion, a Drive folder): look for the image on it
+            try:
+                self.go(url)
+                found = self.page.evaluate("""() => {
+                    const imgs = Array.from(document.images).filter(i => i.naturalWidth >= 200)
+                        .sort((a, b) => b.naturalWidth * b.naturalHeight - a.naturalWidth * a.naturalHeight)
+                        .map(i => i.currentSrc || i.src);
+                    const files = Array.from(document.querySelectorAll('a')).map(a => a.href)
+                        .filter(h => /\\.(png|webp|jpe?g)(\\?|$)|drive\\.google\\.com\\/(file|uc|open)/i.test(h));
+                    return files.concat(imgs);
+                }""")
+            except Exception as e:
+                log.info("couldn't open the overlay page (%s): %s", url[:80], e)
+                continue
+            for u in found or []:
+                if grab(u):
+                    return True
+        return False
 
     def join(self, url):
         """Open a campaign (a ClippingAlpha /go/ link redirects to it) and click Join Campaign.

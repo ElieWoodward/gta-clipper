@@ -22,6 +22,13 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
   (`cr_direct.json`, `mac.submit_directs`, 30-minute window; untested on the live site as of Nov 19).
 - Campaign rules: `campaigns.avoid` (Lysium), required #hashtags/@mentions from each brief go into captions
   (`common.attach_requirements`). Kick streamers are supported (LordKebun, AdinRoss).
+- Campaign rules are read from each joined campaign's page every check, including the "Brief" section and "Joined"
+  (direct-post) campaigns. Required hashtags and quoted caption text go into every caption; `campaigns.rules` in
+  config.yaml always applies on top. A required overlay/logo is downloaded from Reference materials into `overlays/`
+  (gitignored) and burned into that streamer's clips. A clip without a required overlay is posted but never
+  submitted. If the rules or the overlay can't be read, Elie gets one problem message (`mac.rules_problems`).
+- Blotato refusing a post never sends Elie a hand-posting package: the clip stays queued and is retried
+  (`jobs._auto_failed`, dropped after 3 tries) with one problem message a day.
 - Claude budget (`limits.budget_schedule`): launch week up to $4/day, then $30 per 30 days from Nov 27, $40 from Dec 3.
   When it runs out and the queue is empty, Elie gets a Telegram warning.
 - The sandbox can't reach the Mac. To see what the bot is doing, give Elie a Terminal command and ask for the output.

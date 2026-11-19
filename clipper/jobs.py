@@ -464,9 +464,9 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
     if st.get("context") and (p.get("context") or "").strip():   # campaign rule: give the clip context
         p = dict(p, commentary=[{"at": 0.0, "text": p["context"].strip()[:70]}])
         commentary = True
+    ov = campaign_overlay(cfg, st)
     render.render(src, src_offset, p, words, out, facecam=facecam, focus_x=look["focus_x"],
-                  commentary=commentary, layout=layout, speed=speed, handle=st.get("handle"),
-                  overlay=campaign_overlay(cfg, st))
+                  commentary=commentary, layout=layout, speed=speed, handle=st.get("handle"), overlay=ov)
     if facecam:  # remember which streamers show their face; their clips get priority
         state.setdefault("streamers", {}).setdefault(vod["streamer"]["name"], {})["facecam"] = True
     asset_id = None
@@ -487,6 +487,7 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         "context": p.get("context", ""), "handle": st.get("handle"), "preapproval": bool(st.get("preapproval")),
         "campaign": st.get("campaign") if is_campaign(st) else None,
         "created": now_utc().isoformat(), "posts": {}, "issue": None, "local_file": str(out), "asset_id": asset_id,
+        "overlay": bool(ov),
     }
     auto = cfg["review"]["mode"] == "auto"
     clip["status"] = ("approved" if clip["score"] >= cfg["clip"]["min_score"] else "rejected") if auto else "queued"
@@ -579,7 +580,7 @@ def campaign_overlay(cfg, streamer):
     are from the repo folder). None if this streamer has no overlay. A missing file is a problem worth a message:
     the campaign's clips don't count without it."""
     name = (streamer.get("name") or "").lower()
-    ov = ((cfg.get("campaigns") or {}).get("overlays") or {}).get(name)
+    ov = ((cfg.get("campaigns") or {}).get("overlays") or {}).get(name) or streamer.get("overlay")
     if not ov:
         return None
     ov = dict(ov) if isinstance(ov, dict) else {"file": ov}
@@ -597,7 +598,20 @@ def campaign_overlay(cfg, streamer):
             pass
         return None
     ov["file"] = str(f)
+    if not ov.get("pos"):   # placement from the image's shape: a tall frame covers the screen, a logo sits right
+        try:
+            from PIL import Image
+            w, h = Image.open(f).size
+        except Exception:
+            w, h = 1, 1
+        ov.update(width=1.0, pos="center") if h / w > 1.4 else ov.update(width=ov.get("width") or 0.24, pos="right")
     return ov
+
+
+def missing_overlay(cfg, clip):
+    """A campaign that requires its overlay, and this clip was made without it: submitting it only gets rejected."""
+    s = next((x for x in cfg.get("streamers") or [] if x.get("name") == clip.get("streamer")), {})
+    return bool(s.get("campaign") and s.get("needs_overlay") and not clip.get("overlay"))
 
 
 def live_line(cfg, clip):
@@ -610,7 +624,7 @@ def live_line(cfg, clip):
         return ""
     ch = clipqueue.streamer_channel(cfg, streamer)
     home = f"kick.com/{ch}" if s.get("platform") == "kick" else f"twitch.tv/{ch}"
-    return f"🔴 Watch {s.get('handle') or streamer} live: {home}"
+    return f"🔴 Watch {streamer} live: {clip.get('handle') or s.get('handle') or home}"
 
 
 def _caption(cfg, clip, platform):
@@ -837,6 +851,9 @@ def _queue_direct(cfg, clip, platform="youtube"):
     from . import crflow
     camp = crflow.campaign_name(cfg, clip)
     yt = (clip.get("posts") or {}).get(platform) or {}
+    if camp and missing_overlay(cfg, clip):
+        print(f"::notice::{camp} needs its overlay and this clip has none: posted, not submitted", flush=True)
+        return
     if not camp or clip.get("preapproval") or not yt.get("url") or os.environ.get("MAC_RUNS_CLIPPER") != "1":
         return
     crflow.direct_add({"id": clip["id"], "campaign": camp, "url": yt["url"], "platform": platform,

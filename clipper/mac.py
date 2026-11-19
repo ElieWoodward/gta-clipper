@@ -157,7 +157,9 @@ def compare(st, camps, drafts, prioritized):
         live_names.add(name)
         old = book.get(name) or {}
         rec = dict(old, name=name, url=c.get("url") or old.get("url"), status=c.get("status"),
-                   approved=bool(c.get("approved") or c.get("status") == "approved"), bio=c.get("bio") or [],
+                   approved=bool(c.get("approved") or c.get("status") in ("approved", "joined")),
+                   needs_overlay=bool(c.get("needs_overlay") or old.get("needs_overlay")),
+                   overlay_file=c.get("overlay_file") or old.get("overlay_file"), bio=c.get("bio") or [],
                    ended=bool(c.get("ended")), requirements=c.get("requirements") or [],
                    budget=[c.get("budget_used"), c.get("budget_total")], seen=now_utc().isoformat())
         link = f"\n{rec['url']}" if rec.get("url") else ""
@@ -324,16 +326,60 @@ FIX_CHROME = ("1. Make sure Google Chrome is in the Mac's Applications folder an
               ".venv/bin/python -m clipper mac_once")
 
 
+OVERLAYS = ROOT / "overlays"
+
+
+def overlay_path(name):
+    return OVERLAYS / (re.sub(r"[^a-z0-9]+", "-", (name or "").lower()).strip("-")[:60] + ".png")
+
+
+def rules_problems(st, camps):
+    """A campaign we're in whose rules or overlay the bot couldn't get: say so (once a day), so clips never go out
+    breaking its rules without Elie knowing."""
+    for c in camps:
+        if c.get("status") in ("ended", "rejected", "pending", "applied", "under review", "waitlisted") or "url" not in c:
+            continue
+        name = c["name"]
+        if c.get("needs_overlay") and not c.get("overlay_file"):
+            refs = [r["href"] for r in c.get("refs") or [] if cr_overlay_text(r)]
+            tg.problem(st, f"overlay:{name}", f"{name} requires its overlay/logo on every clip, and I couldn't download "
+                       "it by myself. Its clips won't be submitted until I have it (they'd be rejected).",
+                       "1. Open the campaign on Content Rewards and click the overlay under Reference materials"
+                       + (f" ({refs[0]})" if refs else "") + ".\n2. Download the image.\n3. Send it to Claude.")
+        if "requirements" in c and not c.get("requirements"):
+            tg.problem(st, f"rules:{name}", f"I couldn't read any rules on {name}'s page, so its clips only get the "
+                       "usual caption.", f"Send this message to Claude with the campaign's rules: {c.get('url')}")
+
+
+def cr_overlay_text(r):
+    from .contentrewards import OVERLAY_RE
+    return bool(OVERLAY_RE.search(r.get("text") or ""))
+
+
 def check(st):
     from . import contentrewards as cr, crflow
     entries = crflow.load()
     with cr.Site() as s:
-        camps = s.campaigns()
+        known = {n: r.get("url") for n, r in (st.get("campaigns") or {}).items()}
+        for j in joins_load():
+            known.setdefault(j.get("cr_name") or j.get("name") or "", j.get("cr_url"))
+        camps = s.campaigns(known)
+        for c in camps:   # the overlay/logo a campaign requires: download it once, keep it in overlays/
+            if c.get("status") in ("ended", "rejected") or not cr.needs_overlay(c):
+                continue
+            c["needs_overlay"] = True
+            dest = overlay_path(c["name"])
+            if dest.exists():
+                c["overlay_file"] = str(dest)
+            elif s.fetch_overlay(c.get("refs"), dest):
+                c["overlay_file"] = str(dest)
+                log.info("downloaded the overlay for %s", c["name"])
         drafts = s.drafts()
         busy = any(e.get("status") in ("submitted", "approved", "posted", "manual_draft", "manual") for e in entries)
         by_id = hasattr(s, "approved_drafts")
         cards = (s.approved_drafts() if by_id else s.approved()) if busy else []
     msgs = compare(st, camps, drafts, bot_campaigns())
+    rules_problems(st, camps)
     waiting = any(e.get("status") == "submitted" for e in entries)
     if by_id:
         newly, odd = crflow.match_drafts(entries, cards)

@@ -47,6 +47,9 @@ def campaign_name(cfg, clip):
 def applies(cfg, clip):
     """True when this clip should go to Content Rewards as a draft first (Mac + Telegram mode, campaign clip)."""
     from . import mail
+    from .jobs import missing_overlay
+    if missing_overlay(cfg, clip):
+        return False   # a draft without the required overlay only gets rejected; it posts as a normal clip
     return (os.environ.get("MAC_RUNS_CLIPPER") == "1" and mail.telegram_mode() and bool(clip.get("preapproval"))
             and bool(campaign_name(cfg, clip)))
 
