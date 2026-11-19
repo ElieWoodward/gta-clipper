@@ -64,6 +64,15 @@ def parse_campaign_page(text):
             if ln in ("Top clippers", "Reference materials", "Brief") or ln.startswith("Rank"):
                 break
             info["requirements"].append(ln)
+    if "Brief" in ls:   # many campaigns put their rules under "Brief" as plain sentences
+        start = ls.index("Brief") + 1
+        for ln in ls[start:start + 40]:
+            if ln in ("Top clippers", "Reference materials", "Views", "Approved clips") or ln.startswith("More from"):
+                break
+            if (len(ln) <= 400 and re.search(r"\b(must|include|required?|caption|hashtags?|title|description|"
+                                            r"overlay|logo|tag|mention)\b", ln, re.I)
+                    and ln not in info["requirements"]):
+                info["requirements"].append(ln)
     for ln in ls:   # caption rules can sit anywhere in the brief ("Use #GTA6 and tag @brand in the caption")
         if (len(ln) <= 300 and re.search(r"(?<![\w/.])[#@][A-Za-z]", ln)
                 and re.search(r"hashtag|caption|include|tag|mention|title|description|must|required", ln, re.I)

@@ -197,8 +197,8 @@ launch:                           # GTA 6 launch day: switches on by itself, not
   rush_max:                       # most posts on these days (a ceiling: only clips that pass the bar go out);
     "2026-11-18": 8               # after them auto_limit picks the number again
     "2026-11-19": 8
-    "2026-11-20": 10
-    "2026-11-21": 10
+    "2026-11-20": 8               # not 10: YouTube started refusing uploads at the busiest point of launch night
+    "2026-11-21": 8
   watch_top: 4                    # also watch this many of the biggest English GTA 6 streams live
   clip_top: 6                     # streamers re-picked on launch day (and daily after): paid GTA 6 campaigns first,
                                   # then this many of the biggest English GTA 6 streamers
@@ -239,6 +239,11 @@ campaigns:
   pause_until: "2026-11-18"       # until GTA 6 launch: no campaign clips (build the account with what gets views),
                                   # except a really popular streamer's campaign (popular_followers on Twitch)
   popular_followers: 1000000
+  rules:                          # campaign rules that always apply (the bot also reads them off each campaign page)
+    kreekcraft:
+      tags: ["#GTA6", "#KreekCraft", "#GrandTheftAutoVI"]
+      caption: ["Watch KreekCraft on YouTube and Twitch"]
+      notes: ["Strong hook in the first 1-2 seconds; no misleading titles or fabricated context."]
   overlays: {}                    # campaign overlay/logo burned into every clip of that streamer, e.g.
                                   #   kreekcraft: {file: overlays/kreekcraft.png, width: 1.0, pos: center}
                                   # file is on the Mac (relative = inside ~/projects/gta-clipper); width is the share

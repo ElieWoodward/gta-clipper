@@ -621,11 +621,13 @@ def _caption(cfg, clip, platform):
     tags = clipqueue.campaign_tags(cfg, clip["streamer"]) + list(cfg["posting"]["hashtags"])   # campaign's first
     if clip["streamer"] not in ("manual", "test"):
         tags.append("#" + "".join(ch for ch in clip["streamer"].lower() if ch.isalnum()))
-    tags = " ".join(dict.fromkeys(tags))
+    tags = " ".join({t.lower(): t for t in reversed(tags)}[k] for k in dict.fromkeys(t.lower() for t in tags))
     credit = f"Streamer: {clip['streamer']}" if clip["streamer"] not in ("manual", "test") else ""
     if clip.get("handle"):
         credit = f"Streamer: {clip['handle']}"
-    live = live_line(cfg, clip)
+    s = next((x for x in cfg.get("streamers") or [] if x.get("name") == clip.get("streamer")), {})
+    live = "\n".join(s.get("caption_lines") or []) if s.get("campaign") else ""
+    live = live or live_line(cfg, clip)
     if live:
         credit = live
     if platform == "tiktok":

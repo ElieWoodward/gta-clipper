@@ -2233,7 +2233,7 @@ _cpd = _ccfg["clip"]["campaign"]["max_per_day"]
 # reach reset: 2 a day with no campaign clips, then a gradual climb into launch
 assert [crflow.daily_total(_ccfg, d) for d in ("2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15", "2026-11-21",
                                                "2026-11-22", "2026-11-23", "2026-11-24", "2026-12-20")] == \
-    [2, 3, 4, 5, 10, 6, 7, 8, 8]
+    [2, 3, 4, 5, 8, 6, 7, 8, 8]
 assert [crflow.per_day(_ccfg, d) for d in ("2026-11-10", "2026-11-12", "2026-11-13", "2026-11-19")] == [_cpd, 0, _cpd, _cpd]
 # with no campaign posts today, waiting approvals don't eat the day's regular places
 _cs = crflow._step
@@ -2476,7 +2476,7 @@ _rush = dict(_g, launch=dict(_ccfg.get("launch") or {}, enabled=True,
                              date=common.now_local(_g).date().isoformat()))
 from clipper import launch as _lch  # noqa: E402
 assert _lch.rush(_rush) and crflow.youtube_gap_minutes(_rush) == 30
-assert [crflow.daily_total(_rush, d) for d in ("2026-11-18", "2026-11-19", "2026-11-20", "2026-11-21")] == [8, 8, 10, 10]
+assert [crflow.daily_total(_rush, d) for d in ("2026-11-18", "2026-11-19", "2026-11-20", "2026-11-21")] == [8, 8, 8, 8]
 assert not _lch.rush(dict(_rush, launch=dict(_rush["launch"], date="2026-01-01")))
 assert crflow.youtube_gap_minutes(_g) == 180
 _half_hour_ago = (common.now_utc() - __import__("datetime").timedelta(minutes=30)).isoformat()
@@ -2550,3 +2550,38 @@ _kreek = {"name": "KreekCraft GTA 6 Clipping", "status": "joined", "auto_clip": 
 assert _cps.is_logo(_jack) and not _cps.is_logo(_kreek)
 assert [s["name"] for s in _cps.joined_streamers({"campaigns": {"j": _jack, "k": _kreek}})] == ["kreekcraft"]
 print("CAMPAIGN OVERLAY OK")
+
+# ---------- KreekCraft's real page: rules live under "Brief"; tags + caption text land in every caption ----------
+from clipper import contentrewards as _crp  # noqa: E402
+_kpage = """Back
+KreekCraft GTA 6 Clipping
+Joined
+Launched today
+Budget
+$0 / $6,824
+Reference materials
+KreekCraft Overlay
+Brief
+The official KreekCraft logo overlay must remain clearly visible throughout the entire clip. Clips without it will be rejected.
+Only use KreekCraft's official GTA 6 livestreams and stream replays. Content from unrelated games or other creators is prohibited.
+Every clip must include "Watch KreekCraft on YouTube and Twitch" in the caption.
+Every post must include #GTA6 #KreekCraft #GrandTheftAutoVI.
+At least 40% of viewers must come from the United States, United Kingdom, Canada, or Australia.
+0
+views
+Views"""
+_kinfo = _crp.parse_campaign_page(_kpage)
+assert not _kinfo["ended"], _kinfo
+assert any("Watch KreekCraft" in r for r in _kinfo["requirements"]), _kinfo["requirements"]
+assert common.required_tags(_kinfo["requirements"]) == ["#GTA6", "#KreekCraft", "#GrandTheftAutoVI"]
+assert common.required_caption(_kinfo["requirements"]) == ["Watch KreekCraft on YouTube and Twitch"]
+_kcfg = common.load_config()   # config.yaml's campaigns.rules apply even when the page was never read
+_kcfg["streamers"] = [dict(s) for s in _kcfg.get("streamers") or [] if s.get("name") != "kreekcraft"] + [
+    {"name": "kreekcraft", "channel": "kreekcraft", "campaign": "KreekCraft GTA 6 Clipping"}]
+common.attach_requirements(_kcfg)
+for _plat in ("tiktok", "youtube"):
+    _kc = jobs._caption(_kcfg, {"caption": "LADY IM SORRY 😭", "streamer": "kreekcraft"}, _plat)
+    assert "Watch KreekCraft on YouTube and Twitch" in _kc and "Streamer:" not in _kc, _kc
+    assert all(t in _kc for t in ("#GTA6", "#KreekCraft", "#GrandTheftAutoVI")), _kc
+    assert "#gta6 " not in _kc + " " and "#kreekcraft" not in _kc, _kc   # no lowercase duplicates
+print("CAMPAIGN BRIEF RULES OK")

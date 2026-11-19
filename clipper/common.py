@@ -45,14 +45,29 @@ def required_tags(lines):
     return out
 
 
+def required_caption(lines):
+    """Exact text a campaign wants in every caption: the quoted part of a rule that talks about the caption
+    ('Every clip must include "Watch KreekCraft on YouTube and Twitch" in the caption.')."""
+    out = []
+    for ln in lines or []:
+        if not re.search(r"caption|description", ln, re.I):
+            continue
+        for q in re.findall(r"[\"“”]([^\"“”]{3,120})[\"“”]", ln):
+            if q.strip() and not TAG_RE.fullmatch(q.strip()) and q.strip() not in out:
+                out.append(q.strip())
+    return out
+
+
 def attach_requirements(cfg):
     """Campaign requirements read from Content Rewards (the Mac's data/mac.json) go onto that campaign's streamers:
     `requirements` (the lines), `required_tags` (added to every caption) and, unless config.yaml has its own,
     `picker_notes` so the judge writes hooks and captions that follow them."""
     path = DATA / "mac.json"
-    if not path.exists():
-        return
-    book = (json.loads(path.read_text()).get("campaigns") or {})
+    try:
+        book = (json.loads(path.read_text()).get("campaigns") or {}) if path.exists() else {}
+    except ValueError:
+        book = {}
+    rules = (cfg.get("campaigns") or {}).get("rules") or {}
 
     def norm(x):
         return re.sub(r"[^a-z0-9]", "", (x or "").lower())
@@ -62,11 +77,16 @@ def attach_requirements(cfg):
         a = norm(s["campaign"])
         rec = next((r for n, r in book.items() if a and norm(n) and (a in norm(n) or norm(n) in a)), None)
         req = [str(x) for x in (rec or {}).get("requirements") or [] if str(x).strip()]
-        if not req:
+        fixed = rules.get((s.get("name") or "").lower()) or {}   # campaigns.rules in config.yaml always apply
+        req += [str(x) for x in fixed.get("notes") or [] if str(x) not in req]
+        tags = list(dict.fromkeys(list(fixed.get("tags") or []) + required_tags(req)))
+        lines = list(dict.fromkeys(list(fixed.get("caption") or []) + required_caption(req)))
+        if not (req or tags or lines):
             continue
         s["requirements"] = req
-        s["required_tags"] = required_tags(req)
-        if not s.get("picker_notes"):
+        s["required_tags"] = tags
+        s["caption_lines"] = lines
+        if req and not s.get("picker_notes"):
             s["picker_notes"] = "Campaign requirements: " + " | ".join(req)[:800]
 
 
