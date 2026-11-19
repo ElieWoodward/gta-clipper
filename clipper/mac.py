@@ -915,14 +915,16 @@ def _auto_youtube(st, e):
         status, url = services.blotato_post_file("youtube", e["file"], desc, title=title,
                                                  ai_label=(cfg.get("posting") or {}).get("label_ai_generated"))
     except Exception as ex:
+        e["yt_retry"] = True
         tg.problem(st, "blotato", f"Blotato didn't post \"{e.get('hook')}\" on YouTube ({str(ex)[:150]}). "
-                   "It's in your post package instead.",
+                   "The bot tries again by itself in 30 minutes.",
                    "1. In Blotato, check Accounts shows your YouTube channel connected.\n"
                    "2. Check BLOTATO_API_KEY in ~/projects/gta-clipper/.env matches Settings > API in Blotato.")
         return False
     if status == "failed":
-        tg.problem(st, "blotato", f"Blotato couldn't post on YouTube: {str(url)[:200]}. It's in your post package "
-                   "instead.", "Open Blotato and check the post's error, then reconnect YouTube under Accounts.")
+        e["yt_retry"] = True
+        tg.problem(st, "blotato", f"Blotato couldn't post on YouTube: {str(url)[:200]}. The bot tries again by itself "
+                   "in 30 minutes.", "Open Blotato and check the post's error, then reconnect YouTube under Accounts.")
         return False
     e["yt_auto_at"] = now_utc().isoformat()
     if url:
@@ -1021,13 +1023,19 @@ def process_youtube_queue(st):
     for e in sorted(due, key=lambda x: (x["yt_at"], -(x.get("score") or 0)))[:1]:
         e.pop("yt_at", None)
         crflow.save(entries)
-        if _auto_youtube(st, e):
-            fresh = crflow.by_token(crflow.load(), e["token"]) or e
-            link = (fresh.get("links") or {}).get("youtube", "")
-            if not link or link.startswith("failed:"):
-                tg.info(f"▶️ Posted on YouTube: \"{e.get('hook')}\". "
-                        + ("Its link is still processing; I'll submit it from Content Rewards' list in a few minutes."
-                           if not link else ""))
+        if not _auto_youtube(st, e):
+            if e.pop("yt_retry", None):
+                e["yt_fails"] = e.get("yt_fails", 0) + 1
+                if e["yt_fails"] < 5:   # back in the YouTube queue for another try
+                    e["yt_at"] = (now_utc() + timedelta(minutes=30)).isoformat()
+                crflow.save(entries)
+            continue
+        fresh = crflow.by_token(crflow.load(), e["token"]) or e
+        link = (fresh.get("links") or {}).get("youtube", "")
+        if not link or link.startswith("failed:"):
+            tg.info(f"▶️ Posted on YouTube: \"{e.get('hook')}\". "
+                    + ("Its link is still processing; I'll submit it from Content Rewards' list in a few minutes."
+                       if not link else ""))
 
 
 def resend_approved(st):
@@ -1185,7 +1193,7 @@ def _submit(st, e, platform, url):
         e.setdefault("links", {})[platform] = "failed:" + url
         return False
     e.setdefault("links", {})[platform] = url
-    tg.info(f"💰 Submitted your {platform} post to {e.get('campaign')}:\n{url}")
+    tg.send(f"💰 Submitted your {platform} post to {e.get('campaign')}:\n{url}", silent=True)
     return True
 
 
@@ -1229,7 +1237,7 @@ def hunt(st):
                         platform = _pick_platform(e, label)
                         e.setdefault("links", {})[platform] = "picked:" + label[:120]
                         changed = True
-                        tg.info(f"💰 Submitted your {platform} post to {e.get('campaign')}: "
+                        tg.send(f"💰 Submitted your {platform} post to {e.get('campaign')}: "
                                 f"\"{cr.parse_pick_label(label)['text'][:80]}\"")
                     _finish_if_done(e)
         except cr.NotLoggedIn:

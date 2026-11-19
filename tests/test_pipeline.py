@@ -2494,3 +2494,24 @@ render.build_ass({"start": 0, "end": 3}, [{"w": "fucking", "s": 0.1, "e": 0.5}],
 assert "F***ING" in _ass.read_text() and "FUCKING" not in _ass.read_text()
 assert "f***" in jobs._caption(_ccfg, {"caption": "fuck that guy", "streamer": "Lysium"}, "youtube")
 print("BACKUP OK")
+
+# ---------- Blotato refuses a post: the clip stays queued and is retried; nothing comes to Elie to post by hand ----------
+_bcfg, _bst = common.load_config(), {"clips": {}}
+_bclip = {"id": "bfail", "hook": "h", "status": "approved", "score": 7}
+_bst["clips"]["bfail"] = _bclip
+_saved_b = (jobs.auto_platforms, jobs.auto_post_clip, jobs.send_package, jobs.save_state, tg.problem)
+_bsent, _bprob = [], []
+jobs.auto_platforms = lambda cfg: ["youtube"]
+def _refuse(*a, **k): raise RuntimeError("no platform accepted the post")  # noqa: E302,E704
+jobs.auto_post_clip = _refuse
+jobs.send_package = lambda *a, **k: _bsent.append(a)
+jobs.save_state = lambda s: None
+tg.problem = lambda st, key, what, fix: _bprob.append(key)
+_bdry, jobs.DRY_RUN = jobs.DRY_RUN, False
+for _i in range(3):
+    jobs.deliver(_bcfg, _bst, _bclip)
+assert not _bsent and _bprob == ["blotato_post"] * 3, (_bsent, _bprob)
+assert not _bclip.get("emailed_at") and _bclip["auto_fails"] == 3 and _bclip["status"] == "skipped", _bclip
+jobs.DRY_RUN = _bdry
+jobs.auto_platforms, jobs.auto_post_clip, jobs.send_package, jobs.save_state, tg.problem = _saved_b
+print("BLOTATO RETRY OK")

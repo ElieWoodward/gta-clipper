@@ -800,6 +800,29 @@ def _queue_direct(cfg, clip, platform="youtube"):
     print(f"::notice::campaign post for {camp}: queued for submitting on Content Rewards", flush=True)
 
 
+AUTO_TRIES = 3   # a clip Blotato refuses this many times is dropped so the next clip gets its turn
+
+
+def _auto_failed(cfg, state, clip, platforms, err):
+    """Blotato refused a post: keep the clip in the queue (the next post run, ~15 min later, tries again) and tell
+    Elie once a day. Nothing comes to him to post by hand."""
+    from . import tg
+    clip["auto_fails"] = clip.get("auto_fails", 0) + 1
+    dropped = clip["auto_fails"] >= AUTO_TRIES
+    if dropped:
+        clip.update(status="skipped", skip_reason=f"Blotato refused it {AUTO_TRIES} times: {str(err)[:150]}")
+    print(f"::warning::automatic {', '.join(platforms)} post failed ({str(err)[:150]}); "
+          + ("dropped after 3 tries" if dropped else "it stays in the queue and is tried again"), flush=True)
+    tg.problem(state, "blotato_post",
+               f"Blotato couldn't post to {', '.join(platforms)} ({str(err)[:200]}). The bot keeps the clip and tries "
+               "again by itself every 15 minutes (a clip that fails 3 times is swapped for the next one). Nothing for "
+               "you to post.",
+               "1. Open blotato.com and sign in.\n2. Click Accounts and check your YouTube channel shows as connected; "
+               "if not, click Reconnect.\n3. If it's connected, open the failed post in Blotato and send its error "
+               "message to Claude.")
+    save_state(state)
+
+
 def deliver(cfg, state, clip):
     """At a posting slot: post through Blotato in launch mode with automatic posting, otherwise email it.
     A failed automatic post falls back to the email, so the slot isn't lost."""
@@ -827,11 +850,8 @@ def deliver(cfg, state, clip):
             auto_post_clip(cfg, state, clip, platforms=auto, finish=False)
         except Exception as e:
             log.exception("automatic post failed: %s", e)
-            print(f"::warning::automatic {', '.join(auto)} post failed ({str(e)[:150]}); sending it to you instead",
-                  flush=True)
-            from . import tg
-            tg.send(f"⚠️ Blotato couldn't post the next clip to {', '.join(auto)} ({str(e)[:200]}), so it's coming to "
-                    "you to post by hand instead.")
+            _auto_failed(cfg, state, clip, auto, e)
+            return None
         _queue_direct(cfg, clip)
         left = [p for p in cfg["posting"]["platforms"] if p not in clip.get("posts", {})
                 and not (p == "tiktok" and (clipqueue.tiktok_paused(cfg) or clipqueue.tiktok_daily(cfg)))]
