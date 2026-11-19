@@ -387,3 +387,55 @@ def expired(entries, now=None):
     now = now or now_utc()
     return [e for e in entries if e.get("status") == "posted"
             and now - datetime.fromisoformat(e["posted_at"]) > timedelta(minutes=HUNT_MINUTES)]
+
+
+# ------------------------------------------------- campaigns that take posted clips directly (no draft first)
+DIRECT = DATA / "cr_direct.json"
+DIRECT_MINUTES = 30   # Content Rewards only takes a post this long after it went up
+
+
+def _direct_locked(fn):
+    """Read-modify-write data/cr_direct.json under a file lock (the post job adds, the Mac's loop updates)."""
+    import fcntl
+    lock = open(str(DIRECT) + ".lock", "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            items = json.loads(DIRECT.read_text())
+        except (OSError, ValueError):
+            items = []
+        out = fn(items)
+        DIRECT.write_text(json.dumps(items[-200:], indent=1))
+        return out
+    finally:
+        fcntl.flock(lock, fcntl.LOCK_UN)
+        lock.close()
+
+
+def direct_add(entry):
+    def add(items):
+        if not any(i.get("id") == entry["id"] and i.get("platform") == entry["platform"] for i in items):
+            items.append(entry)
+    _direct_locked(add)
+
+
+def direct_load():
+    try:
+        return json.loads(DIRECT.read_text())
+    except (OSError, ValueError):
+        return []
+
+
+def direct_update(entry_id, platform, **changes):
+    def upd(items):
+        for i in items:
+            if i.get("id") == entry_id and i.get("platform") == platform:
+                i.update(changes)
+    _direct_locked(upd)
+
+
+def direct_due(items, now=None):
+    """Posts still waiting to be submitted, newest first, inside the window."""
+    now = now or now_utc()
+    return [i for i in reversed(items) if i.get("status") == "todo"
+            and now - datetime.fromisoformat(i["posted_at"]) <= timedelta(minutes=DIRECT_MINUTES)]

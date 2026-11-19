@@ -1807,6 +1807,7 @@ crflow.save([dict(_base, id="w1", token="w1", status="approved", approved_at=_no
 mac.hunt(_mst)
 _w1 = crflow.by_token(crflow.load(), "w1")
 assert _w1["status"] == "done" and _w1["links"]["tiktok"].startswith("picked:"), _w1
+crflow.DIRECT.unlink(missing_ok=True)   # direct campaign posts from earlier sections
 assert mac.hunt_every() == 300
 crflow.save([dict(_w1, status="approved", links={}, packaged_at=(common.now_utc() - __import__("datetime").timedelta(hours=30)).isoformat())])
 assert not crflow.watching(crflow.load())   # stops looking after a day
@@ -2411,6 +2412,46 @@ _st2["campaigns"]["NYZ GTA"]["missing"] = 0
 _drops = [str(m) for _ in range(3) for m in mac.compare(_st2, [], {"counts": {}}, []) if "dropped" in str(m)]
 assert len(_drops) == 1, _drops
 print("CAMPAIGN RULES TAGS OK")
+# campaigns that take posted clips (no draft): the live link is submitted inside 30 minutes, or sent to Elie now
+crflow.DIRECT.unlink(missing_ok=True)
+_dcfg = {"streamers": [{"name": "kaicenat", "campaign": "Kai Cenat GTA 6 Clips"}]}
+_dclip = {"id": "d1", "streamer": "kaicenat", "title": "kai vs the cops", "caption": "c", "hook": "h",
+          "posts": {"youtube": {"url": "https://youtube.com/shorts/abc", "posted_at": common.now_utc().isoformat()}}}
+os.environ["MAC_RUNS_CLIPPER"] = "1"
+_jobs._queue_direct(_dcfg, _dclip)
+_jobs._queue_direct(_dcfg, _dclip)                                              # once only
+_jobs._queue_direct(_dcfg, dict(_dclip, id="d0", preapproval=True))             # draft campaigns use the draft flow
+_jobs._queue_direct({"streamers": []}, dict(_dclip, id="d9"))                   # not a campaign clip
+assert [e["id"] for e in crflow.direct_load()] == ["d1"] and mac.hunt_every() == 60
+_sub, _tgs = [], []
+class _DS:  # noqa: E302
+    def __enter__(self):
+        return self
+    def __exit__(self, *a):
+        return False
+    def submit_direct(self, page, url, texts=(), dry_run=False):
+        _sub.append((page, url))
+        return True
+_crm = __import__("clipper.contentrewards", fromlist=["Site"])
+_oSite, _osend = _crm.Site, mac.tg.send
+_crm.Site, mac.tg.send = _DS, lambda *a, **k: _tgs.append(a[0])  # noqa: E305
+_mst = {"campaigns": {"Kai Cenat GTA 6 Clips": {"url": "https://contentrewards.com/c/campaigns/k"}}}
+mac.submit_directs(_mst)
+assert _sub == [("https://contentrewards.com/c/campaigns/k", "https://youtube.com/shorts/abc")], _sub
+assert crflow.direct_load()[0]["status"] == "done" and any("Submitted" in t for t in _tgs)
+# no campaign page / the form refuses: Elie gets the link right away; an old one is reported missed
+crflow.direct_add({"id": "d2", "campaign": "Unknown Camp", "url": "https://youtube.com/shorts/x", "platform": "youtube",
+                   "posted_at": common.now_utc().isoformat(), "status": "todo"})
+crflow.direct_add({"id": "d3", "campaign": "Kai Cenat GTA 6 Clips", "url": "https://youtube.com/shorts/y",
+                   "platform": "youtube", "posted_at": "2026-01-01T00:00:00+00:00", "status": "todo"})
+_tgs.clear()
+mac.submit_directs(_mst)
+_st_by = {e["id"]: e["status"] for e in crflow.direct_load()}
+assert _st_by == {"d1": "done", "d2": "manual", "d3": "missed"}, _st_by
+assert any("Submit this now" in t and "shorts/x" in t for t in _tgs) and any("missed" in t for t in _tgs), _tgs
+_crm.Site, mac.tg.send = _oSite, _osend
+crflow.DIRECT.unlink(missing_ok=True)
+print("DIRECT SUBMIT OK")
 # and the Claude budget steps up with them
 _bs = {"limits": {"claude_usd_per_month": 5.0, "claude_usd_day_max": 0.5,
                   "budget_schedule": [{"from": "2000-01-01", "per_month": 30.0, "day_max": 1.5}]}}

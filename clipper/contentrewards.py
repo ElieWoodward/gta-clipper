@@ -600,6 +600,47 @@ class Site:
             log.info("[dry run] link form filled for %s; not sending", campaign)
         return self._send(dialog, dry_run)
 
+    def submit_direct(self, campaign_url, url, texts=(), dry_run=False):
+        """A campaign that takes posted clips straight away (no draft first): campaign page > Submit clip > the post.
+        Picks the post from the form's list of your recent posts when it's there, else pastes the link.
+        Raises with a plain reason when the campaign only takes drafts or the form refuses it."""
+        self.go(campaign_url)
+        self.page.locator("button:visible", has_text=re.compile(r"^\s*Submit clip\s*$")).first.click()
+        dialog = self.page.get_by_role("dialog", name="Submit clip")
+        chooser = self.page.locator('[role="dialog"]').filter(has_text="What are you submitting").last
+        draft_form = self.page.locator('[role="dialog"]').filter(has_text="Submit a draft to").last
+        for _ in range(30):
+            if dialog.count() and dialog.first.is_visible():
+                break
+            if chooser.count() and chooser.is_visible():
+                opt = chooser.get_by_role("button", name=re.compile(r"post|link|live|publish|already", re.I))
+                if not opt.count():
+                    self.page.keyboard.press("Escape")
+                    raise RuntimeError("this campaign only takes drafts first")
+                opt.first.click()
+                self._pause(1, 2)
+            elif draft_form.count() and draft_form.is_visible():
+                self.page.keyboard.press("Escape")
+                raise RuntimeError("this campaign asks for a draft before posting")
+            self.page.wait_for_timeout(1000)
+        dialog = dialog.first
+        dialog.wait_for(timeout=30000)
+        self._pause(1, 2)
+        cards = dialog.locator("button[aria-pressed]")
+        labels = [cards.nth(i).get_attribute("aria-label") or "" for i in range(cards.count())]
+        i = best_pick(labels, [t for t in texts if t]) if labels else None
+        if i is not None:
+            self._choose(dialog, i)
+        else:
+            self._choose(dialog, None)
+            box = dialog.get_by_role("textbox", name="Clip link")
+            if not box.count():
+                box = dialog.get_by_placeholder(re.compile(r"paste a link", re.I))
+            box.first.wait_for(timeout=30000)
+            box.first.fill(url)
+            self._pause(0.8, 1.6)
+        return self._send(dialog, dry_run)
+
     @staticmethod
     def _row_selected(row):
         """Whether an account row in the draft form is ticked (rows start unticked; checked Nov 2026)."""

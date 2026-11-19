@@ -786,6 +786,20 @@ def auto_platforms(cfg):
     return [p for p in cfg["posting"]["platforms"] if p in want]
 
 
+def _queue_direct(cfg, clip, platform="youtube"):
+    """A campaign that pays for posted clips without a draft first: hand the live link to the Mac, which submits it
+    on Content Rewards inside the 30-minute window (mac.submit_directs)."""
+    from . import crflow
+    camp = crflow.campaign_name(cfg, clip)
+    yt = (clip.get("posts") or {}).get(platform) or {}
+    if not camp or clip.get("preapproval") or not yt.get("url") or os.environ.get("MAC_RUNS_CLIPPER") != "1":
+        return
+    crflow.direct_add({"id": clip["id"], "campaign": camp, "url": yt["url"], "platform": platform,
+                       "title": clip.get("title"), "caption": clip.get("caption"), "hook": clip.get("hook"),
+                       "posted_at": yt.get("posted_at") or now_utc().isoformat(), "status": "todo"})
+    print(f"::notice::campaign post for {camp}: queued for submitting on Content Rewards", flush=True)
+
+
 def deliver(cfg, state, clip):
     """At a posting slot: post through Blotato in launch mode with automatic posting, otherwise email it.
     A failed automatic post falls back to the email, so the slot isn't lost."""
@@ -818,6 +832,7 @@ def deliver(cfg, state, clip):
             from . import tg
             tg.send(f"⚠️ Blotato couldn't post the next clip to {', '.join(auto)} ({str(e)[:200]}), so it's coming to "
                     "you to post by hand instead.")
+        _queue_direct(cfg, clip)
         left = [p for p in cfg["posting"]["platforms"] if p not in clip.get("posts", {})
                 and not (p == "tiktok" and (clipqueue.tiktok_paused(cfg) or clipqueue.tiktok_daily(cfg)))]
         if not left:
@@ -960,6 +975,7 @@ def tiktok_daily_post(cfg, state, now=None):
         save_state(state)
         return None
     rec.update(clip=clip["id"], posted_day=today)
+    _queue_direct(cfg, clip, "tiktok")
     url = ((clip.get("posts") or {}).get("tiktok") or {}).get("url")
     try:
         from . import tg

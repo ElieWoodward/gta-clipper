@@ -1257,10 +1257,44 @@ def hunt(st):
 
 
 def hunt_every(entries=None):
-    """Seconds until the next look: 2 minutes while a Posted tap is fresh, 5 while just watching, else idle."""
+    """Seconds until the next look: 1 minute while a direct campaign post waits, 2 while a Posted tap is fresh,
+    5 while just watching."""
     from . import crflow
+    if crflow.direct_due(crflow.direct_load()):
+        return 60
     entries = crflow.load() if entries is None else entries
     return 120 if crflow.hunting(entries) else 300
+
+
+def submit_directs(st):
+    """Campaigns that pay for posted clips without a draft: submit each new post's link inside the 30 minutes.
+    Anything that can't be submitted goes to Elie right away with the link and the campaign page, while there's
+    still time to do it by hand."""
+    from . import crflow, contentrewards as cr
+    items = crflow.direct_load()
+    for e in crflow.direct_due(items):
+        rec = next((r for n, r in (st.get("campaigns") or {}).items() if same_campaign(n, e["campaign"])), {})
+        page = rec.get("url")
+        try:
+            if not page:
+                raise RuntimeError("I don't have this campaign's Content Rewards page")
+            with cr.Site() as s:
+                s.submit_direct(page, e["url"], [e.get("title"), e.get("caption"), e.get("hook")])
+        except Exception as ex:
+            crflow.direct_update(e["id"], e["platform"], status="manual", error=str(ex)[:200])
+            left = max(0, crflow.DIRECT_MINUTES - int((now_utc() - datetime.fromisoformat(e["posted_at"]))
+                                                      .total_seconds() // 60))
+            tg.send(f"⏰ Submit this now ({left} min left): I couldn't submit your post to {e['campaign']} "
+                    f"({str(ex)[:150]}).\n\nOn Content Rewards: open the campaign > Submit clip > paste:\n{e['url']}"
+                    + (f"\n\nCampaign page: {page}" if page else ""))
+            continue
+        crflow.direct_update(e["id"], e["platform"], status="done", submitted_at=now_utc().isoformat())
+        tg.send(f"💰 Submitted your {e['platform'].title()} post to {e['campaign']}:\n{e['url']}")
+    for e in items:   # missed the window (the Mac was busy or asleep): say so once
+        if e.get("status") == "todo" and e not in crflow.direct_due(items):
+            crflow.direct_update(e["id"], e["platform"], status="missed")
+            tg.send(f"⏰ I missed the 30-minute window for your {e['campaign']} post:\n{e['url']}\n\nIf Content "
+                    "Rewards still lets you, submit it by hand.")
 
 
 def submit_pasted_link(st, url):
@@ -1445,6 +1479,10 @@ def loop():
             try:
                 if awake():
                     process_drafts(st)
+                try:
+                    submit_directs(st)   # every pass: these have 30 minutes
+                except Exception as e:
+                    log.warning("direct campaign submit step failed: %s", e)
                 if time.time() >= st.get("hunt_next", 0):
                     hunt(st)
                     st["hunt_next"] = time.time() + hunt_every()
