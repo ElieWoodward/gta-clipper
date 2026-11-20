@@ -612,7 +612,7 @@ def campaign_overlay(cfg, streamer):
 def missing_overlay(cfg, clip):
     """A campaign that requires its overlay, and this clip was made without it: submitting it only gets rejected."""
     s = next((x for x in cfg.get("streamers") or [] if x.get("name") == clip.get("streamer")), {})
-    return bool(s.get("campaign") and s.get("needs_overlay") and not clip.get("overlay"))
+    return bool(s.get("campaign") and (s.get("hold_submit") or (s.get("needs_overlay") and not clip.get("overlay"))))
 
 
 def live_line(cfg, clip):

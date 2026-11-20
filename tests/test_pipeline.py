@@ -2767,3 +2767,13 @@ _ln.launched = _lsaved
 _lch = [s.get("channel") for s in _lout.get("streamers") or []]
 assert "jack" not in _lch, _lch
 print("LOGO LAUNCH OK")
+
+# ---------- a campaign's submissions can be paused (campaigns.rules.<streamer>.submit: false); clips still post ----------
+_hcfg = common.load_config()
+_hcfg["streamers"] = [{"name": "kreekcraft", "channel": "kreekcraft", "campaign": "KreekCraft GTA 6 Clipping"}]
+_hcfg["campaigns"] = dict(_hcfg.get("campaigns") or {}, rules={"kreekcraft": {"submit": False}})
+common.attach_requirements(_hcfg)
+assert _hcfg["streamers"][0].get("hold_submit")
+assert jobs.missing_overlay(_hcfg, {"streamer": "kreekcraft", "overlay": True})   # held: not submitted
+assert "submit" in str(common.load_config()["campaigns"]["rules"]["kreekcraft"])
+print("CAMPAIGN HOLD OK")

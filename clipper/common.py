@@ -86,6 +86,8 @@ def attach_requirements(cfg):
         f = (rec or {}).get("overlay_file")
         if need:
             s["needs_overlay"] = True
+        if fixed.get("submit") is False:
+            s["hold_submit"] = True
         if f and os.path.isfile(f) and not s.get("overlay"):
             s["overlay"] = {"file": f}
         if not (req or tags or lines):
