@@ -2754,3 +2754,16 @@ assert crflow.direct_load()[0]["tries"] == 1
 _cr.Site, tg.send = _saved_site, _saved_send
 crflow.DIRECT.unlink(missing_ok=True)
 print("AUDIT FIXES OK")
+
+# ---------- launch mode never clips a brand-logo campaign's name as a Twitch streamer ----------
+from clipper import launch as _ln  # noqa: E402
+_lcf = common.load_config()
+_lsx = {"launch": {"streamers": [{"name": "jack", "channel": "jack", "campaign": "Jack [GTA LOGO]"},
+                                 {"name": "kreekcraft", "channel": "kreekcraft", "campaign": "KreekCraft GTA 6 Clipping"}]}}
+_lsaved = _ln.launched
+_ln.launched = lambda cfg, state: True
+_lout = _ln.apply(_lcf, _lsx)
+_ln.launched = _lsaved
+_lch = [s.get("channel") for s in _lout.get("streamers") or []]
+assert "jack" not in _lch, _lch
+print("LOGO LAUNCH OK")

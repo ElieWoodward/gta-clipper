@@ -89,7 +89,10 @@ def apply(cfg, state=None):
     lim["claude_usd_per_day"] = max(float(lim["claude_usd_per_day"]), float(s["claude_usd_per_day"]))
     # streamers picked on launch day (paid GTA 6 campaigns first, then the biggest GTA 6 streams), refreshed daily
     have = {(x.get("channel") or "").lower() for x in cfg.get("streamers") or []}
+    from .campaigns import is_logo
     for x in ((state or {}).get("launch") or {}).get("streamers") or []:
+        if x.get("campaign") and is_logo({"name": x["campaign"]}):
+            continue   # a brand-logo campaign picked before logo campaigns were told apart: not a streamer
         if x["channel"] not in have:
             cfg.setdefault("streamers", []).append(dict(x, platform="twitch", enabled=True, auto_found=True))
     auto = auto_post(cfg, state)
@@ -302,7 +305,7 @@ def refresh_streamers(cfg, state, dry_run=False):
     s = settings(cfg)
     configured = {(x.get("channel") or "").lower() for x in cfg.get("streamers") or [] if not x.get("auto_found")}
     paid = sorted((r for r in (state.get("campaigns") or {}).values()
-                   if r.get("status") in campaigns.ACTIVE and r.get("twitch_login")),
+                   if r.get("status") in campaigns.ACTIVE and r.get("twitch_login") and not campaigns.is_logo(r)),
                   key=lambda r: (r.get("status") != "joined", -(r.get("rate") or 0)))
     picked = []
     for r in paid:
