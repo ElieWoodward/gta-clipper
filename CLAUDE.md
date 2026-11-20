@@ -36,6 +36,7 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
 - Blotato posts still processing after the 3-minute wait are followed up each post run (`jobs.refresh_blotato`),
   which records the link and queues campaign submission. Direct submissions retry (3 min apart) before Elie is told.
 - No "Claim" message for Content Rewards campaigns: the Mac submits those itself.
+- KreekCraft submissions are paused (`campaigns.rules.kreekcraft.submit: false`) until Elie approves the edited look.
 - Claude budget (`limits.budget_schedule`): launch week up to $4/day, then $30 per 30 days from Nov 27, $40 from Dec 3.
   When it runs out and the queue is empty, Elie gets a Telegram warning.
 - The sandbox can't reach the Mac. To see what the bot is doing, give Elie a Terminal command and ask for the output.
@@ -48,6 +49,9 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
   - `live.py`: live watcher (chat spikes + viewer clips on a stream that is still going).
   - `highlights.py`: candidate moments, transcripts, Claude judge and hook editor (tool-call answers, retried).
   - `render.py`: ffmpeg render (fill, wide, cam+fill, cam+wide layouts; hook box; captions; punchline).
+  - `edit.py`: edit pass after every render (`edit` in config.yaml): cuts dead air, punch-in zooms on the loudest
+    moments, generated whoosh/boom sound effects, a music bed from `music/` on the Mac ducked under the voice. No
+    Claude calls; a failure leaves the rendered clip as it was. Added after ClipLaunch rejected a clip as low effort.
   - `vision.py`: Claude looks at frames to find the webcam and the action.
   - `twitch.py`: Twitch GQL (VOD list, chapters, viewer clips, chat replay). `fetch.py`: yt-dlp downloads.
   - `preflight.py`: one-minute check of every service before any long run.

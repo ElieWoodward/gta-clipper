@@ -468,6 +468,8 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
     ov = campaign_overlay(cfg, st)
     render.render(src, src_offset, p, words, out, facecam=facecam, focus_x=look["focus_x"],
                   commentary=commentary, layout=layout, speed=speed, handle=st.get("handle"), overlay=ov)
+    from . import edit
+    edited = edit.polish(out, cfg, p)   # cuts, punch-in zooms, sound effects, music bed
     if facecam:  # remember which streamers show their face; their clips get priority
         state.setdefault("streamers", {}).setdefault(vod["streamer"]["name"], {})["facecam"] = True
     asset_id = None
@@ -488,7 +490,7 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
         "context": p.get("context", ""), "handle": st.get("handle"), "preapproval": bool(st.get("preapproval")),
         "campaign": st.get("campaign") if is_campaign(st) else None,
         "created": now_utc().isoformat(), "posts": {}, "issue": None, "local_file": str(out), "asset_id": asset_id,
-        "overlay": bool(ov),
+        "overlay": bool(ov), "edit": edited,
     }
     auto = cfg["review"]["mode"] == "auto"
     clip["status"] = ("approved" if clip["score"] >= cfg["clip"]["min_score"] else "rejected") if auto else "queued"

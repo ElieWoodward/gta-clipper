@@ -2777,3 +2777,24 @@ assert _hcfg["streamers"][0].get("hold_submit")
 assert jobs.missing_overlay(_hcfg, {"streamer": "kreekcraft", "overlay": True})   # held: not submitted
 assert "submit" in str(common.load_config()["campaigns"]["rules"]["kreekcraft"])
 print("CAMPAIGN HOLD OK")
+
+# ---------- edit pass: dead air cut, punch-in zooms, sound effects, music bed; a failure leaves the clip as it was ----------
+from clipper import edit as _ed  # noqa: E402
+_ec = TMP / "ed.mp4"
+_ea = ("aevalsrc='0.4*sin(2*PI*220*t)*(lt(t,3)+between(t,5.5,8))+0.9*sin(2*PI*330*t)*gte(t,9.5)':d=12:s=44100")
+subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=s=1080x1920:d=12:r=30", "-f", "lavfi",
+                "-i", _ea, "-c:v", "libx264", "-preset", "veryfast", "-pix_fmt", "yuv420p", "-c:a", "aac", "-shortest",
+                str(_ec)], check=True)
+_mdir = TMP / "music"
+_mdir.mkdir(exist_ok=True)
+subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=f=440:d=5", str(_mdir / "bed.mp3")],
+               check=True)
+_er = _ed.polish(_ec, {"edit": {"music_dir": str(_mdir)}}, {"punch_at": 10.0})
+assert _er and _er["cuts"] == 2 and 3.0 <= _er["cut_s"] <= 4.0 and _er["zooms"] >= 1 and _er["sfx"] >= 2, _er
+assert _er["music"] == "bed.mp3" and 8.0 <= _ed.duration(_ec) <= 9.0, (_er, _ed.duration(_ec))
+_before = _ec.read_bytes()
+_saved_run, _ed._run = _ed._run, lambda cmd: (_ for _ in ()).throw(RuntimeError("ffmpeg broke"))
+assert _ed.polish(_ec, {}, {}) is None and _ec.read_bytes() == _before   # failure: clip untouched
+_ed._run = _saved_run
+assert _ed.polish(_ec, {"edit": {"enabled": False}}, {}) is None
+print("EDIT PASS OK")

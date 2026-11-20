@@ -236,6 +236,16 @@ notify:
                                   # drafts needing changes), the Monday report and the weekly video. true = also
                                   # every "posted / submitted / sent for approval" note.
 
+edit:                             # edit pass on every clip (campaign reviewers reject unedited clips as "low effort")
+  enabled: true
+  trim_silence_s: 0.7             # cut silent stretches longer than this (kept tight)
+  silence_db: -32                 # quieter than this counts as silence
+  zooms: 3                        # punch-in zooms on the loudest moments
+  zoom: 1.08                      # how far each zoom goes in
+  sfx: true                       # whoosh on each zoom, boom on the punchline (made by the bot, no copyright)
+  music_dir: music                # royalty-free tracks on the Mac (~/projects/gta-clipper/music); empty = no music
+  music_db: -24                   # music volume; it also dips whenever the streamer talks
+
 campaigns:
   avoid: [lysium]                 # never clipped or posted, campaign or not (small channel, few views)
   pause_until: "2026-11-18"       # until GTA 6 launch: no campaign clips (build the account with what gets views),

@@ -9,3 +9,5 @@ logs/
 data/live.pid
 data/tg_replies.json
 overlays/
+music/
+data/sfx/
