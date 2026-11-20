@@ -2798,3 +2798,27 @@ assert _ed.polish(_ec, {}, {}) is None and _ec.read_bytes() == _before   # failu
 _ed._run = _saved_run
 assert _ed.polish(_ec, {"edit": {"enabled": False}}, {}) is None
 print("EDIT PASS OK")
+
+# ---------- unposted hand-posting packages go back in the queue and stop using up the day's posting slots ----------
+from datetime import timedelta as _td2  # noqa: E402
+_rnow = common.now_utc()
+_rst = {"clips": {
+    "pk": {"id": "pk", "status": "approved", "emailed_at": (_rnow - _td2(hours=3)).isoformat(), "hook": "pkg"},
+    "fresh": {"id": "fresh", "status": "approved", "emailed_at": (_rnow - _td2(minutes=10)).isoformat(), "hook": "f"},
+    "done": {"id": "done", "status": "approved", "emailed_at": (_rnow - _td2(hours=3)).isoformat(), "hook": "d",
+             "posts": {"youtube": {"url": "https://youtu.be/x"}}},
+    "draft": {"id": "draft", "status": "approved", "emailed_at": (_rnow - _td2(hours=3)).isoformat(), "hook": "dr"}}}
+_rsaved = (crflow.load, jobs.auto_platforms, jobs.save_state)
+crflow.load = lambda: [{"id": "draft", "token": "x"}]
+jobs.auto_platforms = lambda cfg: ["youtube"]
+jobs.save_state = lambda s: None
+_rmrc = os.environ.get("MAC_RUNS_CLIPPER")
+os.environ["MAC_RUNS_CLIPPER"] = "1"
+assert jobs.rescue_packages(common.load_config(), _rst) == 1
+assert "emailed_at" not in _rst["clips"]["pk"] and all(_rst["clips"][k].get("emailed_at") for k in ("fresh", "done", "draft"))
+crflow.load, jobs.auto_platforms, jobs.save_state = _rsaved
+if _rmrc is None:
+    os.environ.pop("MAC_RUNS_CLIPPER", None)
+else:
+    os.environ["MAC_RUNS_CLIPPER"] = _rmrc
+print("PACKAGE RESCUE OK")

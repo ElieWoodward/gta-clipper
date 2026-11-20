@@ -766,7 +766,7 @@ def cleanup_assets(state):
     for c in state["clips"].values():
         if c.get("status") == "approved" or _keep_for_tiktok(c):
             continue
-        if c.get("asset_id") and not c.get("asset_deleted"):
+        if c.get("asset_id") and not c.get("asset_deleted") and os.environ.get("MAC_RUNS_CLIPPER") != "1":
             try:
                 services.release_delete(c["asset_id"])
                 c["asset_deleted"] = True
@@ -1182,6 +1182,29 @@ def _budget_alert(cfg, state, now):
             "Tell Claude to raise limits.budget_schedule in config.yaml, or it starts again when the budget frees up.")
 
 
+def rescue_packages(cfg, state):
+    """Mac with Blotato posting: a clip that went out as a hand-posting package (before Blotato failures stopped
+    sending packages) and was never posted goes back in the queue, so Blotato posts it and it stops using up one of
+    the day's posting slots. Campaign drafts waiting for approval are left alone. Returns how many came back."""
+    if os.environ.get("MAC_RUNS_CLIPPER") != "1" or not auto_platforms(cfg):
+        return 0
+    from . import crflow
+    drafts = {e.get("id") for e in crflow.load()}
+    cutoff = (now_utc() - timedelta(hours=1)).isoformat()
+    back = 0
+    for c in state["clips"].values():
+        if c.get("status") == "approved" and c.get("emailed_at") and not c.get("posts") and \
+                c["id"] not in drafts and c["emailed_at"] < cutoff:
+            for k in ("emailed_at", "email_message_id", "sent_caption", "sent_title"):
+                c.pop(k, None)
+            back += 1
+    if back:
+        print(f"::notice::{back} clip(s) sent as hand-posting packages and never posted are back in the queue",
+              flush=True)
+        save_state(state)
+    return back
+
+
 def email_post(cfg):
     from . import health
     state = load_state()
@@ -1195,6 +1218,7 @@ def email_post(cfg):
     state["tiktok_paused"] = bool(clipqueue.tiktok_paused(cfg))
     for note in clipqueue.refresh_posted(cfg, state):
         print(f"::notice::{note}", flush=True)
+    rescue_packages(cfg, state)   # unposted hand-posting packages: back in the queue for Blotato
     for c in clipqueue.expire(cfg, state):
         print(f"::notice::expired (too old to post): {c['hook']}", flush=True)
     for c in clipqueue.queue(state):   # streamers no longer clipped (avoided, or a paused small campaign)
