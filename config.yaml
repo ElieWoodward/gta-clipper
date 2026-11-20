@@ -257,8 +257,7 @@ campaigns:
       caption: ["Watch KreekCraft on YouTube and Twitch"]
       notes: ["Strong hook in the first 1-2 seconds; no misleading titles or fabricated context."]
       needs_overlay: true
-      submit: false                 # paused: ClipLaunch rejected a clip as "low effort" (wants cuts, SFX, music).
-                                  # Clips still post as normal; set true again once the edit upgrade is in
+      submit: true                  # false pauses this campaign's submissions (clips still post as normal)
   overlays: {}                    # The Mac downloads each campaign's overlay/logo by itself (overlays/ folder) and
                                   # puts it on that streamer's clips. Only list one here to override it, e.g.
                                   #   kreekcraft: {file: overlays/kreekcraft.png, width: 1.0, pos: center}
