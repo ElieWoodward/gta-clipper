@@ -6,13 +6,15 @@ recently on Twitch, Elie gets one email with the rate, the rules and how to join
 streamer is added to the ones the bot clips, and every posting email for their clips says how to claim the money.
 No Claude calls: this is plain web reading.
 """
+import json
 import os
 import re
+from datetime import datetime, timedelta
 from html.parser import HTMLParser
 
 import requests
 
-from .common import log, now_utc
+from .common import log, now_utc, DATA
 
 BASE = "https://clippingalpha.com"
 UA = {"User-Agent": "Mozilla/5.0 (compatible; wanted-level-clipper/1.0)"}
@@ -368,19 +370,44 @@ def scan(cfg, state):
         cap = MAX_EMAILS_PER_SCAN
     live_ids = {c["id"] for c in cards}
     dry = os.environ.get("DRY_RUN") == "1"
+    prev = state.get("campaign_scan_count") or 0
+    partial = not cards or (prev and len(cards) < 0.7 * prev)   # a short listing (a page that didn't load): no verdicts
+    state["campaign_scan_count"] = len(cards) if not partial else prev
+    for rec in book.values():   # wrongly ended (one listing it was missing from): back on if it's still running
+        if rec.get("status") == "ended" and rec.get("joined") and \
+                (rec["id"] in live_ids or cr_still_running(rec)) and \
+                (now_utc() - datetime.fromisoformat(rec.get("ended") or "2000-01-01T00:00:00+00:00")).days < 7:
+            rec.update(status="joined", missing_scans=0)
+            rec.pop("missing_since", None)
+            print(f"::notice::campaign still running, back on: {rec['name']}", flush=True)
     for rec in book.values():   # campaigns that disappeared (budget spent, ended): stop clipping for them
-        if rec.get("status") in ACTIVE and rec["id"] not in live_ids and cards:
-            rec["status"] = "ended"
-            rec["ended"] = now_utc().isoformat()
-            print(f"::notice::campaign ended: {rec['name']}", flush=True)
-            if rec.get("joined") and mail.configured() and not dry:
-                try:
-                    mail.send(f"Clip bot: campaign ended: {rec['name'][:60]}",
-                              f"{rec['name']} is no longer listed (budget used up or ended). The bot stopped clipping "
-                              f"{rec.get('twitch_login')} for it. Submit any clips you haven't yet at "
-                              f"{rec.get('join_url') or rec['url']} while the page is still up.")
-                except Exception as e:
-                    log.info("couldn't send the campaign-ended email: %s", e)
+        if rec.get("status") not in ACTIVE:
+            continue
+        if rec["id"] in live_ids:
+            rec.pop("missing_since", None)
+            rec["missing_scans"] = 0
+            continue
+        if partial:
+            continue
+        # one missing listing isn't an ending: it takes 3 scans in a row over at least 6 hours, and never while the
+        # Mac's Content Rewards check still sees the campaign running
+        rec["missing_scans"] = rec.get("missing_scans", 0) + 1
+        rec.setdefault("missing_since", now_utc().isoformat())
+        if rec["missing_scans"] < 3 or \
+                (now_utc() - datetime.fromisoformat(rec["missing_since"])).total_seconds() < 6 * 3600 or \
+                cr_still_running(rec):
+            continue
+        rec["status"] = "ended"
+        rec["ended"] = now_utc().isoformat()
+        print(f"::notice::campaign ended: {rec['name']}", flush=True)
+        if rec.get("joined") and mail.configured() and not dry:
+            try:
+                mail.send(f"Clip bot: campaign ended: {rec['name'][:60]}",
+                          f"{rec['name']} is no longer listed (budget used up or ended). The bot stopped clipping "
+                          f"{rec.get('twitch_login')} for it. Submit any clips you haven't yet at "
+                          f"{rec.get('join_url') or rec['url']} while the page is still up.")
+            except Exception as e:
+                log.info("couldn't send the campaign-ended email: %s", e)
     QUICK["left"] = int((cfg.get("campaigns") or {}).get("lookups_per_scan", 400))
     if not state.get("campaigns_recheck_v3"):   # earlier scans skipped campaigns named only after a streamer
         for k in [k for k in seen if k not in book]:
@@ -474,6 +501,18 @@ def is_logo(rec):
     name like "Jack [GTA LOGO]" must never turn into the Twitch channel "jack"."""
     text = f"{rec.get('name') or ''} {(rec.get('brief') or '')[:600]}"
     return rec.get("kind") == "LOGO" or bool(re.search(r"\blogo\b", text, re.I))
+
+
+def cr_still_running(rec):
+    """The Mac's last Content Rewards check (data/mac.json) saw this campaign, not ended, in the last 12 hours."""
+    try:
+        from .mac import same_campaign
+        book = (json.loads((DATA / "mac.json").read_text()).get("campaigns") or {})
+    except Exception:
+        return False
+    cutoff = (now_utc() - timedelta(hours=12)).isoformat()
+    return any(same_campaign(n, rec.get("name")) and not r.get("ended") and (r.get("seen") or "") >= cutoff
+               for n, r in book.items())
 
 
 def joined_streamers(state):

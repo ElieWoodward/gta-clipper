@@ -840,7 +840,12 @@ campaigns._get = lambda url: ('<article><a href="/campaigns/other/x">x</a>Board:
                               'Platforms TikTok CLIPPING $1.00 per 1K views $1K of $1K left</article>'
                               if url.endswith("/campaigns") else "")
 n = len(sent)
+st["campaign_scan_count"] = 1   # same-size listings (a short one counts as a page that didn't load)
 campaigns.scan(cfg2, st)
+assert st["campaigns"][big["id"]]["status"] in campaigns.ACTIVE and len(sent) == n, "one missing listing isn't an end"
+campaigns.scan(cfg2, st)
+st["campaigns"][big["id"]]["missing_since"] = (common.now_utc() - timedelta(hours=7)).isoformat()
+campaigns.scan(cfg2, st)   # 3 scans in a row over 6+ hours: ended
 assert st["campaigns"][big["id"]]["status"] == "ended" and any("campaign ended" in x["subject"] for x in sent[n:])
 common.save_state(st)
 assert not any(s["channel"] == "bigrp_live" for s in common.load_config()["streamers"])

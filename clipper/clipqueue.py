@@ -519,7 +519,7 @@ def claim_email(cfg, state, clip, platform):
         clip["claim_sent"][platform] = "mac submits it"   # the Mac submits this link itself (crflow)
         return
     on_cr = "contentrewards.com" in f"{rec.get('url') or ''} {_cr_url(rec)}"
-    if os.environ.get("MAC_RUNS_CLIPPER") == "1" and crflow.campaign_name(cfg, clip) and on_cr:
+    if os.environ.get("MAC_RUNS_CLIPPER") == "1" and on_cr:
         clip["claim_sent"][platform] = "mac submits it"   # Content Rewards: the Mac submits posted links itself
         return
     text = "\n".join([f"Your {platform} post of \"{clip['hook']}\" is live. Submit it to get paid:", "",
