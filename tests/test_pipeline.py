@@ -2843,3 +2843,17 @@ assert _fcalls == ["old1"], _fcalls   # 4 days old: checked again; seen today: n
 assert _fst["campaigns_seen"]["old1"] == common.now_utc().date().isoformat()
 campaigns.list_campaigns, campaigns.evaluate = _fsaved
 print("CAMPAIGN RECHECK OK")
+
+# ---------- overlay required only when the brief says so (not a "logo" link, not "no watermarks") ----------
+assert _crp.needs_overlay({"requirements": ["The official KreekCraft logo overlay must remain clearly visible throughout "
+                                            "the entire clip. Clips without it will be rejected."]})
+assert not _crp.needs_overlay({"requirements": ["Do not add watermarks, logos or other creators' overlays."]})
+assert not _crp.needs_overlay({"requirements": ["No logo overlays. Every post must include #GTA6."]})
+assert not _crp.needs_overlay({"requirements": ["Every post must include #GTA6"],
+                               "refs": [{"text": "Content Rewards logo", "href": "https://x.com"}]})
+_ncfg = common.load_config()
+_ncfg["streamers"] = [{"name": "skiimasktimmy", "campaign": "$2,500 SkiiMaskTimmy Streamer Campaign"}]
+_ncfg["campaigns"] = dict(_ncfg.get("campaigns") or {}, rules={})
+common.attach_requirements(_ncfg)
+assert not _ncfg["streamers"][0].get("needs_overlay")
+print("OVERLAY RULE OK")

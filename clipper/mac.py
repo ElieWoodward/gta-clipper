@@ -158,7 +158,8 @@ def compare(st, camps, drafts, prioritized):
         old = book.get(name) or {}
         rec = dict(old, name=name, url=c.get("url") or old.get("url"), status=c.get("status"),
                    approved=bool(c.get("approved") or c.get("status") in ("approved", "joined")),
-                   needs_overlay=bool(c.get("needs_overlay") or old.get("needs_overlay")),
+                   needs_overlay=bool(c.get("needs_overlay")) if "requirements" in c else
+                   bool(old.get("needs_overlay")),
                    overlay_file=c.get("overlay_file") or old.get("overlay_file"), bio=c.get("bio") or [],
                    ended=bool(c.get("ended")), requirements=c.get("requirements") or [],
                    budget=[c.get("budget_used"), c.get("budget_total")], seen=now_utc().isoformat())

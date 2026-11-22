@@ -24,11 +24,17 @@ OVERLAY_RE = re.compile(r"\b(overlay|logo|watermark)\b", re.I)
 
 
 def needs_overlay(info):
-    """The campaign wants its overlay/logo on screen (its rules say so, or it hands one out under Reference materials)."""
-    text = " ".join(str(x) for x in (info.get("requirements") or []))
-    return bool(re.search(r"\b(overlay|logo|watermark)\b.{0,80}\b(must|visible|include|required|on screen)\b|"
-                          r"\b(must|include|required)\b.{0,80}\b(overlay|logo|watermark)\b", text, re.I)
-                or any(OVERLAY_RE.search(r.get("text") or "") for r in info.get("refs") or []))
+    """The campaign's rules require its overlay/logo on screen. Only the brief's own words count (a link named
+    "logo" somewhere on the page doesn't), and a sentence that forbids overlays or logos means the opposite."""
+    for ln in info.get("requirements") or []:
+        for sent in re.split(r"(?<=[.!?])\s+", str(ln)):
+            if not OVERLAY_RE.search(sent):
+                continue
+            if re.search(r"\b(no|not|don'?t|never|without|avoid|remove|prohibited|banned)\b", sent, re.I):
+                continue
+            if re.search(r"\b(must|required?|include|visible|on screen|on every|at all times|throughout)\b", sent, re.I):
+                return True
+    return False
 
 
 def drive_direct(url):
@@ -356,10 +362,17 @@ class Site:
 
     def reference_links(self):
         """Links on the open campaign page: [{"text", "href"}] (overlays and logos sit under Reference materials)."""
-        try:
-            return self.page.evaluate("""() => Array.from(document.querySelectorAll('main a, a'))
-                .map(a => ({text: (a.innerText || a.getAttribute('aria-label') || '').trim().slice(0, 120),
-                            href: a.href})).filter(a => a.href && a.href.startsWith('http'))""")[:80]
+        try:   # only the links under "Reference materials" (not the site's own header/logo links)
+            return self.page.evaluate("""() => {
+                const head = Array.from(document.querySelectorAll('main *'))
+                    .find(e => e.children.length === 0 && /^\\s*Reference materials\\s*$/i.test(e.textContent));
+                let box = head;
+                for (let i = 0; box && i < 6 && box.querySelectorAll('a').length === 0; i++) box = box.parentElement;
+                if (!box) return [];
+                return Array.from(box.querySelectorAll('a'))
+                    .map(a => ({text: (a.innerText || '').trim().slice(0, 120), href: a.href}))
+                    .filter(a => a.href && a.href.startsWith('http') && !/contentrewards\\.com/.test(a.href));
+            }""")[:40]
         except Exception as e:
             log.info("couldn't list the page's links: %s", e)
             return []
