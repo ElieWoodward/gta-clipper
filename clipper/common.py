@@ -88,6 +88,13 @@ def attach_requirements(cfg):
             s["needs_overlay"] = True
         if fixed.get("submit") is False:
             s["hold_submit"] = True
+        from .contentrewards import overlay_text as _otext, needs_facecam as _nface
+        if need and not (f and os.path.isfile(f)) and not s.get("overlay"):
+            t = fixed.get("overlay_text") or _otext({"requirements": req})
+            if t:   # an overlay that is just text (a channel link or handle): the bot makes it
+                s["overlay"] = {"text": t}
+        if fixed.get("needs_facecam") or _nface({"requirements": req}):
+            s["needs_facecam"] = True
         if f and os.path.isfile(f) and not s.get("overlay"):
             s["overlay"] = {"file": f}
         if not (req or tags or lines):

@@ -2916,3 +2916,33 @@ if _mj_old is None:
 else:
     _mj.write_text(_mj_old)
 print("POSTMORTEM FIXES OK")
+
+# ---------- SkiiMaskTimmy's real rules: a text overlay the bot makes itself, facecam required ----------
+_sk = {"requirements": ["Timmy’s facecam must be visible in every clip",
+                        "Use the twitch.tv/skiimasktimmy overlay on every clip",
+                        "Caption must include “twitch.tv/skiimasktimmy”"]}
+assert _crp.needs_overlay(_sk) and _crp.overlay_text(_sk) == "twitch.tv/skiimasktimmy" and _crp.needs_facecam(_sk)
+assert _crp.overlay_text({"requirements": ["The official KreekCraft logo overlay must remain clearly visible."]}) is None
+assert common.required_caption(_sk["requirements"]) == ["twitch.tv/skiimasktimmy"]
+_mj_old = _mj.read_text() if _mj.exists() else None
+_mj.write_text(json.dumps({"campaigns": {"$2,500 SkiiMaskTimmy Streamer Campaign": dict(_sk, approved=True)}}))
+_skc = {"streamers": [{"name": "skiimasktimmy", "channel": "skiimasktimmy",
+                       "campaign": "$2,500 SkiiMaskTimmy Streamer Campaign"}], "campaigns": {"rules": {}}}
+common.attach_requirements(_skc)
+_sks = _skc["streamers"][0]
+assert _sks["overlay"] == {"text": "twitch.tv/skiimasktimmy"} and _sks["needs_facecam"], _sks
+_skov = jobs.campaign_overlay(_skc, _sks)
+assert Path(_skov["file"]).is_file() and _skov["pos"] == "tag" and 0.3 < _skov["width"] < 0.9, _skov
+assert jobs.missing_overlay(_skc, {"streamer": "skiimasktimmy", "overlay": True, "facecam": False})   # no facecam
+assert not jobs.missing_overlay(_skc, {"streamer": "skiimasktimmy", "overlay": True, "facecam": True})
+_skprobs = []
+_saved_prob, tg.problem = tg.problem, lambda st, key, what, fix: _skprobs.append(key)
+mac.rules_problems({}, [{"name": "$2,500 SkiiMaskTimmy Streamer Campaign", "status": "joined", "url": "u",
+                         "needs_overlay": True, "requirements": _sk["requirements"]}])
+tg.problem = _saved_prob
+assert not _skprobs, _skprobs   # nothing for Elie to download
+if _mj_old is None:
+    _mj.unlink()
+else:
+    _mj.write_text(_mj_old)
+print("TEXT OVERLAY OK")

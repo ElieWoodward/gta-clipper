@@ -337,11 +337,12 @@ def overlay_path(name):
 def rules_problems(st, camps):
     """A campaign we're in whose rules or overlay the bot couldn't get: say so (once a day), so clips never go out
     breaking its rules without Elie knowing."""
+    from . import contentrewards as cr
     for c in camps:
         if c.get("status") in ("ended", "rejected", "pending", "applied", "under review", "waitlisted") or "url" not in c:
             continue
         name = c["name"]
-        if c.get("needs_overlay") and not c.get("overlay_file"):
+        if c.get("needs_overlay") and not c.get("overlay_file") and not cr.overlay_text(c):
             refs = [r["href"] for r in c.get("refs") or [] if cr_overlay_text(r)]
             tg.problem(st, f"overlay:{name}", f"{name} requires its overlay/logo on every clip, and I couldn't download "
                        "it by myself. Its clips won't be submitted until I have it (they'd be rejected).",

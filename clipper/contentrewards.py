@@ -39,6 +39,32 @@ def needs_overlay(info):
     return False
 
 
+def _rule_sentences(info, word_re):
+    for ln in info.get("requirements") or []:
+        for sent in re.split(r"(?<=[.!?])\s+", str(ln)):
+            if word_re.search(sent) and not re.search(
+                    r"\b(no|not|don'?t|never|without|avoid|remove|prohibited|banned)\b", sent, re.I):
+                yield sent
+
+
+def overlay_text(info):
+    """The text an overlay rule asks for, when it names one ("Use the twitch.tv/skiimasktimmy overlay on every
+    clip"): the bot makes that overlay itself. None when the overlay is an image to download."""
+    for sent in _rule_sentences(info, OVERLAY_RE):
+        m = re.search(r"\b((?:twitch\.tv|kick\.com|youtube\.com|tiktok\.com)/[\w@.\-]+)", sent, re.I) or \
+            re.search(r"[\"“”']([^\"“”']{3,40})[\"“”']\s+(?:overlay|logo|watermark)", sent, re.I) or \
+            re.search(r"(?<![\w.])(@[A-Za-z0-9_.]{2,30})", sent)
+        if m:
+            return m.group(1).strip()
+    return None
+
+
+def needs_facecam(info):
+    """The rules require the streamer's facecam/webcam on screen."""
+    return any(re.search(r"\b(must|visible|required|always|every|include)\b", s, re.I)
+               for s in _rule_sentences(info, re.compile(r"\b(face ?cam|webcam|cam)\b", re.I)))
+
+
 def drive_direct(url):
     """A Google Drive file link -> its direct download link (folders and other links come back unchanged)."""
     m = re.search(r"drive\.google\.com/(?:file/d/|open\?id=|uc\?(?:export=\w+&)?id=)([\w-]{20,})", url or "")

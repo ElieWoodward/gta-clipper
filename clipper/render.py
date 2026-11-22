@@ -18,7 +18,7 @@ YELLOW = "&H0000E5FF&"  # ASS colors are &HAABBGGRR
 
 OVERLAY_POS = {   # where a campaign overlay goes (x, y), kept clear of TikTok's top bar and bottom buttons
     "center": ("(W-w)/2", "(H-h)/2"), "top": ("(W-w)/2", "140"), "bottom": ("(W-w)/2", "H-h-320"),
-    "right": ("W-w-40", "420"), "top-left": ("40", "140"), "top-right": ("W-w-40", "140"),
+    "right": ("W-w-40", "420"), "tag": ("(W-w)/2", "H-h-350"), "top-left": ("40", "140"), "top-right": ("W-w-40", "140"),
     "bottom-left": ("40", "H-h-320"), "bottom-right": ("W-w-160", "H-h-320")}
 HOOK_TOP = 250          # px from the top: clear of TikTok's top bar
 HOOK_MAX_W = 980
@@ -236,6 +236,24 @@ def speed_up(src, dest, speed, ffmpeg="ffmpeg"):
          "-map", "[v]", "-map", "[a]", "-c:v", "libx264", "-preset", "veryfast", "-crf", "19", "-pix_fmt", "yuv420p",
          "-c:a", "aac", "-b:a", "128k", "-ar", "44100", "-movflags", "+faststart", dest])
     return dest
+
+
+def text_tag(text, dest):
+    """A Twitch-style tag (purple pill, white bold text) for campaigns whose overlay is a channel link or handle."""
+    from PIL import Image, ImageDraw, ImageFont
+    font = ImageFont.truetype(str(HOOK_FONT_FILE), 46)
+    probe = ImageDraw.Draw(Image.new("RGBA", (10, 10)))
+    x0, y0, x1, y1 = probe.textbbox((0, 0), text, font=font)
+    pw, ph = 34, 18
+    w, h = (x1 - x0) + 2 * pw, (y1 - y0) + 2 * ph
+    im = Image.new("RGBA", (w + 8, h + 8), (0, 0, 0, 0))
+    d = ImageDraw.Draw(im)
+    d.rounded_rectangle((6, 6, w + 6, h + 6), radius=h // 2, fill=(0, 0, 0, 110))   # soft shadow
+    d.rounded_rectangle((0, 0, w, h), radius=h // 2, fill=(145, 70, 255, 245))      # Twitch purple
+    d.text((pw - x0, ph - y0), text, font=font, fill=(255, 255, 255, 255))
+    Path(dest).parent.mkdir(parents=True, exist_ok=True)
+    im.save(dest, "PNG")
+    return Path(dest)
 
 
 def render(src, src_offset, pick, words, out, facecam=None, commentary=False, layout="fill", focus_x=0.5, speed=1.0,

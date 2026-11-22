@@ -602,6 +602,12 @@ def campaign_overlay(cfg, streamer):
     if not ov:
         return None
     ov = dict(ov) if isinstance(ov, dict) else {"file": ov}
+    if ov.get("text") and not ov.get("file"):   # a text overlay the campaign named: made here, kept with the data
+        slug = re.sub(r"[^a-z0-9]+", "-", ov["text"].lower()).strip("-")[:60]
+        ov["file"] = str(render.text_tag(ov["text"], DATA / "overlays" / f"{slug}.png"))
+        ov.setdefault("pos", "tag")
+        from PIL import Image
+        ov.setdefault("width", round(Image.open(ov["file"]).size[0] / render.W, 3))
     f = Path(os.path.expanduser(str(ov.get("file") or "")))
     if not f.is_absolute():
         f = ROOT / f
@@ -629,7 +635,8 @@ def campaign_overlay(cfg, streamer):
 def missing_overlay(cfg, clip):
     """A campaign that requires its overlay, and this clip was made without it: submitting it only gets rejected."""
     s = next((x for x in cfg.get("streamers") or [] if x.get("name") == clip.get("streamer") and x.get("campaign")), {})
-    return bool(s.get("campaign") and (s.get("hold_submit") or (s.get("needs_overlay") and not clip.get("overlay"))))
+    return bool(s.get("campaign") and (s.get("hold_submit") or (s.get("needs_overlay") and not clip.get("overlay"))
+                                        or (s.get("needs_facecam") and not clip.get("facecam"))))
 
 
 def live_line(cfg, clip):
@@ -1237,6 +1244,9 @@ def campaign_check(cfg, state):
             if x.get("needs_overlay") and any(not c.get("overlay") for c in recent):
                 problems.append(f"{sum(1 for c in recent if not c.get('overlay'))} of {x['name']}'s clips from the "
                                 "last day have no overlay")
+            noface = [c for c in recent if not c.get("facecam")]
+            if x.get("needs_facecam") and recent and len(noface) == len(recent):
+                problems.append(f"none of {x['name']}'s clips from the last day show the facecam it requires")
             lines = x.get("caption_lines") or []
             if lines and any(c.get("sent_caption") and not all(ln in c["sent_caption"] for ln in lines)
                              for c in recent):
