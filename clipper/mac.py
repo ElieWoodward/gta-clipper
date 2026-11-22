@@ -1341,6 +1341,9 @@ def submit_directs(st):
         if (e.get("retry_at") or "") > now_utc().isoformat():
             continue   # tried a moment ago; give the page a few minutes
         rec = next((r for n, r in (st.get("campaigns") or {}).items() if same_campaign(n, e["campaign"])), {})
+        if rec.get("ended"):   # budget spent or campaign over: nothing to submit to, nothing to tell Elie
+            crflow.direct_update(e["id"], e["platform"], status="ended")
+            continue
         page = rec.get("url")
         try:
             if not page:
@@ -1370,6 +1373,9 @@ def submit_directs(st):
         tg.send(f"💰 Submitted your {e['platform'].title()} post to {e['campaign']}:\n{e['url']}")
     for e in items:   # missed the window (the Mac was busy or asleep): say so once
         if e.get("status") == "todo" and e not in crflow.direct_due(items):
+            if any(same_campaign(n, e["campaign"]) and r.get("ended") for n, r in (st.get("campaigns") or {}).items()):
+                crflow.direct_update(e["id"], e["platform"], status="ended")
+                continue
             crflow.direct_update(e["id"], e["platform"], status="missed")
             tg.send(f"⏰ I missed the 30-minute window for your {e['campaign']} post:\n{e['url']}\n\nIf Content "
                     "Rewards still lets you, submit it by hand.")

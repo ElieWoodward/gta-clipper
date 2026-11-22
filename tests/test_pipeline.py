@@ -2946,3 +2946,27 @@ if _mj_old is None:
 else:
     _mj.write_text(_mj_old)
 print("TEXT OVERLAY OK")
+
+# ---------- a campaign Content Rewards says has ended is ended everywhere: no submissions, no messages ----------
+_mj_old = _mj.read_text() if _mj.exists() else None
+_mj.write_text(json.dumps({"campaigns": {"KreekCraft GTA 6 Clipping": {"approved": True, "ended": True}}}))
+_ecfg = {"streamers": [{"name": "kreekcraft", "channel": "kreekcraft", "campaign": "KreekCraft GTA 6 Clipping"}],
+         "campaigns": {"rules": {"kreekcraft": {"needs_overlay": True}}}}
+common.attach_requirements(_ecfg)
+assert not _ecfg["streamers"][0].get("campaign") and _ecfg["streamers"][0]["campaign_ended"]
+assert crflow.campaign_name(_ecfg, {"streamer": "kreekcraft"}) is None
+crflow.DIRECT.unlink(missing_ok=True)
+crflow.direct_add({"id": "e1", "campaign": "KreekCraft GTA 6 Clipping", "url": "https://youtu.be/e1", "platform": "youtube",
+                   "posted_at": common.now_utc().isoformat(), "status": "todo"})
+_emsgs = []
+_saved_site, _cr.Site = _cr.Site, _FailSite
+_saved_send, tg.send = tg.send, lambda *a, **k: _emsgs.append(a[0])
+mac.submit_directs({"campaigns": {"KreekCraft GTA 6 Clipping": {"url": "https://x", "ended": True}}})
+assert crflow.direct_load()[0]["status"] == "ended" and not _emsgs, _emsgs
+_cr.Site, tg.send = _saved_site, _saved_send
+crflow.DIRECT.unlink(missing_ok=True)
+if _mj_old is None:
+    _mj.unlink()
+else:
+    _mj.write_text(_mj_old)
+print("ENDED CAMPAIGN OK")

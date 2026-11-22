@@ -76,6 +76,11 @@ def attach_requirements(cfg):
             continue
         a = norm(s["campaign"])
         rec = next((r for n, r in book.items() if a and norm(n) and (a in norm(n) or norm(n) in a)), None)
+        if rec and rec.get("ended"):   # Content Rewards says it's over (budget spent): stop treating it as a campaign
+            s["campaign_ended"] = s.pop("campaign")
+            for k in ("campaign_joined", "needs_overlay", "needs_facecam", "hold_submit"):
+                s.pop(k, None)
+            continue
         req = [str(x) for x in (rec or {}).get("requirements") or [] if str(x).strip()]
         fixed = rules.get((s.get("name") or "").lower()) or {}   # campaigns.rules in config.yaml always apply
         req += [str(x) for x in fixed.get("notes") or [] if str(x) not in req]
