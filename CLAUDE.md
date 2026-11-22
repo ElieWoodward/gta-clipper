@@ -42,6 +42,24 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
 - The sandbox can't reach the Mac. To see what the bot is doing, give Elie a Terminal command and ask for the output.
   Apply a push right away: `cd ~/projects/gta-clipper && git pull -q && launchctl kickstart -k gui/$(id -u)/com.wantedlevel.clipbot`
 
+## Lessons from KreekCraft (Nov 18-21, $6.8K campaign, earned $0)
+
+What went wrong, in order: the list parser didn't know "Joined" (rules and overlay never read); clips waited for a
+12-16 h stream to end; the day's posting slots went to unposted packages; a one-miss directory scan "ended" the
+campaign; `is_logo` matched ClippingAlpha's menu ("Logo 38") in every brief, so every campaign streamer lost its
+overlay, required caption and needs-overlay flag; launch mode re-added the streamer after the rules step; the
+"Clip submitted" success screen was read as a failure. Each fix was tested only offline against what the code
+expected, not against what the live site and the real data show. Rules for this repo from now on:
+- Check a fix against the real data on the Mac (give Elie a command) before calling it done, especially for
+  anything that touches a paid campaign. "Tests pass" is not "it works".
+- A rule written from a site's page must be tested on that page's real text (save it as a test fixture). Text
+  scraped from ClippingAlpha includes its menu; text from Content Rewards includes nav and status words.
+- Anything that adds streamers to the config must run before (or re-run) `attach_requirements`.
+- A guess that drops or blocks a campaign (ended, logo, needs overlay) needs strong evidence and a message, never
+  a silent change.
+- `jobs.campaign_check` runs hourly and messages Elie when a joined campaign's streamer isn't clipped, its rules or
+  overlay don't reach the clips, or submissions fail. Extend it when adding campaign features.
+
 ## How it is laid out
 
 - `clipper/` is the Python package. Entry point: `python -m clipper <job>`.

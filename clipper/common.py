@@ -134,6 +134,10 @@ def load_config():
         apply(cfg, _merge_live(json.loads(STATE_FILE.read_text())) if STATE_FILE.exists() else {})
     except Exception as e:
         log.warning("launch settings not applied: %s", e)
+    try:   # launch mode adds campaign streamers of its own: they get the campaign's rules and overlay too
+        attach_requirements(cfg)
+    except Exception as e:
+        log.warning("couldn't read campaign requirements: %s", e)
     return cfg
 
 

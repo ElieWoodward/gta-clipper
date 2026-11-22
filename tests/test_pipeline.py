@@ -2857,3 +2857,62 @@ _ncfg["campaigns"] = dict(_ncfg.get("campaigns") or {}, rules={})
 common.attach_requirements(_ncfg)
 assert not _ncfg["streamers"][0].get("needs_overlay")
 print("OVERLAY RULE OK")
+
+# ---------- KreekCraft post-mortem: every bug in the chain that cost the campaign ----------
+# 1. ClippingAlpha's menu ("Logo 38") is in every saved brief: that alone isn't a logo campaign
+_kb = ("KreekCraft GTA 6 clipping campaign, $1.00 per 1K views | ClippingAlpha Skip to content Clipping 629 UGC 143 "
+       "Logo 38 Music 157 Clip with AI")
+assert not campaigns.is_logo({"name": "KreekCraft GTA 6 Clipping", "brief": _kb})
+assert campaigns.is_logo({"name": "Jack [GTA LOGO]", "brief": _kb})
+assert campaigns.is_logo({"name": "Jack campaign 2", "brief": _kb + " Jack logo campaign 2, $0.40 per 1K views"})
+# 2/3. a streamer added late (launch mode, or a batch's old copy) still gets the campaign's overlay and rules
+_pcfg2 = common.load_config()
+_pcfg2["streamers"] = [{"name": "kreekcraft", "channel": "kreekcraft"},
+                       {"name": "kreekcraft", "channel": "kreekcraft", "campaign": "KreekCraft GTA 6 Clipping",
+                        "overlay": {"file": "/x/ov.png"}, "needs_overlay": True, "caption_lines": ["Watch KreekCraft"]}]
+_cs = jobs.current_streamer(_pcfg2, {"name": "kreekcraft", "channel": "kreekcraft", "facecam": "tr"})
+assert _cs["overlay"] and _cs["needs_overlay"] and _cs["facecam"] == "tr" and _cs["campaign"], _cs
+assert jobs.missing_overlay(_pcfg2, {"streamer": "kreekcraft"})   # finds the entry that carries the campaign
+_lcfg2 = {"streamers": [{"name": "kreekcraft", "channel": "kreekcraft", "campaign": "KreekCraft GTA 6 Clipping"}],
+          "campaigns": {"rules": {"kreekcraft": {"needs_overlay": True, "caption": ["Watch KreekCraft on YouTube and Twitch"]}}}}
+common.attach_requirements(_lcfg2)
+assert _lcfg2["streamers"][0]["needs_overlay"] and _lcfg2["streamers"][0]["caption_lines"]
+# 4. Content Rewards' success screen is a success; "already submitted" after a try means it went through
+assert _crp.SUBMITTED_RE.search("Clip submitted Your clip is submitted and now part of the campaign. Done")
+assert _crp.ALREADY_RE.search("This post is already submitted to this campaign. Pick a different post.")
+crflow.DIRECT.unlink(missing_ok=True)
+crflow.direct_add({"id": "d2", "campaign": "KreekCraft GTA 6 Clipping", "url": "https://youtu.be/d2", "platform": "youtube",
+                   "posted_at": common.now_utc().isoformat(), "status": "todo", "tries": 1})
+class _AlreadySite(_FailSite):  # noqa: E302
+    def submit_direct(self, *a, **k): raise RuntimeError("Content Rewards didn't accept it: This post is already submitted to this campaign.")  # noqa: E501,E704
+_saved_site, _cr.Site = _cr.Site, _AlreadySite
+_amsgs = []
+_saved_send, tg.send = tg.send, lambda *a, **k: _amsgs.append(a[0])
+mac.submit_directs(_dst)
+assert crflow.direct_load()[0]["status"] == "done" and _amsgs and _amsgs[0].startswith("💰 Submitted"), _amsgs
+_cr.Site, tg.send = _saved_site, _saved_send
+crflow.DIRECT.unlink(missing_ok=True)
+# the hourly self-check catches a campaign whose clips go out without its overlay or required caption
+_mj = common.DATA / "mac.json"
+_mj_old = _mj.read_text() if _mj.exists() else None
+_mj.write_text(json.dumps({"campaigns": {"KreekCraft GTA 6 Clipping": {"approved": True, "requirements": ["r"]},
+                                         "Nobody Clipped Campaign": {"approved": True}}}))
+_ccfg = common.load_config()
+_ccfg["streamers"] = [{"name": "kreekcraft", "campaign": "KreekCraft GTA 6 Clipping", "requirements": ["r"],
+                       "needs_overlay": True, "overlay": {"file": "x"}, "caption_lines": ["Watch KreekCraft"]}]
+_cst = {"clips": {"k1": {"id": "k1", "streamer": "kreekcraft", "created": common.now_utc().isoformat(),
+                         "overlay": False, "sent_caption": "LADY 😭 #gta6"}}}
+_cprobs = []
+_saved_prob, tg.problem = tg.problem, lambda st, key, what, fix: _cprobs.append(what)
+_saved_ss, jobs.save_state = jobs.save_state, lambda s: None
+_found = dict(jobs.campaign_check(_ccfg, _cst))
+tg.problem, jobs.save_state = _saved_prob, _saved_ss
+assert "the bot isn't clipping anyone for it" in _found["Nobody Clipped Campaign"], _found
+assert any("no overlay" in p for p in _found["KreekCraft GTA 6 Clipping"]), _found
+assert any("missing the required text" in p for p in _found["KreekCraft GTA 6 Clipping"]), _found
+assert len(_cprobs) == 2
+if _mj_old is None:
+    _mj.unlink()
+else:
+    _mj.write_text(_mj_old)
+print("POSTMORTEM FIXES OK")

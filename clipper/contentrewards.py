@@ -20,6 +20,8 @@ from .common import log
 SITE = "https://contentrewards.com"
 PROFILE = Path.home() / ".clipper" / "chrome-profile"   # the bot's own Chrome profile (separate from Elie's)
 STATUS_WORDS = ("Approved", "Joined", "Pending", "Rejected", "Applied", "Under review", "Waitlisted", "Ended", "Paused")
+SUBMITTED_RE = re.compile(r"clip submitted|is submitted and now part of the campaign", re.I)
+ALREADY_RE = re.compile(r"already submitted to this campaign", re.I)
 OVERLAY_RE = re.compile(r"\b(overlay|logo|watermark)\b", re.I)
 
 
@@ -682,6 +684,9 @@ class Site:
         except Exception:
             msg = " ".join(dialog.inner_text().split())[:300] if dialog.count() else ""
             self.page.keyboard.press("Escape")
+            if SUBMITTED_RE.search(msg):   # the success screen stays open until "Done" is pressed
+                self._pause()
+                return True
             raise RuntimeError(f"Content Rewards didn't accept it: {msg}")
         self._pause()
         return True

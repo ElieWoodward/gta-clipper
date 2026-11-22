@@ -11,7 +11,7 @@ from pathlib import Path
 
 from . import clipqueue, fetch, highlights, render, services, vision
 from .common import (log, load_config, load_state, save_state, now_utc, now_local, days_since_start,
-                     WORK, PLAYBOOK_FILE, INSIGHTS_FILE, load_json, ROOT)
+                     WORK, PLAYBOOK_FILE, INSIGHTS_FILE, load_json, ROOT, DATA)
 
 FORCE = os.environ.get("FORCE") == "1"
 DRY_RUN = os.environ.get("DRY_RUN") == "1"
@@ -436,6 +436,21 @@ def ensure_speed(cfg, state, clip, src, d):
     return out
 
 
+CAMPAIGN_KEYS = ("campaign", "campaign_joined", "overlay", "needs_overlay", "hold_submit", "required_tags",
+                 "caption_lines", "requirements", "picker_notes", "handle", "preapproval")
+
+
+def current_streamer(cfg, streamer):
+    """The streamer as the config has it now. A batch judged hours later carries a copy from when it was sent,
+    which can miss a campaign's overlay and rules that arrived since."""
+    name = (streamer.get("name") or "").lower()
+    now = next((s for s in cfg.get("streamers") or [] if (s.get("name") or "").lower() == name and s.get("campaign")),
+               None) or next((s for s in cfg.get("streamers") or [] if (s.get("name") or "").lower() == name), None)
+    if not now:
+        return streamer
+    return dict(streamer, **{k: now[k] for k in CAMPAIGN_KEYS if k in now})
+
+
 def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
     cid = _clip_id(vod["id"], p["start"])
     if cid in state["clips"]:
@@ -460,7 +475,7 @@ def make_clip(cfg, state, vod, p, words, d, src=None, src_offset=None):
     if layout == "auto":
         layout = look["layout"]
     speed = clip_speed(cfg)
-    st = vod["streamer"]
+    st = current_streamer(cfg, vod["streamer"])
     commentary = cfg["clip"].get("commentary", False)
     if st.get("context") and (p.get("context") or "").strip():   # campaign rule: give the clip context
         p = dict(p, commentary=[{"at": 0.0, "text": p["context"].strip()[:70]}])
@@ -613,7 +628,7 @@ def campaign_overlay(cfg, streamer):
 
 def missing_overlay(cfg, clip):
     """A campaign that requires its overlay, and this clip was made without it: submitting it only gets rejected."""
-    s = next((x for x in cfg.get("streamers") or [] if x.get("name") == clip.get("streamer")), {})
+    s = next((x for x in cfg.get("streamers") or [] if x.get("name") == clip.get("streamer") and x.get("campaign")), {})
     return bool(s.get("campaign") and (s.get("hold_submit") or (s.get("needs_overlay") and not clip.get("overlay"))))
 
 
@@ -1182,6 +1197,63 @@ def _budget_alert(cfg, state, now):
             "Tell Claude to raise limits.budget_schedule in config.yaml, or it starts again when the budget frees up.")
 
 
+def campaign_check(cfg, state):
+    """Hourly self-check of every Content Rewards campaign Elie is in (data/mac.json): its streamer is being
+    clipped, its rules and overlay reach the clips, and submissions go through. Anything broken is one problem
+    message a day, the same day, instead of a rejection email days later. Returns the problems found."""
+    import json as _json
+    from . import crflow, tg
+    from .campaigns import avoided
+    try:
+        book = _json.loads((DATA / "mac.json").read_text()).get("campaigns") or {}
+    except Exception:
+        return []
+
+    def norm(x):
+        return re.sub(r"[^a-z0-9]", "", (x or "").lower())
+    since = (now_utc() - timedelta(hours=24)).isoformat()
+    try:
+        direct = crflow.direct_load()
+    except Exception:
+        direct = []
+    found = []
+    for name, rec in book.items():
+        if not rec.get("approved") or rec.get("ended") or \
+                any(a and a in norm(name) for a in (norm(x) for x in (cfg.get("campaigns") or {}).get("avoid") or [])):
+            continue
+        ss = [x for x in cfg.get("streamers") or [] if x.get("campaign") and
+              (norm(x["campaign"]) in norm(name) or norm(name) in norm(x["campaign"])) and
+              not avoided(cfg, x.get("channel") or x.get("name"))]
+        problems = []
+        if not ss:
+            problems.append("the bot isn't clipping anyone for it")
+        for x in ss:
+            if rec.get("requirements") and not x.get("requirements"):
+                problems.append(f"its rules aren't reaching {x['name']}'s clips")
+            if x.get("needs_overlay") and not x.get("overlay"):
+                problems.append(f"{x['name']}'s clips are being made without the required overlay")
+            recent = [c for c in state["clips"].values() if c.get("streamer") == x.get("name") and
+                      (c.get("created") or "") >= since]
+            if x.get("needs_overlay") and any(not c.get("overlay") for c in recent):
+                problems.append(f"{sum(1 for c in recent if not c.get('overlay'))} of {x['name']}'s clips from the "
+                                "last day have no overlay")
+            lines = x.get("caption_lines") or []
+            if lines and any(c.get("sent_caption") and not all(ln in c["sent_caption"] for ln in lines)
+                             for c in recent):
+                problems.append(f"{x['name']}'s captions are missing the required text")
+        failed = [e for e in direct if norm(e.get("campaign")) == norm(name) and e.get("status") == "manual"
+                  and (e.get("posted_at") or "") >= since]
+        if len(failed) >= 2:
+            problems.append(f"{len(failed)} submissions failed in the last day ({(failed[-1].get('error') or '')[:120]})")
+        if problems:
+            found.append((name, problems))
+            tg.problem(state, f"campaign_check:{name}", f"{name}: " + "; ".join(problems) + ". Clips for it may not "
+                       "earn until this is fixed.", "Send this message to Claude.")
+    if found:
+        save_state(state)
+    return found
+
+
 def rescue_packages(cfg, state):
     """Mac with Blotato posting: a clip that went out as a hand-posting package (before Blotato failures stopped
     sending packages) and was never posted goes back in the queue, so Blotato posts it and it stops using up one of
@@ -1219,6 +1291,13 @@ def email_post(cfg):
     for note in clipqueue.refresh_posted(cfg, state):
         print(f"::notice::{note}", flush=True)
     rescue_packages(cfg, state)   # unposted hand-posting packages: back in the queue for Blotato
+    if os.environ.get("MAC_RUNS_CLIPPER") == "1" and (state.get("last_campaign_check") or "") < \
+            (now_utc() - timedelta(minutes=55)).isoformat():
+        state["last_campaign_check"] = now_utc().isoformat()
+        try:
+            campaign_check(cfg, state)
+        except Exception as e:
+            log.warning("campaign self-check: %s", e)
     for c in clipqueue.expire(cfg, state):
         print(f"::notice::expired (too old to post): {c['hook']}", flush=True)
     for c in clipqueue.queue(state):   # streamers no longer clipped (avoided, or a paused small campaign)

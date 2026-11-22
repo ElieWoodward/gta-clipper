@@ -502,8 +502,11 @@ ACTIVE = ("found", "notified", "joined")   # campaigns whose streamer is being c
 def is_logo(rec):
     """A logo/brand campaign (a brand's logo on GTA videos): it pays for the logo, not for a streamer's clips, so a
     name like "Jack [GTA LOGO]" must never turn into the Twitch channel "jack"."""
-    text = f"{rec.get('name') or ''} {(rec.get('brief') or '')[:600]}"
-    return rec.get("kind") == "LOGO" or bool(re.search(r"\blogo\b", text, re.I))
+    if rec.get("kind") == "LOGO" or re.search(r"\blogo\b", rec.get("name") or "", re.I):
+        return True
+    # the saved brief starts with ClippingAlpha's own menu ("... UGC 143 Logo 38 Music ..."): only the campaign's
+    # own words count, e.g. "Jack logo campaign"
+    return bool(re.search(r"\blogo (campaign|clipping|promo)", rec.get("brief") or "", re.I))
 
 
 def cr_still_running(rec):

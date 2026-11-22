@@ -1350,6 +1350,11 @@ def submit_directs(st):
             left = max(0, crflow.DIRECT_MINUTES - int((now_utc() - datetime.fromisoformat(e["posted_at"]))
                                                       .total_seconds() // 60))
             tries = e.get("tries", 0) + 1
+            if cr.ALREADY_RE.search(str(ex)) and tries > 1:   # an earlier try went through after all
+                crflow.direct_update(e["id"], e["platform"], status="done", tries=tries,
+                                     submitted_at=now_utc().isoformat())
+                tg.send(f"💰 Submitted your {e['platform'].title()} post to {e['campaign']}:\n{e['url']}")
+                continue
             log.warning("direct submit to %s failed (try %d): %s", e["campaign"], tries, ex)
             if page and tries < 4 and left > 8:   # a slow page or a popup: try again on the next pass
                 crflow.direct_update(e["id"], e["platform"], tries=tries, error=str(ex)[:200],
