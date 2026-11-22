@@ -3,9 +3,13 @@
   "GTA RP": {
    "episode": 3,
    "last": "2026-11-15"
+  },
+  "GTA 6": {
+   "episode": 1,
+   "last": "2026-11-22"
   }
  },
- "last_made": "2026-11-15T21:53:13.641695+00:00",
+ "last_made": "2026-11-22T22:38:56.065454+00:00",
  "episodes": [
   {
    "series": "GTA RP",
@@ -101,7 +105,8 @@
      "title": "The Outcome of Frank and Carmella's Wedding",
      "views": 4470
     }
-   ]
+   ],
+   "deleted": true
   },
   {
    "series": "GTA RP",
@@ -199,6 +204,123 @@
      "name": "IndoorScream",
      "title": "tp KEKW",
      "views": 3565
+    }
+   ]
+  },
+  {
+   "series": "GTA 6",
+   "episode": 1,
+   "title": "GTA 6 MOST VIEWED Twitch Clips of The Week! #1",
+   "made": "2026-11-22T22:38:56.065454+00:00",
+   "asset": "weekly_gta6_1.mp4",
+   "clips": [
+    {
+     "rank": 1,
+     "name": "ohnePixel",
+     "title": "ohnePixel tries out the strip club's private dance in GTA 6",
+     "views": 689365
+    },
+    {
+     "rank": 2,
+     "name": "ohnePixel",
+     "title": "neuron activation",
+     "views": 304000
+    },
+    {
+     "rank": 3,
+     "name": "KaiCenat",
+     "title": "o0mg",
+     "views": 273992
+    },
+    {
+     "rank": 4,
+     "name": "IShowSpeed",
+     "title": "GYATT OMG THAT CRAZY",
+     "views": 175105
+    },
+    {
+     "rank": 5,
+     "name": "ohnePixel",
+     "title": "horny ohne!",
+     "views": 168235
+    },
+    {
+     "rank": 6,
+     "name": "Dinah",
+     "title": "LMAO",
+     "views": 135500
+    },
+    {
+     "rank": 7,
+     "name": "IShowSpeed",
+     "title": "borrrr",
+     "views": 112098
+    },
+    {
+     "rank": 8,
+     "name": "Marlon",
+     "title": "gyattttttt",
+     "views": 108367
+    },
+    {
+     "rank": 9,
+     "name": "Joe_Bartolozzi",
+     "title": "Straight Cheeks",
+     "views": 105048
+    },
+    {
+     "rank": 10,
+     "name": "Tminnzy",
+     "title": "MANDY WALKED IN AND I FORGOT ABOUT THE MISSION \ud83d\ude33",
+     "views": 93845
+    },
+    {
+     "rank": 11,
+     "name": "jasontheween",
+     "title": "Reset",
+     "views": 87928
+    },
+    {
+     "rank": 12,
+     "name": "IShowSpeed",
+     "title": "THIS STREAM GOT WILD!!",
+     "views": 80628
+    },
+    {
+     "rank": 13,
+     "name": "Lacy",
+     "title": "LUCIA",
+     "views": 76550
+    },
+    {
+     "rank": 14,
+     "name": "IShowSpeed",
+     "title": "bahaha",
+     "views": 72556
+    },
+    {
+     "rank": 15,
+     "name": "ohnePixel",
+     "title": "Ohnepixel agrees with Hasan.",
+     "views": 71668
+    },
+    {
+     "rank": 16,
+     "name": "xQc",
+     "title": "xQc shares his thoughts on GTA VI after a 24hr stream",
+     "views": 68288
+    },
+    {
+     "rank": 17,
+     "name": "KaiCenat",
+     "title": "kai cenat argues with his new girlfriend",
+     "views": 67690
+    },
+    {
+     "rank": 18,
+     "name": "Zoil",
+     "title": "wtf",
+     "views": 63436
     }
    ]
   }
