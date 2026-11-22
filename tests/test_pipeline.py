@@ -2827,3 +2827,19 @@ if _rmrc is None:
 else:
     os.environ["MAC_RUNS_CLIPPER"] = _rmrc
 print("PACKAGE RESCUE OK")
+
+# ---------- the campaign finder looks again at campaigns that didn't fit (streamers switched to GTA 6 at launch) ----------
+_fsaved = (campaigns.list_campaigns, campaigns.evaluate)
+_fcards = [{"id": "old1", "name": "Streamer X clipping", "rate": 1.0, "kind": "CLIPPING"},
+           {"id": "new1", "name": "Streamer Y clipping", "rate": 1.0, "kind": "CLIPPING"}]
+campaigns.list_campaigns = lambda: _fcards
+_fcalls = []
+campaigns.evaluate = lambda c, game_re: _fcalls.append(c["id"]) or None
+_fst = {"campaigns": {}, "campaigns_seen": {"old1": (common.now_utc() - timedelta(days=4)).date().isoformat(),
+                                             "new1": common.now_utc().date().isoformat()},
+        "campaigns_recheck_v3": "x", "campaign_scan_count": 2}
+campaigns.scan(common.load_config(), _fst)
+assert _fcalls == ["old1"], _fcalls   # 4 days old: checked again; seen today: not
+assert _fst["campaigns_seen"]["old1"] == common.now_utc().date().isoformat()
+campaigns.list_campaigns, campaigns.evaluate = _fsaved
+print("CAMPAIGN RECHECK OK")

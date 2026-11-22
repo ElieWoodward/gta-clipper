@@ -414,8 +414,11 @@ def scan(cfg, state):
             seen.pop(k)
         state["campaigns_recheck_v3"] = now_utc().isoformat()
     deferred = 0
+    # A campaign that didn't fit is looked at again every 2 days while it's still listed: before GTA 6 came out,
+    # streamers weren't playing GTA, so their campaigns failed the "streams GTA" check and were never seen again.
+    recheck = (now_utc() - timedelta(days=int((cfg.get("campaigns") or {}).get("recheck_days", 2)))).date().isoformat()
     for c in sorted(cards, key=lambda c: -(c.get("rate") or 0)):   # best paying first
-        if c["id"] in seen or c["id"] in book:
+        if c["id"] in book or (c["id"] in seen and str(seen[c["id"]]) > recheck):
             continue
         try:
             m = evaluate(c, game_re)
