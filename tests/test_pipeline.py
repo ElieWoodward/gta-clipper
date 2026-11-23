@@ -1343,7 +1343,7 @@ print("MAC OK")
 from clipper import relay  # noqa: E402
 from datetime import datetime as _dt, timedelta as _td, timezone as _tz  # noqa: E402
 _now = _dt(2026, 11, 4, 18, 0, tzinfo=_tz.utc)
-_rcfg = yaml_cfg = __import__("yaml").safe_load((REPO / "config.yaml").read_text())
+_rcfg = yaml_cfg = __import__("yaml").safe_load((TMP / "config.yaml").read_text())   # the test copy (TikTok on)
 _rstate = {"clips": {
     "old": {"id": "old", "streamer": "xQc", "hook": "old one", "score": 7, "emailed_at": (_now - _td(days=1)).isoformat(),
             "posts": {"tiktok": {"url": "https://tiktok.com/@w/video/1"}}, "status": "posted"},
@@ -3127,3 +3127,31 @@ if _mj_old is None:
 else:
     _mj.write_text(_mj_old)
 print("RANKING FIXES OK")
+
+# ---------- bio text from a campaign Elie is done with: told once that it can come out ----------
+_bst = {"campaigns": {
+    "Lysium/Benji Ramos Clips": {"approved": True, "bio": ["twitch.tv/Lysium"], "bio_told": ["twitch.tv/Lysium"]},
+    "KreekCraft GTA 6 Clipping": {"approved": True, "ended": True, "bio_told": ["twitch.tv/shared"]},
+    "Other Live Campaign": {"approved": True, "bio_told": ["twitch.tv/shared"]}}}
+_bmsgs = []
+_saved_send, tg.send = tg.send, lambda *a, **k: _bmsgs.append(a[0])
+_bcfg3 = dict(common.load_config(), campaigns={"avoid": ["lysium"]})
+assert mac.bio_cleanup(_bst, _bcfg3) == ["twitch.tv/Lysium"]   # the shared text stays: another campaign needs it
+assert len(_bmsgs) == 1 and "twitch.tv/Lysium" in _bmsgs[0]
+assert mac.bio_cleanup(_bst, _bcfg3) == [] and len(_bmsgs) == 1   # once
+tg.send = _saved_send
+print("BIO CLEANUP OK")
+
+# ---------- TikTok fully paused: the daily TikTok post doesn't run ----------
+_tcfg = common.load_config()
+assert clipqueue.tiktok_paused(dict(_tcfg, posting=dict(_tcfg["posting"], tiktok_paused_until="2099-12-31")))
+_mrc_t = os.environ.get("MAC_RUNS_CLIPPER"); _bk_t = os.environ.get("BLOTATO_API_KEY")
+os.environ["MAC_RUNS_CLIPPER"] = "1"; os.environ["BLOTATO_API_KEY"] = "x"
+assert jobs.tiktok_daily_post(dict(_tcfg, posting=dict(_tcfg["posting"], tiktok_paused_until="2099-12-31")),
+                              {"clips": {}}) is None
+for _k, _v in (("MAC_RUNS_CLIPPER", _mrc_t), ("BLOTATO_API_KEY", _bk_t)):
+    if _v is None:
+        os.environ.pop(_k, None)
+    else:
+        os.environ[_k] = _v
+print("TIKTOK PAUSE OK")

@@ -1100,7 +1100,7 @@ def tiktok_daily_post(cfg, state, now=None):
     (it already proved itself), posts it through Blotato, and tells Elie. Campaign clips are left out (their drafts
     don't include TikTok). Returns the clip posted, or None."""
     at = clipqueue.tiktok_daily(cfg)
-    if not at:
+    if not at or clipqueue.tiktok_paused(cfg):   # TikTok paused: nothing goes there at all
         return None
     now = now or now_local(cfg)
     hh, mm = (int(x) for x in at.split(":"))
@@ -1489,7 +1489,9 @@ def _status_email_mode(cfg, state):
                    f"({launch.launch_date(cfg, state):%b %d}). Automatic posting: "
                    + ("ready." if lrec.get("blotato_ok") else "not set up yet (reminder email a week before)."))
     if clipqueue.tiktok_paused(cfg):
-        out.append(f"**TikTok is paused until {clipqueue.tiktok_paused(cfg)}.** Emails are YouTube only until then.")
+        until = clipqueue.tiktok_paused(cfg)
+        out.append("**TikTok is paused.** YouTube only." if until >= "2090" else
+                   f"**TikTok is paused until {until}.** YouTube only until then.")
     stalled = clipqueue.dead_on_tiktok(state)
     if stalled:
         out.append(f"TikTok stopped showing recent clips of {', '.join(sorted(stalled))} (last 3 under 10 views), "

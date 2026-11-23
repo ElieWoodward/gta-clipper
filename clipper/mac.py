@@ -358,6 +358,34 @@ def cr_overlay_text(r):
     return bool(OVERLAY_RE.search(r.get("text") or ""))
 
 
+def bio_cleanup(st, cfg=None):
+    """A campaign that put text in Elie's bio has ended or he's done with it (campaigns.avoid): tell him once that
+    the text can come out, unless a campaign he's still in needs the same text. Returns the texts told."""
+    from .common import load_config
+    cfg = cfg or load_config()
+    avoid = [re.sub(r"[^a-z0-9]", "", str(a).lower()) for a in (cfg.get("campaigns") or {}).get("avoid") or []]
+    book = st.get("campaigns") or {}
+
+    def done(name, r):
+        n = re.sub(r"[^a-z0-9]", "", (name or "").lower())
+        return bool(r.get("ended") or r.get("gone") or any(a and a in n for a in avoid))
+    still = {str(b).strip().lower() for n, r in book.items() if r.get("approved") and not done(n, r)
+             for b in (r.get("bio_told") or r.get("bio") or [])}
+    told = []
+    for name, r in book.items():
+        bio = [b for b in (r.get("bio_told") or r.get("bio") or []) if str(b).strip()]
+        if not bio or r.get("bio_removed_told") or not done(name, r):
+            continue
+        free = [b for b in bio if str(b).strip().lower() not in still]
+        r["bio_removed_told"] = now_utc().isoformat()
+        if free:
+            tg.send(f"🧹 You're done with {name}, so this can come out of your bio:\n\n" + "\n".join(free) +
+                    "\n\n1. Open TikTok and YouTube, go to your profile and tap Edit profile.\n2. Delete that text "
+                    "from the bio.\n3. Save.", silent=True)
+            told += free
+    return told
+
+
 def check(st):
     from . import contentrewards as cr, crflow
     entries = crflow.load()
@@ -382,6 +410,10 @@ def check(st):
         cards = (s.approved_drafts() if by_id else s.approved()) if busy else []
     msgs = compare(st, camps, drafts, bot_campaigns())
     rules_problems(st, camps)
+    try:
+        bio_cleanup(st)
+    except Exception as e:
+        log.info("bio cleanup check: %s", e)
     waiting = any(e.get("status") == "submitted" for e in entries)
     if by_id:
         newly, odd = crflow.match_drafts(entries, cards)
