@@ -135,7 +135,8 @@ def parse_cr_card(text, href):
     cid = re.search(r"/c/campaigns/([0-9a-f-]{20,})", href or "")
     return {"id": "cr__" + (cid.group(1) if cid else re.sub(r"\W+", "", name)[:40]), "source": "cr",
             "url": CR_BASE + "/c/campaigns/" + (cid.group(1) if cid else ""), "name": name[:120], "agency": agency,
-            "rate": float(rate.group(2) or rate.group(1)) if rate else None, "pool": pool.group(1) if pool else None,
+            "rate": float(rate.group(2) or rate.group(1)) if rate else None,
+            "pool": pool.group(1) if pool else ("yes" if re.search(r"\bpool\b", name, re.I) else None),
             "left": None, "budget": (used.group(2) if used else pool.group(1) if pool else None),
             "used": used.group(1) if used else None, "platforms": "", "kind": kind, "text": flat[:400],
             "streamer_guess": cr_streamer_guesses(name)}
@@ -169,7 +170,8 @@ def cr_list_campaigns():
     for href, inner in re.findall(r'<a[^>]+href="((?:https://contentrewards\.com)?/c/campaigns/[0-9a-f-]{20,})[^"]*"[^>]*>'
                                   r'(.*?)</a>', html, flags=re.S | re.I):
         text = re.sub(r"<[^>]+>", "\n", inner)
-        text = re.sub(r"&amp;", "&", re.sub(r"&#x27;|&#39;", "'", text))
+        import html as _html
+        text = _html.unescape(text)
         c = parse_cr_card(text, href)
         if c["id"] not in seen and c["name"]:
             seen.add(c["id"])
@@ -426,6 +428,16 @@ def queue_join(m):
     return f"tg:{token}"
 
 
+BRAND_RE = re.compile(r"\b(1win|puffco|fanvue|casino|bet(ting)?|gambl\w*|vape|nicotine|crypto|stake|"
+                      r"luxdrop|18\+|regulated)\b|\s(x|×)\s+[A-Z0-9]", re.I)
+
+
+def brand_deal(m):
+    """A brand collab ("BenDaDonnn x Puffco", "GATTOUZ × GTA VI × 1WIN", gambling, vapes): Elie decides."""
+    return bool(BRAND_RE.search(m.get("name") or "") or
+                re.search(r"\b(1win|casino|gambl\w*|vape|nicotine|18\+|regulated)\b", (m.get("brief") or "")[:1500], re.I))
+
+
 def notify(state, m):
     from . import mail
     if auto_join_on():   # the Mac joins certain-GTA campaigns by itself; anything less certain isn't sent at all
@@ -435,7 +447,8 @@ def notify(state, m):
             return "skipped:avoided"
         if sure_gta(m) and paused(cfg) and not popular(cfg, m.get("followers")):
             return "skipped:paused"   # looked at again once the pause ends (see scan)
-        if sure_gta(m) and not m.get("pool") and m.get("kind") in ("CLIPPING", "", None):
+        if sure_gta(m) and m.get("twitch_login") and not m.get("pool") and not brand_deal(m) and \
+                m.get("kind") in ("CLIPPING", "", None):
             return queue_join(m)
         if not (m.get("gta6") or sure_gta(m)):
             return "skipped:not-sure-gta"

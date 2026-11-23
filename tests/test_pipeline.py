@@ -2219,7 +2219,8 @@ _mrc9 = os.environ.get("MAC_RUNS_CLIPPER")
 os.environ["MAC_RUNS_CLIPPER"] = "1"
 mac.JOINS.unlink(missing_ok=True)
 _ref = _cmp9.notify({}, {"name": "GTA RP Highlights", "brief": "", "join_url": "https://clippingalpha.com/go/9",
-                          "url": "u", "why": "mentions GTA", "followers": 5000000})
+                          "url": "u", "why": "GTA in 9 of their last 10 streams", "twitch_login": "somegtastreamer",
+                          "followers": 5000000})
 if _cmp9.paused(common.load_config()):   # before GTA 6 launch a small streamer's campaign waits; Lysium never joins
     assert _cmp9.notify({}, {"name": "GTA RP Small", "brief": "", "url": "u", "why": "mentions GTA",
                              "followers": 20000}) == "skipped:paused"
@@ -3006,7 +3007,32 @@ campaigns.queue_join = lambda m: "tg:joined"
 _pm = dict(_c1, brief="Clip content from Lacy's GTA 6 marathon!", why="GTA in 10 of their last 10 streams",
            twitch_login="lacy", gta6=True, join_url=_c1["url"], followers=2_000_000)
 assert campaigns.notify({}, _pm) == "tg:x" and _jl and _jl[0].startswith("Campaign:"), _jl   # pool: join link
-_dm = dict(_pm, pool=None, rate=2.0, name="Dasgasd3m x RUCKUS | GTA 6", twitch_login="dasgasd3m")
+_dm = dict(_pm, pool=None, rate=1.0, name="DiegoLoveless GTA 6 Clipping", twitch_login="diegoloveless")
 assert campaigns.notify({}, _dm) == "tg:joined"   # a plain CPM streamer campaign it can clip: joined by itself
 campaigns.auto_join_on, mail.send, campaigns.queue_join = _saved
 print("CR SOURCE OK")
+
+# ---------- the real GTA VI page dry run (Nov 22): only streamer campaigns the bot can clip are joined by itself ----------
+_dry = [  # name, streamer found, why, expected
+    ("$12,500 LACY GTA VI Marathon Pool Campaign", "lacy", "GTA in 6 of their last 10 streams", "link"),
+    ("Kai Cenat - $10,000 GTA 6 Pool Campaign", "kaicenat", "GTA in 7 of their last 10 streams", "link"),
+    ("BenDaDonnn x Puffco GTA 6", "bendadonnn", "GTA in 3 of their last 10 streams", "link"),
+    ("GATTOUZ × GTA VI × 1WIN", None, "mentions GTA", "link"),
+    ("GTA VI Lucia vs Fanvue AI Lucia", None, "mentions GTA", "link"),
+    ("$5,000 Dylan Page GTA VI Marathon Campaign", None, "mentions GTA", "link"),
+    ("Dasgasd3m x RUCKUS | GTA 6", None, "mentions GTA", "link"),
+    ("BOBBY VAN RIPER GTA VI Clipping", "bobby_vanriper", "GTA in 10 of their last 10 streams", "join"),
+    ("DiegoLoveless GTA 6 Clipping", "diegoloveless", "GTA in 4 of their last 10 streams", "join"),
+    ("Boeshi GTA 6 Clipping", "darealboeshi", "GTA in 5 of their last 10 streams", "join"),
+]
+_saved = (campaigns.auto_join_on, mail.send, campaigns.queue_join)
+campaigns.auto_join_on = lambda cfg=None: True
+mail.send = lambda subj, body, **k: "tg:link"
+campaigns.queue_join = lambda m: "tg:joined"
+for _n, _login, _why, _want in _dry:
+    _card = campaigns.parse_cr_card(_n, "/c/campaigns/00000000-0000-0000-0000-000000000001")
+    _m = dict(_card, brief=_n, why=_why, twitch_login=_login, gta6=True, join_url=_card["url"], followers=500000)
+    _got = campaigns.notify({}, _m)
+    assert _got == ("tg:joined" if _want == "join" else "tg:link"), (_n, _got)
+campaigns.auto_join_on, mail.send, campaigns.queue_join = _saved
+print("CR DRY RUN OK")
