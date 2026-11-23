@@ -482,7 +482,7 @@ def scan(cfg, state):
     cards = list_campaigns()
     if (cfg.get("campaigns") or {}).get("contentrewards_source", True):
         from .mac import same_campaign
-        known = [c["name"] for c in cards] + [r.get("name") for r in book.values()]
+        known = [r.get("name") for r in book.values()]
         cr_all = cr_list_campaigns()
         cr_extra = [c for c in cr_all if not any(same_campaign(c["name"], n) for n in known if n)]
     else:
@@ -692,10 +692,20 @@ def campaign_score(cfg, state, rec):
     return round(rate * budget * views * active, 4)
 
 
+def cr_ended(rec):
+    """The Mac's Content Rewards check (data/mac.json) says this campaign has ended."""
+    try:
+        from .mac import same_campaign
+        book = json.loads((DATA / "mac.json").read_text()).get("campaigns") or {}
+    except Exception:
+        return False
+    return any(r.get("ended") and same_campaign(n, rec.get("name")) for n, r in book.items())
+
+
 def eligible(cfg, rec):
     """A campaign the bot can work for: a Twitch streamer it clips, paid per view, not a brand deal or a pool."""
     return (rec.get("status") in ACTIVE + ("waiting",) and rec.get("auto_clip") and rec.get("twitch_login")
-            and not is_logo(rec) and not avoided(cfg, rec.get("twitch_login"))
+            and not is_logo(rec) and not avoided(cfg, rec.get("twitch_login")) and not cr_ended(rec)
             # a prize pool or brand deal is Elie's call: clipped once he has joined it
             and (rec.get("status") == "joined" or not (rec.get("pool") or brand_deal(rec))))
 
@@ -711,6 +721,11 @@ def select_active(cfg, state):
     cur = dict(state.get("campaigns_active") or {})
     pool = {i: r for i, r in book.items() if eligible(cfg, r)}
     score = {i: campaign_score(cfg, state, r) for i, r in pool.items()}
+    best = {}   # the same campaign from both directories, or two campaigns for one streamer: one spot, the best
+    for i in sorted(pool, key=lambda i: (pool[i].get("status") != "joined", -score[i])):
+        best.setdefault(pool[i]["twitch_login"].lower(), i)
+    pool = {i: pool[i] for i in best.values()}
+    score = {i: score[i] for i in pool}
     keep = sorted((i for i in cur if i in pool), key=lambda i: -score[i])[:n]
     out = {i: cur[i] for i in keep}
     now = now_utc()

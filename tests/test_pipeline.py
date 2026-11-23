@@ -3112,3 +3112,18 @@ if _mj_old is None:
 else:
     _mj.write_text(_mj_old)
 print("TOP4 SELFCHECK OK")
+
+# ---------- real ranking run (Nov 22): ended KreekCraft out, one spot per streamer ----------
+_mj_old = _mj.read_text() if _mj.exists() else None
+_mj.write_text(json.dumps({"campaigns": {"KreekCraft GTA 6 Clipping": {"approved": True, "ended": True}}}))
+_e2 = {"clips": {}, "campaigns": {
+    "kc": _rc("kc", "kreekcraft", 1.0, "joined", name="KreekCraft GTA 6 Clipping"),
+    "aj1": _rc("aj1", "asianjeff", 1.0, why="linked on the campaign page", name="AsianJeff Clipping Campaign"),
+    "aj2": _rc("aj2", "asianjeff", 1.0, "joined", why="linked on the campaign page", name="$2,500 AsianJeff Clipping Campaign")}}
+_t = campaigns.select_active(_rcfg, _e2)
+assert "kc" not in _t and list(_t) == ["aj2"], _t   # ended is out; the joined copy of AsianJeff's takes the one spot
+if _mj_old is None:
+    _mj.unlink()
+else:
+    _mj.write_text(_mj_old)
+print("RANKING FIXES OK")
