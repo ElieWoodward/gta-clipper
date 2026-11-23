@@ -74,8 +74,13 @@ def for_stream(cfg, streamer):
 
 
 def campaign_allowed(cfg, state):
-    """Campaign clips earn money, so a full queue doesn't stop them; only the Claude budget does."""
-    return bool(TEST_SOURCE) or highlights.budget_left(cfg, state) > 0
+    """Campaign clips earn money, so a full queue doesn't stop them, until campaigns.max_queued campaign clips are
+    already waiting (more than that only expire unposted: Claude money for nothing). And the Claude budget."""
+    if TEST_SOURCE:
+        return True
+    cap = int((cfg.get("campaigns") or {}).get("max_queued", 8))
+    waiting = sum(1 for c in _queued(state) if c.get("campaign"))
+    return waiting < cap and highlights.budget_left(cfg, state) > 0
 
 
 def open_room(cfg, state):
@@ -279,7 +284,8 @@ def _make_from_picks(cfg, state, vod, picks, words):
     try:
         bar = cfg["clip"]["min_score"]
         for p in picks:
-            if clipqueue.email_mode(cfg) and clipqueue.room(cfg, state) <= 0 and not is_campaign(vod.get("streamer")):
+            if clipqueue.email_mode(cfg) and clipqueue.room(cfg, state) <= 0 and \
+                    (not is_campaign(vod.get("streamer")) or not campaign_allowed(cfg, state)):
                 break
             if cfg["review"]["mode"] == "auto" and int(p["score"]) < bar:
                 continue
@@ -1232,6 +1238,12 @@ def campaign_check(cfg, state):
               (norm(x["campaign"]) in norm(name) or norm(name) in norm(x["campaign"])) and
               not avoided(cfg, x.get("channel") or x.get("name"))]
         problems = []
+        top = state.get("campaigns_active")
+        paused = top is not None and any(
+            r.get("id") not in top and (norm(r.get("name")) in norm(name) or norm(name) in norm(r.get("name")))
+            for r in (state.get("campaigns") or {}).values() if r.get("name"))
+        if not ss and paused:
+            continue   # outside the top campaigns.max_active on purpose: it waits for a spot
         if not ss:
             problems.append("the bot isn't clipping anyone for it")
         for x in ss:

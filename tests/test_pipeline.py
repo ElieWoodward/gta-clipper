@@ -3048,3 +3048,67 @@ campaigns.cr_detail, campaigns.streams_gta = _saved
 assert _ajm and _ajm["twitch_login"] == "asianjeff" and _ajm["auto_clip"] and campaigns.sure_gta(_ajm), _ajm
 assert not campaigns.brand_deal(_ajm) and not _ajm.get("pool")
 print("CR PAGE LINK OK")
+
+# ---------- only the best campaigns.max_active (4) campaigns get clipped, joined or not; no flip-flopping ----------
+from datetime import timedelta as _td3  # noqa: E402
+_rcfg = common.load_config()
+_rcfg["campaigns"] = dict(_rcfg.get("campaigns") or {}, max_active=4, swap_margin=1.3, grace_days=3, avoid=[])
+def _rc(i, login, rate, status="found", why="GTA in 10 of their last 10 streams", **kw):  # noqa: E302
+    return dict({"id": i, "name": f"{login} GTA 6 Clipping", "twitch_login": login, "rate": rate, "status": status,
+                 "auto_clip": True, "why": why, "kind": "CLIPPING", "budget": "5K", "used": "0"}, **kw)
+_rst = {"clips": {}, "campaigns": {
+    "skii": _rc("skii", "skiimasktimmy", 1.0, "joined"),
+    "lauren": _rc("lauren", "laurenhamdenn", 1.5), "bobby": _rc("bobby", "bobby_vanriper", 1.5),
+    "aj": _rc("aj", "asianjeff", 1.0, why="linked on the campaign page"),
+    "boeshi": _rc("boeshi", "darealboeshi", 1.0, why="GTA in 5 of their last 10 streams"),
+    "diego": _rc("diego", "diegoloveless", 1.0, why="GTA in 4 of their last 10 streams"),
+    "lacy": _rc("lacy", "lacy", None, pool="yes"),                       # a pool Elie hasn't joined: not clipped
+    "kc": _rc("kc", "kaicenat", None, "joined", pool="yes")}}            # a pool he joined: clipped
+_top = campaigns.select_active(_rcfg, _rst)
+assert len(_top) == 4 and "lacy" not in _top and {"lauren", "bobby"} <= set(_top), _top
+assert {s["name"] for s in campaigns.joined_streamers(_rst)} == {_rst["campaigns"][i]["twitch_login"] for i in _top}
+# a slightly better newcomer doesn't bump a settled one; a much better one does, once the grace days are over
+_rst["campaigns"]["new"] = _rc("new", "newguy", 0.7)
+assert "new" not in campaigns.select_active(_rcfg, _rst)   # everyone still inside their 3 days
+for _k in _rst["campaigns_active"]:
+    _rst["campaigns_active"][_k] = (common.now_utc() - _td3(days=4)).isoformat()
+assert "new" not in campaigns.select_active(_rcfg, _rst)   # 0.7 isn't 30% better than the weakest (AsianJeff, 0.6)
+_rst["campaigns"]["big"] = _rc("big", "bigguy", 3.0)
+_top2 = campaigns.select_active(_rcfg, _rst)
+assert "big" in _top2 and len(_top2) == 4, _top2
+# our clips of a streamer doing badly lower its score
+_rst["clips"] = {f"v{i}": {"streamer": "bigguy" if i < 4 else "x", "posts": {"youtube": {
+    "views": 100 if i < 4 else 1000, "posted_at": common.now_utc().isoformat()}}} for i in range(12)}
+assert campaigns.campaign_score(_rcfg, _rst, _rst["campaigns"]["big"]) < 3.0
+# the scan's notify: a campaign outside the top waits instead of being joined
+_saved = (campaigns.auto_join_on, campaigns.queue_join)
+campaigns.auto_join_on = lambda cfg=None: True
+campaigns.queue_join = lambda m: "tg:joined"
+assert campaigns.notify(_rst, dict(_rst["campaigns"]["new"], name="newguy GTA 6 Clipping", brief="", gta6=True,
+                                   followers=50000)) == "waiting:rank"
+campaigns.auto_join_on, campaigns.queue_join = _saved
+# a full queue pauses campaign clipping once campaigns.max_queued campaign clips are waiting
+_qst = {"clips": {f"q{i}": {"id": f"q{i}", "status": "approved", "campaign": "C", "score": 7} for i in range(8)}}
+_qcfg = dict(_rcfg, campaigns=dict(_rcfg["campaigns"], max_queued=8))
+_saved_ts, jobs.TEST_SOURCE = jobs.TEST_SOURCE, ""
+assert not jobs.campaign_allowed(_qcfg, _qst)
+_qst["clips"].pop("q0")
+_saved_bl, highlights.budget_left = highlights.budget_left, lambda cfg, st: 1.0
+assert jobs.campaign_allowed(_qcfg, _qst)
+highlights.budget_left, jobs.TEST_SOURCE = _saved_bl, _saved_ts
+print("CAMPAIGN TOP4 OK")
+
+# ---------- the self-check doesn't nag about a joined campaign that's waiting outside the top 4 ----------
+_mj_old = _mj.read_text() if _mj.exists() else None
+_mj.write_text(json.dumps({"campaigns": {"Boeshi GTA 6 Clipping": {"approved": True}}}))
+_pst2 = {"clips": {}, "campaigns": {"boeshi": {"id": "boeshi", "name": "Boeshi GTA 6 Clipping", "status": "joined"}},
+         "campaigns_active": {"other": "x"}}
+_saved_prob, tg.problem = tg.problem, lambda *a: None
+_saved_ss, jobs.save_state = jobs.save_state, lambda s: None
+assert jobs.campaign_check(dict(common.load_config(), streamers=[]), _pst2) == []
+tg.problem, jobs.save_state = _saved_prob, _saved_ss
+if _mj_old is None:
+    _mj.unlink()
+else:
+    _mj.write_text(_mj_old)
+print("TOP4 SELFCHECK OK")

@@ -455,6 +455,8 @@ def notify(state, m):
             return "skipped:paused"   # looked at again once the pause ends (see scan)
         if sure_gta(m) and m.get("twitch_login") and not m.get("pool") and not brand_deal(m) and \
                 m.get("kind") in ("CLIPPING", "", None):
+            if m.get("id") and m["id"] not in (state.get("campaigns_active") or {m["id"]: 1}):
+                return "waiting:rank"   # joined once it ranks in the top campaigns.max_active (see scan)
             return queue_join(m)
         if not (m.get("gta6") or sure_gta(m)):
             return "skipped:not-sure-gta"
@@ -587,6 +589,14 @@ def scan(cfg, state):
             if (r.get("status") == "noted" and r.get("kind") in ("CLIPPING", "") and GTA6_RE.search(text)
                     and not re.search(r"\b(trailer|music|song|edits?)\b", text[:500], re.I)):
                 r.update(gta6=True, status="found")
+    # Pick the top campaigns (joined or not) before anything is joined; a waiting one that made it is joined now.
+    top = select_active(cfg, state)
+    if auto_join_on(cfg) and not dry:
+        for i in top:
+            r = book.get(i) or {}
+            if r.get("status") == "waiting":
+                r["email_message_id"] = queue_join(r)
+                r["status"] = "notified"
     # Email what fits, best paying first: streamer campaigns the bot clips, and from launch day GTA 6 campaigns too.
     def emailable(r):
         return r.get("status") == "found" and (r.get("auto_clip") or (launch_on and r.get("gta6")))
@@ -599,8 +609,8 @@ def scan(cfg, state):
             except Exception as e:   # Gmail down: it stays "found" and goes out on a later scan
                 log.warning("couldn't email campaign %s: %s", rec.get("name"), e)
                 break
-            rec["status"] = "notified"
-            sent += 1
+            rec["status"] = "waiting" if rec["email_message_id"] == "waiting:rank" else "notified"
+            sent += rec["status"] == "notified"
     if deferred:
         print(f"::notice::campaign scan: {deferred} campaign(s) named after people left to check on later scans",
               flush=True)
@@ -647,12 +657,89 @@ def cr_still_running(rec):
                for n, r in book.items())
 
 
+# ------------------------------------------------------------------ which campaigns get clipped (top N by money)
+def _money(x):
+    """"$6,825" / "2.5K" / "6825" -> 6825.0 (None if unknown)."""
+    m = re.search(r"([\d.,]+)\s*(K)?", str(x or "").replace("$", ""), re.I)
+    if not m:
+        return None
+    try:
+        return float(m.group(1).replace(",", "")) * (1000 if m.group(2) else 1)
+    except ValueError:
+        return None
+
+
+def campaign_score(cfg, state, rec):
+    """Expected money: pay per 1K views x budget left x how our clips of this streamer do x how often they
+    stream GTA. Neutral (1.0) where there's no data yet."""
+    rate = rec.get("rate") or 0.5
+    total, used, left = _money(rec.get("budget")), _money(rec.get("used")), _money(rec.get("left"))
+    left = left if left is not None else (total - used if total is not None and used is not None else None)
+    budget = 0.8 if left is None else max(0.15, min(1.0, left / 1000))
+    login = (rec.get("twitch_login") or "").lower()
+    since = (now_utc() - timedelta(days=21)).isoformat()
+    def med(vals):
+        vals = sorted(vals)
+        return vals[len(vals) // 2] if vals else None
+    yt = [(c, (c.get("posts") or {}).get("youtube") or {}) for c in (state.get("clips") or {}).values()]
+    yt = [(c, p) for c, p in yt if p.get("views") is not None and (p.get("posted_at") or "") >= since]
+    mine = med([p["views"] for c, p in yt if (c.get("streamer") or "").lower() == login])
+    allv = med([p["views"] for c, p in yt])
+    n_mine = sum(1 for c, p in yt if (c.get("streamer") or "").lower() == login)
+    views = max(0.3, min(3.0, mine / allv)) if mine is not None and allv and n_mine >= 3 else 1.0
+    hit = re.search(r"GTA in (\d+) of their last (\d+)", rec.get("why") or "")
+    active = max(0.3, int(hit.group(1)) / int(hit.group(2))) if hit else 0.6
+    return round(rate * budget * views * active, 4)
+
+
+def eligible(cfg, rec):
+    """A campaign the bot can work for: a Twitch streamer it clips, paid per view, not a brand deal or a pool."""
+    return (rec.get("status") in ACTIVE + ("waiting",) and rec.get("auto_clip") and rec.get("twitch_login")
+            and not is_logo(rec) and not avoided(cfg, rec.get("twitch_login"))
+            # a prize pool or brand deal is Elie's call: clipped once he has joined it
+            and (rec.get("status") == "joined" or not (rec.get("pool") or brand_deal(rec))))
+
+
+def select_active(cfg, state):
+    """The campaigns that get clipped: the best campaigns.max_active (4) by expected money, joined or not.
+    One already in keeps its place for campaigns.grace_days (3) after it started, and after that is only replaced by
+    one that scores campaigns.swap_margin (1.3x) better, so they don't flip back and forth. Saved in
+    state["campaigns_active"] {id: since}; returns it."""
+    c = cfg.get("campaigns") or {}
+    n, margin, grace = int(c.get("max_active", 4)), float(c.get("swap_margin", 1.3)), int(c.get("grace_days", 3))
+    book = state.get("campaigns") or {}
+    cur = dict(state.get("campaigns_active") or {})
+    pool = {i: r for i, r in book.items() if eligible(cfg, r)}
+    score = {i: campaign_score(cfg, state, r) for i, r in pool.items()}
+    keep = sorted((i for i in cur if i in pool), key=lambda i: -score[i])[:n]
+    out = {i: cur[i] for i in keep}
+    now = now_utc()
+    for i in sorted((i for i in pool if i not in out), key=lambda i: -score[i]):
+        if len(out) < n:
+            out[i] = now.isoformat()
+            continue
+        settled = [k for k in out if (now - datetime.fromisoformat(out[k])).days >= grace]
+        weakest = min(settled, key=lambda k: score[k], default=None)
+        if weakest and score[i] > margin * score[weakest]:
+            print(f"::notice::campaign swap: {pool[i]['name']} ({score[i]}) replaces {pool[weakest]['name']} "
+                  f"({score[weakest]})", flush=True)
+            out.pop(weakest)
+            out[i] = now.isoformat()
+    state["campaigns_active"] = out
+    for i, r in pool.items():
+        r["score"] = score[i]
+    return out
+
+
 def joined_streamers(state):
     """Streamer entries (config format) for campaigns that pay for a GTA streamer's clips. They're clipped as soon as
     they're found, so clips are ready by the time you join; joined ones go first."""
     out = []
     recs = sorted((state.get("campaigns") or {}).values(), key=lambda r: r.get("status") != "joined")
+    top = state.get("campaigns_active")   # only the best few get clipped (select_active); None: not ranked yet
     for rec in recs:
+        if top is not None and rec.get("id") not in top:
+            continue
         if rec.get("status") in ACTIVE and rec.get("auto_clip") and rec.get("twitch_login") and not is_logo(rec):
             out.append({"name": rec["twitch_login"], "platform": "twitch", "channel": rec["twitch_login"],
                         "enabled": True, "campaign": clean_name(rec["name"]), "campaign_id": rec["id"],

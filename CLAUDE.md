@@ -82,6 +82,11 @@ expected, not against what the live site and the real data show. Rules for this 
     `cr_streamer_guesses`; a guessed channel needs `CR_MIN_FOLLOWERS`). On the Mac, sure-GTA CPM campaigns are
     joined by themselves; prize pools, logo/music and anything less certain reach Elie as a join link (Telegram).
     Campaigns that didn't fit are re-checked every `campaigns.recheck_days`.
+    Only the best `campaigns.max_active` (4) campaigns are clipped (`select_active`, `campaign_score`: rate x budget
+    left x our views for that streamer x GTA streaming share), joined or not; `state["campaigns_active"]` {id: since}.
+    New ones join only when they make the top 4 (status "waiting" until then); a settled one is replaced only by a
+    campaign scoring `swap_margin` (1.3x) better after `grace_days`. Campaign clipping pauses once
+    `campaigns.max_queued` campaign clips wait to post.
   - `batch.py`: full-stream judging through the half-price Message Batches API. `process` hands off and exits;
     a later hourly `process` run finishes it (`jobs.finish_batches`); falls back to a normal call after 6h.
   - `timing.py`: posting-time experiment (candidate times, views 3h after posting, explore/exploit plan per day).

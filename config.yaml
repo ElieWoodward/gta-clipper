@@ -258,6 +258,12 @@ campaigns:
       notes: ["Strong hook in the first 1-2 seconds; no misleading titles or fabricated context."]
       needs_overlay: true
       submit: true                  # false pauses this campaign's submissions (clips still post as normal)
+  max_active: 4                   # campaigns clipped at once: the best 4 by expected money (pay rate x budget left x
+                                  # how our clips of that streamer do x how often they stream GTA), joined or not.
+                                  # Others wait (still joined if they were) and move up when a spot opens.
+  swap_margin: 1.3                # a waiting campaign replaces one in the top 4 only if it scores 30% better
+  grace_days: 3                   # a campaign that just got a spot keeps it this long before it can be replaced
+  max_queued: 8                   # campaign clips waiting to post before campaign clipping pauses too
   overlays: {}                    # The Mac downloads each campaign's overlay/logo by itself (overlays/ folder) and
                                   # puts it on that streamer's clips. Only list one here to override it, e.g.
                                   #   kreekcraft: {file: overlays/kreekcraft.png, width: 1.0, pos: center}
