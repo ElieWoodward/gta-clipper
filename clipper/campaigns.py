@@ -300,7 +300,7 @@ def quick_gta_login(card, game_re):
 
 def evaluate(card, game_re):
     """Decide whether a campaign fits. Returns a match dict or None."""
-    gta_text = bool(GTA_RE.search(card["name"]))
+    gta_text = bool(GTA_RE.search(card["name"])) or card.get("source") == "cr"   # Content Rewards' GTA VI page
     streamer = bool(STREAMER_RE.search(card["name"])) and card["kind"] in ("CLIPPING", "")
     named_after = None
     if not (gta_text or streamer):
@@ -327,6 +327,10 @@ def evaluate(card, game_re):
         if ok:
             login = cand
             break
+    if not login and card.get("source") == "cr" and d["twitch"]:
+        # the campaign page itself links this channel and the campaign is on the GTA VI page: that's the
+        # streamer, even if their last few streams weren't GTA (only the GTA parts of a stream get clipped)
+        login, why = d["twitch"][0], "linked on the campaign page"
     if not (gta_text or login):
         return None
     m = dict(card, **d, twitch_login=login, why=why if login else "mentions GTA")
@@ -366,6 +370,8 @@ SURE_GTA_RE = re.compile(r"\bgta ?(v|5|6|vi|rp|online)?\b|grand theft auto|nopix
 def sure_gta(m):
     """True only when a campaign is certainly GTA content (used to join by itself)."""
     if SURE_GTA_RE.search(m.get("name") or "") or SURE_GTA_RE.search(m.get("brief") or ""):
+        return True
+    if m.get("source") == "cr" and m.get("twitch_login") and m.get("why") == "linked on the campaign page":
         return True
     hit = re.search(r"GTA in (\d+) of their last (\d+)", m.get("why") or "")
     return bool(m.get("twitch_login") and hit and int(hit.group(1)) >= max(3, (int(hit.group(2)) + 1) // 2))

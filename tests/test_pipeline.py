@@ -3036,3 +3036,15 @@ for _n, _login, _why, _want in _dry:
     assert _got == ("tg:joined" if _want == "join" else "tg:link"), (_n, _got)
 campaigns.auto_join_on, mail.send, campaigns.queue_join = _saved
 print("CR DRY RUN OK")
+
+# ---------- AsianJeff (real page, Nov 22): the campaign page links twitch.tv/asianjeff, the name doesn't say GTA ----------
+_aj = campaigns.parse_cr_card("Reach Verified\n$2,500 AsianJeff Clipping Campaign\n$463/$2.5K\n$1/1K", "/c/campaigns/bbd3a963-9a23-457c-bc15-6697971d9902")
+_saved = (campaigns.cr_detail, campaigns.streams_gta)
+campaigns.cr_detail = lambda card: {"brief": card["name"], "join_url": card["url"], "kick": [],
+                                    "twitch": ["asianjeff"]}
+campaigns.streams_gta = lambda login, game_re=None: (False, "GTA in 0 of their last 10 streams")
+_ajm = campaigns.evaluate(_aj, "gta")
+campaigns.cr_detail, campaigns.streams_gta = _saved
+assert _ajm and _ajm["twitch_login"] == "asianjeff" and _ajm["auto_clip"] and campaigns.sure_gta(_ajm), _ajm
+assert not campaigns.brand_deal(_ajm) and not _ajm.get("pool")
+print("CR PAGE LINK OK")
