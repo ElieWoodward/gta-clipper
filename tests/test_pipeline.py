@@ -2970,3 +2970,43 @@ if _mj_old is None:
 else:
     _mj.write_text(_mj_old)
 print("ENDED CAMPAIGN OK")
+
+# ---------- Content Rewards' own GTA VI page as a second campaign source (names from the real page, Nov 22) ----------
+_c1 = campaigns.parse_cr_card("Reach Verified\n$12,500 LACY GTA VI Marathon Pool Campaign\n$12.5K pool",
+                              "/c/campaigns/a5c63fad-cd53-4b81-9305-4a2d1696872a")
+assert _c1["id"] == "cr__a5c63fad-cd53-4b81-9305-4a2d1696872a" and _c1["pool"] == "12.5K" and _c1["rate"] is None, _c1
+assert "lacy" in _c1["streamer_guess"] and _c1["kind"] == "CLIPPING", _c1
+_c2 = campaigns.parse_cr_card("Clipped & Shipped Kai Cenat - $10,000 GTA 6 Pool Campaign $10K pool",
+                              "https://contentrewards.com/c/campaigns/1d2bcb00-c904-415f-aa82-f95b96baad86")
+assert _c2["streamer_guess"][0] == "kaicenat" or "kaicenat" in _c2["streamer_guess"], _c2
+for _txt, _who in [("Ruckus\nDasgasd3m x RUCKUS | GTA 6\n$94/$1K\n$2/1K", "dasgasd3m"),
+                   ("Clipping Nation\nBOBBY VAN RIPER GTA VI Clipping\n$156/$1K\n$1.50/1K", "bobbyvanriper"),
+                   ("NewsDaddy\n$5,000 Dylan Page GTA VI Marathon Campaign\n$83/$5K\n$1.20/1K", "dylanpage"),
+                   ("Lysium\nLysium/Benji Ramos Clips\n$577/$1K\n$1.50/1K", "lysium")]:
+    _cc = campaigns.parse_cr_card(_txt, "/c/campaigns/00000000-0000-0000-0000-000000000000")
+    assert _who in _cc["streamer_guess"], (_txt, _cc["streamer_guess"])
+_c3 = campaigns.parse_cr_card("Reach Verified\nDylan Page GTA VI Marathon Campaign\n$83/$5K\n$0.50–$2/1K", "/c/campaigns/x")
+assert _c3["rate"] == 2.0 and _c3["used"] == "83" and _c3["budget"] == "5K", _c3
+assert campaigns.parse_cr_card("ClipUp Official\nVerified GTA VI Clipup Logo Campaign\n$267/$15K\n$0.30/1K", "/c/campaigns/y")["kind"] == "LOGO"
+assert campaigns.parse_cr_card("Music Promo Clippers\nGTA VI \"Things I Could've Said\" Music Campaign\n$0/$1K", "/c/campaigns/z")["kind"] == "MUSIC"
+_saved_get = campaigns._get
+campaigns._get = lambda url: ('<main><a href="/c/campaigns/a5c63fad-cd53-4b81-9305-4a2d1696872a?group=1"><div>Reach Verified</div>'
+                              '<div>$12,500 LACY GTA VI Marathon Pool Campaign</div><span>$12.5K pool</span></a>'
+                              '<a href="/c/campaigns/051002dd-5c46-43d0-a446-43f2957ba3a9"><p>Ruckus</p><p>Dasgasd3m x RUCKUS | GTA 6</p>'
+                              '<p>$94/$1K</p><p>$2/1K</p></a><a href="/c/discover">Discover</a></main>')
+_crl = campaigns.cr_list_campaigns()
+campaigns._get = _saved_get
+assert [c["streamer_guess"][0] for c in _crl] == ["lacy", "dasgasd3m"], _crl
+# on the Mac, a GTA campaign it won't join by itself (a prize pool) reaches Elie as a join link
+_jl = []
+_saved = (campaigns.auto_join_on, mail.send, campaigns.queue_join)
+campaigns.auto_join_on = lambda cfg=None: True
+mail.send = lambda subj, body, **k: _jl.append(subj) or "tg:x"
+campaigns.queue_join = lambda m: "tg:joined"
+_pm = dict(_c1, brief="Clip content from Lacy's GTA 6 marathon!", why="GTA in 10 of their last 10 streams",
+           twitch_login="lacy", gta6=True, join_url=_c1["url"], followers=2_000_000)
+assert campaigns.notify({}, _pm) == "tg:x" and _jl and _jl[0].startswith("Campaign:"), _jl   # pool: join link
+_dm = dict(_pm, pool=None, rate=2.0, name="Dasgasd3m x RUCKUS | GTA 6", twitch_login="dasgasd3m")
+assert campaigns.notify({}, _dm) == "tg:joined"   # a plain CPM streamer campaign it can clip: joined by itself
+campaigns.auto_join_on, mail.send, campaigns.queue_join = _saved
+print("CR SOURCE OK")

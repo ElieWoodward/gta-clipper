@@ -78,6 +78,10 @@ expected, not against what the live site and the real data show. Rules for this 
   - `campaigns.py`: daily scan of ClippingAlpha's campaign directory (no Claude calls). Emails campaigns that pay for
     a Twitch streamer with recent GTA streams; reply "join" adds them to the clipped streamers (via state, merged in
     `load_config`); posting emails for their clips carry the claim link, and a "Claim" email goes out once posted.
+    Second source: Content Rewards' public GTA VI page (`cr_list_campaigns`, cards `cr__<id>`, `cr_detail`,
+    `cr_streamer_guesses`; a guessed channel needs `CR_MIN_FOLLOWERS`). On the Mac, sure-GTA CPM campaigns are
+    joined by themselves; prize pools, logo/music and anything less certain reach Elie as a join link (Telegram).
+    Campaigns that didn't fit are re-checked every `campaigns.recheck_days`.
   - `batch.py`: full-stream judging through the half-price Message Batches API. `process` hands off and exits;
     a later hourly `process` run finishes it (`jobs.finish_batches`); falls back to a normal call after 6h.
   - `timing.py`: posting-time experiment (candidate times, views 3h after posting, explore/exploit plan per day).

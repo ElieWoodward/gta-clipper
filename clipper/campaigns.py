@@ -102,6 +102,99 @@ def list_campaigns(max_pages=25):
     return out
 
 
+# ------------------------------------------------------------------ Content Rewards' own GTA VI list
+# ClippingAlpha doesn't list every campaign (grouped prize pools, brand-new ones). Content Rewards keeps a public
+# GTA VI page; its cards are links to /c/campaigns/<id> whose text runs: agency, campaign name, then "$used/$total"
+# with "$rate/1K" or "$12.5K pool".
+CR_BASE = "https://contentrewards.com"
+CR_MIN_FOLLOWERS = 20000
+CR_GTA_URL = CR_BASE + "/c/discover/gtavi"
+CR_AGENCY_RE = re.compile(r"^(?:[\w&.' -]{2,40}?\s+)?verified\s+", re.I)
+CR_NAME_NOISE = re.compile(r"\$[\d,.]+k?|\b(gta|vi|6|grand theft auto|clipping|clips?|campaign|marathon|pool|stream|"
+                           r"streamer|official|verified|reach|the)\b|[^\w\s]", re.I)
+
+
+def parse_cr_card(text, href):
+    """One Content Rewards card -> the same card dict ClippingAlpha cards use (source "cr")."""
+    lines = [ln.strip() for ln in re.split(r"[\n\r]+", text or "") if ln.strip()]
+    flat = " ".join(lines)
+    rate = re.search(r"\$([\d.]+)(?:\s*[–-]\s*\$([\d.]+))?\s*/\s*1K", flat, re.I)
+    pool = re.search(r"\$([\d.,]+K?)\s*pool", flat, re.I)
+    used = re.search(r"\$([\d.,]+K?)\s*/\s*\$([\d.,]+K?)(?!\s*/\s*1K)", flat)
+    # the name: drop the money tokens at the end; an agency line or "<Agency> Verified" prefix goes too
+    words = [ln for ln in lines if not re.fullmatch(r"[\d$.,K/–\- ]+(pool|1K)?|\d+|views?", ln, re.I)]
+    if len(words) >= 2 and len(words[0]) <= 40 and not GTA_RE.search(words[0]):
+        agency, name = words[0], " ".join(words[1:2])
+    else:
+        name = " ".join(words) or flat
+        agency = ""
+    name = re.sub(r"\s*(\$[\d.,]+K?\s*/\s*\$[\d.,]+K?.*|\$[\d.,]+K?\s*pool.*)$", "", name, flags=re.I).strip()
+    name = CR_AGENCY_RE.sub("", name).strip() or name
+    kind = ("LOGO" if re.search(r"\blogo\b", name, re.I) else
+            "MUSIC" if re.search(r"\b(music|sound|song|tracks?|audio)\b", name, re.I) else "CLIPPING")
+    cid = re.search(r"/c/campaigns/([0-9a-f-]{20,})", href or "")
+    return {"id": "cr__" + (cid.group(1) if cid else re.sub(r"\W+", "", name)[:40]), "source": "cr",
+            "url": CR_BASE + "/c/campaigns/" + (cid.group(1) if cid else ""), "name": name[:120], "agency": agency,
+            "rate": float(rate.group(2) or rate.group(1)) if rate else None, "pool": pool.group(1) if pool else None,
+            "left": None, "budget": (used.group(2) if used else pool.group(1) if pool else None),
+            "used": used.group(1) if used else None, "platforms": "", "kind": kind, "text": flat[:400],
+            "streamer_guess": cr_streamer_guesses(name)}
+
+
+def cr_streamer_guesses(name):
+    """Twitch logins a Content Rewards campaign name points at: "Kai Cenat - $10,000 GTA 6 Pool Campaign" ->
+    kaicenat; "Dasgasd3m x RUCKUS | GTA 6" -> dasgasd3m; "BOBBY VAN RIPER GTA VI Clipping" -> bobbyvanriper."""
+    head = re.split(r"\s+(?:x|×)\s+|\s*[|–/]\s*|\s+-\s+|\s+GTA\b|\s+Grand Theft", name, maxsplit=1, flags=re.I)[0]
+    words = [w for w in CR_NAME_NOISE.sub(" ", head).split() if not w.isdigit()][:6]
+    out = []
+    # the agency can run into the name on one line ("Clipped & Shipped Kai Cenat"): also try it with the first
+    # words dropped; each guess is checked against Twitch before it's used
+    for start in range(0, min(4, len(words))):
+        w = words[start:start + 3]
+        out += ["".join(w).lower(), "_".join(w).lower()] + (["".join(w[:2]).lower()] if len(w) >= 2 else [])
+    if len(words) == 1:   # a one-word name ("Lacy"); otherwise single words match strangers who play GTA
+        out.append(words[0].lower())
+    out = [x for x in out if len(x) >= 6 or len(words) == 1]
+    return [x for x in dict.fromkeys(out) if 3 <= len(x) <= 25][:10]
+
+
+def cr_list_campaigns():
+    """Cards on Content Rewards' public GTA VI page (no login). Empty if the page can't be read."""
+    try:
+        html = _get(CR_GTA_URL)
+    except Exception as e:
+        log.info("Content Rewards GTA VI page: %s", e)
+        return []
+    out, seen = [], set()
+    for href, inner in re.findall(r'<a[^>]+href="((?:https://contentrewards\.com)?/c/campaigns/[0-9a-f-]{20,})[^"]*"[^>]*>'
+                                  r'(.*?)</a>', html, flags=re.S | re.I):
+        text = re.sub(r"<[^>]+>", "\n", inner)
+        text = re.sub(r"&amp;", "&", re.sub(r"&#x27;|&#39;", "'", text))
+        c = parse_cr_card(text, href)
+        if c["id"] not in seen and c["name"]:
+            seen.add(c["id"])
+            out.append(c)
+    print(f"::notice::Content Rewards GTA VI page: {len(out)} campaign(s)", flush=True)
+    return out
+
+
+def cr_detail(card):
+    """A Content Rewards campaign page (public): brief text and any Twitch/Kick channel it names."""
+    try:
+        html = _get(card["url"])
+    except Exception as e:
+        log.info("couldn't read %s: %s", card["url"], e)
+        html = ""
+    text = re.sub(r"<script.*?</script>|<style.*?</style>", " ", html, flags=re.S)
+    text = " ".join(re.sub(r"<[^>]+>", " ", text).split())
+    i = text.find("Brief")
+    brief = (text[i:i + 1400] if i >= 0 else text[:1000]) or card["name"]
+    bad = {"videos", "directory", "settings", "p", "login", "signup"}
+    return {"brief": f"{card['name']}. {brief}", "join_url": card["url"],
+            "twitch": [t.lower() for t in re.findall(r"twitch\.tv/([A-Za-z0-9_]{3,25})", html, re.I) if t.lower() not in bad],
+            "kick": [k.lower() for k in re.findall(r"kick\.com/([A-Za-z0-9_]{3,25})", html, re.I)]}
+
+
 def detail(card):
     """Brief excerpt, the join link, and any Twitch/Kick channel the brief names."""
     html = _get(card["url"])
@@ -212,10 +305,10 @@ def evaluate(card, game_re):
         # Campaigns are often just the streamer's name ("Benji Ramos"): check that name against Twitch.
         if card["kind"] not in ("CLIPPING", ""):
             return None
-        named_after = quick_gta_login(card, game_re)
+        named_after = None if card.get("source") == "cr" else quick_gta_login(card, game_re)
         if not named_after:
             return None
-    d = detail(card)
+    d = cr_detail(card) if card.get("source") == "cr" else detail(card)
     if named_after:
         # the campaign page itself has to point at that channel or at GTA, or it's a name clash
         if named_after not in [t.lower() for t in d["twitch"]] and not GTA_RE.search(d["brief"]):
@@ -223,8 +316,12 @@ def evaluate(card, game_re):
         d["twitch"] = [named_after] + [t for t in dict.fromkeys(d["twitch"]) if t != named_after]
     gta_text = gta_text or bool(GTA_RE.search(d["brief"]))
     login, why = None, ""
-    for cand in ([] if is_logo(card) else d["twitch"] + login_guesses(card["name"])):
+    guesses = card.get("streamer_guess") or login_guesses(card["name"])
+    for cand in ([] if is_logo(card) else list(dict.fromkeys(d["twitch"] + guesses))):
         ok, why = streams_gta(cand, game_re)
+        if ok and card.get("source") == "cr" and cand not in d["twitch"]:
+            from . import twitch   # a guessed channel (the page doesn't link it): only a real streamer counts
+            ok = (twitch.followers(cand) or 0) >= CR_MIN_FOLLOWERS
         if ok:
             login = cand
             break
@@ -242,7 +339,7 @@ def _steps(m):
     steps = [f"Open the campaign: {m['url']}",
              f"Click Join (it opens the board: {m['join_url']}) and sign in with the channel Gmail.",
              "Read the brief there. The key rules are copied below, but the board's page is the one that counts."]
-    if m["auto_clip"]:
+    if m.get("auto_clip"):
         steps.append(f'The bot has already started clipping {m["twitch_login"]} (GTA only). Once you\'ve joined, reply '
                      '"join" to this email: their clips then go to the front of the queue and every posting email for '
                      'them includes the link to submit. Reply "skip" if you don\'t want this one.')
@@ -338,9 +435,12 @@ def notify(state, m):
             return "skipped:avoided"
         if sure_gta(m) and paused(cfg) and not popular(cfg, m.get("followers")):
             return "skipped:paused"   # looked at again once the pause ends (see scan)
-        if sure_gta(m):
+        if sure_gta(m) and not m.get("pool") and m.get("kind") in ("CLIPPING", "", None):
             return queue_join(m)
-        return "skipped:not-sure-gta"
+        if not (m.get("gta6") or sure_gta(m)):
+            return "skipped:not-sure-gta"
+        # a GTA campaign it won't join by itself (a prize pool, a brand deal, no Twitch channel it can clip):
+        # Elie gets the join link and decides
     rate = f"${m['rate']:.2f} per 1,000 views" if m.get("rate") else "rate on the page"
     budget = f"{m['left']} of {m['budget']} left" if m.get("left") else "budget on the page"
     lines = [f"New paid campaign that fits the channel: {m['name']}", "",
@@ -359,6 +459,13 @@ def scan(cfg, state):
     seen = state.setdefault("campaigns_seen", {})
     game_re = (cfg.get("fetch") or {}).get("game_match") or "grand theft auto|gta"
     cards = list_campaigns()
+    if (cfg.get("campaigns") or {}).get("contentrewards_source", True):
+        from .mac import same_campaign
+        known = [c["name"] for c in cards] + [r.get("name") for r in book.values()]
+        cr_all = cr_list_campaigns()
+        cr_extra = [c for c in cr_all if not any(same_campaign(c["name"], n) for n in known if n)]
+    else:
+        cr_all, cr_extra = [], []
     log.info("campaign scan: %d live campaigns", len(cards))
     print(f"::notice::campaign scan: {len(cards)} live campaigns listed", flush=True)
     found, sent = [], 0
@@ -368,7 +475,7 @@ def scan(cfg, state):
         cap = int(_ls(cfg)["campaign_emails"])
     else:
         cap = MAX_EMAILS_PER_SCAN
-    live_ids = {c["id"] for c in cards}
+    live_ids = {c["id"] for c in cards} | {c["id"] for c in cr_all}
     dry = os.environ.get("DRY_RUN") == "1"
     prev = state.get("campaign_scan_count") or 0
     partial = not cards or (prev and len(cards) < 0.7 * prev)   # a short listing (a page that didn't load): no verdicts
@@ -387,8 +494,8 @@ def scan(cfg, state):
             rec.pop("missing_since", None)
             rec["missing_scans"] = 0
             continue
-        if partial:
-            continue
+        if partial or (str(rec["id"]).startswith("cr__") and not cr_all):
+            continue   # that list didn't load this time: no verdicts from it
         # one missing listing isn't an ending: it takes 3 scans in a row over at least 6 hours, and never while the
         # Mac's Content Rewards check still sees the campaign running
         rec["missing_scans"] = rec.get("missing_scans", 0) + 1
@@ -417,7 +524,7 @@ def scan(cfg, state):
     # A campaign that didn't fit is looked at again every 2 days while it's still listed: before GTA 6 came out,
     # streamers weren't playing GTA, so their campaigns failed the "streams GTA" check and were never seen again.
     recheck = (now_utc() - timedelta(days=int((cfg.get("campaigns") or {}).get("recheck_days", 2)))).date().isoformat()
-    for c in sorted(cards, key=lambda c: -(c.get("rate") or 0)):   # best paying first
+    for c in sorted(cards + cr_extra, key=lambda c: -(c.get("rate") or (1.0 if c.get("pool") else 0))):   # best paying first
         if c["id"] in book or (c["id"] in seen and str(seen[c["id"]]) > recheck):
             continue
         try:
@@ -436,7 +543,7 @@ def scan(cfg, state):
             from . import twitch
             m["followers"] = twitch.followers(m["twitch_login"])
         rec = {k: m.get(k) for k in ("id", "name", "url", "join_url", "rate", "left", "budget", "platforms", "kind",
-                                     "twitch_login", "auto_clip", "why", "gta6", "followers")}
+                                     "twitch_login", "auto_clip", "why", "gta6", "followers", "source", "pool")}
         rec.update(brief=m["brief"][:1500], found=now_utc().isoformat(), status="found")
         if dry:
             print(f"::notice::[dry run] would email: {rec['name']} | {rec.get('rate')}/1K | twitch={rec.get('twitch_login')} "
