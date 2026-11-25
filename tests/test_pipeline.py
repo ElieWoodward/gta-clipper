@@ -3155,3 +3155,15 @@ for _k, _v in (("MAC_RUNS_CLIPPER", _mrc_t), ("BLOTATO_API_KEY", _bk_t)):
     else:
         os.environ[_k] = _v
 print("TIKTOK PAUSE OK")
+
+# ---------- the Anthropic account limit is per calendar month: the bot never goes past limits.calendar_month_cap ----------
+_bcf = common.load_config()
+_bcf["limits"] = dict(_bcf.get("limits") or {}, calendar_month_cap=28.0, claude_usd_per_day=4.0, boost_dates=[
+    common.now_utc().date().isoformat()], claude_usd_boost_per_day=4.0)
+_d0 = common.now_utc().date().replace(day=1).isoformat()
+_bst2 = {"spend": {_d0: 26.5}, "spend_live": {}}
+if _d0 != common.now_utc().date().isoformat():
+    assert abs(highlights.budget_left(_bcf, _bst2) - 1.5) < 1e-6, highlights.budget_left(_bcf, _bst2)   # boost day too
+_bst2["spend"][_d0] = 29.0
+assert highlights.budget_left(_bcf, _bst2) <= 0
+print("MONTH CAP OK")

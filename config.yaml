@@ -207,7 +207,7 @@ launch:                           # GTA 6 launch day: switches on by itself, not
                                   # then this many of the biggest English GTA 6 streamers
   campaign_emails: 8              # on launch day, email up to this many GTA 6 campaigns, best paying first
   claude_usd_per_day: 4.00        # Claude budget per day from launch day
-  boost_days: 8                   # launch week (Nov 19-26): $4/day instead of the $5/month budget; those days
+  boost_days: 5                   # launch week (Nov 19-23, ended early): $4/day instead of the $5/month budget; those days
                                   # don't count against the month afterwards, so it goes straight back to $5/month
   # Posting times from launch day: only the hours that got the most views (then likes) in the time test.
 
@@ -226,7 +226,8 @@ limits:
   budget_schedule:                # more posts a day need more clips found: the budget steps up with them
     - {from: "2026-11-15", per_month: 20.00, day_max: 1.00}   # $5/month ran out mid-month and clipping stopped
     - {from: "2026-11-27", per_month: 30.00, day_max: 1.50}   # after launch week (that week has its own $4/day)
-    - {from: "2026-12-03", per_month: 40.00, day_max: 2.00}   # 12 posts a day
+  calendar_month_cap: 28.00       # Anthropic account limit is $30 a month (resets on the 1st, UTC); the bot stops at
+                                  # $28 spent since the 1st, launch week included. Raise both together.
   claude_usd_per_day_from: {3: 2.00}   # raised to $2 a day once posting reaches 3 a day (launch.claude_usd_per_day after)
   price_per_mtok: {input: 2.0, output: 10.0}   # Claude Sonnet 5.5 list price in USD per million tokens
   batch: true                     # judge full streams through Anthropic's half-price batch API (live clips stay instant)

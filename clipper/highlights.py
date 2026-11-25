@@ -290,8 +290,14 @@ def budget_left(cfg, state):
         PRICE_PER_MTOK.update(prices)
     today = spend_today(state)
     boost = set(lim.get("boost_dates") or [])
+    # Anthropic's own spend limit counts the calendar month (UTC), every day included: never past it
+    mcap = lim.get("calendar_month_cap")
+    m0 = now_utc().date().replace(day=1).isoformat()
+    month_left = float(mcap) - sum(v for key in ("spend", "spend_live") for d, v in (state.get(key) or {}).items()
+                                   if d >= m0) if mcap is not None else float("inf")
     if now_utc().date().isoformat() in boost:   # GTA 6 launch week: its own daily cap, no monthly budget
-        return float(lim.get("claude_usd_boost_per_day", lim.get("claude_usd_per_day", 4.0))) - today
+        return min(month_left,
+                   float(lim.get("claude_usd_boost_per_day", lim.get("claude_usd_per_day", 4.0))) - today)
     left = float("inf")
     cap = lim.get("claude_usd_per_day")
     if cap is not None:
@@ -309,7 +315,7 @@ def budget_left(cfg, state):
         left = min(left, float(month) - (spend_last_days(state, 30) - boosted))
         if day_max is not None:
             left = min(left, float(day_max) - today)
-    return left
+    return min(left, month_left)
 
 
 def parse_json(text):

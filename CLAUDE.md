@@ -37,7 +37,7 @@ The email posting mode described in `docs/BUILD_PROMPT.md` is built (`clipper/cl
   which records the link and queues campaign submission. Direct submissions retry (3 min apart) before Elie is told.
 - No "Claim" message for Content Rewards campaigns: the Mac submits those itself.
 - `campaigns.rules.<streamer>.submit: false` pauses a campaign's submissions (clips still post).
-- Claude budget (`limits.budget_schedule`): launch week up to $4/day, then $30 per 30 days from Nov 27, $40 from Dec 3.
+- Claude budget: `limits.calendar_month_cap` ($28; Elie's Anthropic account limit is $30 per calendar month) over everything, plus `limits.budget_schedule` ($30 per 30 days from Nov 27). Launch boost ended Nov 23.
   When it runs out and the queue is empty, Elie gets a Telegram warning.
 - The sandbox can't reach the Mac. To see what the bot is doing, give Elie a Terminal command and ask for the output.
   Apply a push right away: `cd ~/projects/gta-clipper && git pull -q && launchctl kickstart -k gui/$(id -u)/com.wantedlevel.clipbot`
