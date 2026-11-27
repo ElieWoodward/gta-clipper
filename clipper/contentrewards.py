@@ -338,9 +338,15 @@ class Site:
         from playwright.sync_api import sync_playwright
         PROFILE.mkdir(parents=True, exist_ok=True)
         self._pw = sync_playwright().start()
-        self.ctx = self._pw.chromium.launch_persistent_context(
-            str(PROFILE), channel="chrome", headless=self.headless, viewport={"width": 1280, "height": 860})
-        self.page = self.ctx.pages[0] if self.ctx.pages else self.ctx.new_page()
+        try:
+            self.ctx = self._pw.chromium.launch_persistent_context(
+                str(PROFILE), channel="chrome", headless=self.headless, viewport={"width": 1280, "height": 860})
+            self.page = self.ctx.pages[0] if self.ctx.pages else self.ctx.new_page()
+        except BaseException:
+            # Chrome didn't start (e.g. the profile is open in another window): stop Playwright here, or it stays
+            # running in this process and every later Site() fails with "Sync API inside the asyncio loop"
+            self._pw.stop()
+            raise
         return self
 
     def __exit__(self, *exc):

@@ -3167,3 +3167,24 @@ if _d0 != common.now_utc().date().isoformat():
 _bst2["spend"][_d0] = 29.0
 assert highlights.budget_left(_bcf, _bst2) <= 0
 print("MONTH CAP OK")
+
+# ---------- Chrome failing to start doesn't leave Playwright running (later submissions failed with "Sync API inside
+# the asyncio loop", Nov 27) ----------
+import playwright.sync_api as _pwapi  # noqa: E402
+_stops = []
+class _FakePW:  # noqa: E302
+    class chromium:  # noqa: N801
+        @staticmethod
+        def launch_persistent_context(*a, **k): raise RuntimeError("profile in use")  # noqa: E704
+    def stop(self): _stops.append(1)  # noqa: E704
+class _FakeStarter:  # noqa: E302
+    def start(self): return _FakePW()  # noqa: E704
+_saved_spw, _pwapi.sync_playwright = _pwapi.sync_playwright, lambda: _FakeStarter()
+try:
+    with _cr.Site():
+        pass
+except RuntimeError:
+    pass
+_pwapi.sync_playwright = _saved_spw
+assert _stops == [1], _stops
+print("PLAYWRIGHT CLEANUP OK")
