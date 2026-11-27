@@ -693,13 +693,17 @@ def campaign_score(cfg, state, rec):
 
 
 def cr_ended(rec):
-    """The Mac's Content Rewards check (data/mac.json) says this campaign has ended."""
+    """The Mac's Content Rewards check (data/mac.json) says this campaign can't earn right now: it ended, it's
+    paused, or it doesn't pay for any platform the bot posts to (YouTube, plus TikTok unless paused)."""
     try:
-        from .mac import same_campaign
+        from .mac import same_campaign, posting_platforms
         book = json.loads((DATA / "mac.json").read_text()).get("campaigns") or {}
+        ours = set(posting_platforms())
     except Exception:
         return False
-    return any(r.get("ended") and same_campaign(n, rec.get("name")) for n, r in book.items())
+    return any(same_campaign(n, rec.get("name")) and
+               (r.get("ended") or r.get("paused") or (r.get("platforms") and not set(r["platforms"]) & ours))
+               for n, r in book.items())
 
 
 def eligible(cfg, rec):

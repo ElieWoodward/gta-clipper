@@ -123,6 +123,13 @@ def parse_campaign_page(text):
             "rejected": bool(re.search(r"Application (rejected|declined)", full, re.I)),
             "preapproval": bool(re.search(r"pre-?approval", full, re.I)), "bio": [], "requirements": [],
             "budget_used": None, "budget_total": None}
+    # each paid platform has its own rate block: "TikTok" / "Per 1K views" / "$1.00"
+    info["platforms"] = sorted({ls[i].lower() for i in range(len(ls) - 1)
+                                if ls[i] in ("TikTok", "YouTube", "Instagram", "X", "Facebook", "Snapchat")
+                                and any(re.match(r"^Per 1K views$", x, re.I) for x in ls[i + 1:i + 3])})
+    info["paused"] = "Paused" in ls
+    m = re.search(r"RULES?(?: AND REQUIREMENTS)?:?\s*\n?\s*((?:https?://)?[\w.-]+\.\w{2,}/\S+)", full, re.I)
+    info["rules_link"] = m.group(1) if m else None
     for i, ln in enumerate(ls):
         if re.match(r"^Add (a )?link in (your )?bio$", ln, re.I) and i + 1 < len(ls):
             info["bio"].append(ls[i + 1])

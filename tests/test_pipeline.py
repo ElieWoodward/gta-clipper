@@ -3188,3 +3188,37 @@ except RuntimeError:
 _pwapi.sync_playwright = _saved_spw
 assert _stops == [1], _stops
 print("PLAYWRIGHT CLEANUP OK")
+
+# ---------- platforms, paused and off-site rules from real pages (KreekCraft pasted Nov 19, Lauren Hamden Nov 27) ----------
+_kp = _crp.parse_campaign_page("Back\nKreekCraft GTA 6 Clipping\nJoined\nLaunched today\nTwitch\n0\nCPM\nSubmit clip\nTikTok\n"
+                               "Per 1K views\n$1.00\nMin payout\n$3.00\nInstagram\nPer 1K views\n$1.00\nYouTube\nPer 1K views\n"
+                               "$1.00\nBudget\n$0 / $6,824\nBrief\nEvery post must include #GTA6 #KreekCraft #GrandTheftAutoVI.")
+assert _kp["platforms"] == ["instagram", "tiktok", "youtube"] and not _kp["paused"], _kp
+_lp = _crp.parse_campaign_page("$5,000 Hamden Sisters Campaign\nClip/Create content of the Hamden sisters to post on a "
+                               "dedicated account.\nPaused\nContent Creator\nCPM\nTikTok\nPer 1K views\n$1.50\nMin payout\n"
+                               "$15.00\nInstagram\nPer 1K views\n$1.50\nBudget\n$473 / $5,000\nReference materials\n2 files\n"
+                               "Brief\nClip/Create content of the Hamden sisters to post on a dedicated account.\n"
+                               "Content to clip:\ntwitch.tv/laurenhamdenn\nRULES AND REQUIREMENTS:\nreachclipping.com/Sisters")
+assert _lp["platforms"] == ["instagram", "tiktok"] and _lp["paused"] and _lp["rules_link"] == "reachclipping.com/Sisters", _lp
+_mj_old = _mj.read_text() if _mj.exists() else None
+_mj.write_text(json.dumps({"campaigns": {"$5,000 Lauren Hamden GTA 6 Clipping Campaign": dict(_lp, approved=True, paused=False),
+                                         "Boeshi GTA 6 Clipping": {"approved": True, "platforms": ["tiktok", "youtube"]}}}))
+_saved_pp = mac.posting_platforms
+mac.posting_platforms = lambda: ["youtube"]   # TikTok paused
+assert campaigns.cr_ended({"name": "$5,000 Lauren Hamden GTA 6 Clipping Campaign"})   # TikTok/Instagram only: can't earn
+assert not campaigns.cr_ended({"name": "Boeshi GTA 6 Clipping"})
+_lprobs = []
+_saved_prob, tg.problem = tg.problem, lambda st, key, what, fix: _lprobs.append((key, what, fix))
+mac.rules_problems({}, [dict(_lp, name="$5,000 Lauren Hamden GTA 6 Clipping Campaign", status="joined", url="u",
+                             requirements=[], paused=False)])
+assert not _lprobs, _lprobs   # it can't earn here, so no rules message
+mac.posting_platforms = lambda: ["youtube", "tiktok"]
+mac.rules_problems({}, [dict(_lp, name="$5,000 Lauren Hamden GTA 6 Clipping Campaign", status="joined", url="u",
+                             requirements=[], paused=False)])
+assert len(_lprobs) == 1 and "reachclipping.com/Sisters" in _lprobs[0][1] + _lprobs[0][2], _lprobs
+tg.problem, mac.posting_platforms = _saved_prob, _saved_pp
+if _mj_old is None:
+    _mj.unlink()
+else:
+    _mj.write_text(_mj_old)
+print("CAMPAIGN PLATFORMS OK")

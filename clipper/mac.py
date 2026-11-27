@@ -162,6 +162,8 @@ def compare(st, camps, drafts, prioritized):
                    bool(old.get("needs_overlay")),
                    overlay_file=c.get("overlay_file") or old.get("overlay_file"), bio=c.get("bio") or [],
                    ended=bool(c.get("ended")), requirements=c.get("requirements") or [],
+                   platforms=c.get("platforms") or old.get("platforms") or [], paused=bool(c.get("paused")),
+                   rules_link=c.get("rules_link") or old.get("rules_link"),
                    budget=[c.get("budget_used"), c.get("budget_total")], seen=now_utc().isoformat())
         link = f"\n{rec['url']}" if rec.get("url") else ""
         if rec["approved"] and not old.get("approved"):
@@ -348,9 +350,21 @@ def rules_problems(st, camps):
                        "it by myself. Its clips won't be submitted until I have it (they'd be rejected).",
                        "1. Open the campaign on Content Rewards and click the overlay under Reference materials"
                        + (f" ({refs[0]})" if refs else "") + ".\n2. Download the image.\n3. Send it to Claude.")
-        if "requirements" in c and not c.get("requirements"):
-            tg.problem(st, f"rules:{name}", f"I couldn't read any rules on {name}'s page, so its clips only get the "
-                       "usual caption.", f"Send this message to Claude with the campaign's rules: {c.get('url')}")
+        if "requirements" in c and not c.get("requirements") and c.get("paused") is not True and \
+                not (c.get("platforms") and not set(c["platforms"]) & set(posting_platforms())):
+            where = c.get("rules_link") or c.get("url")
+            tg.problem(st, f"rules:{name}", f"{name} keeps its rules off Content Rewards ({where}), so its clips "
+                       "only get the usual caption." if c.get("rules_link") else
+                       f"I couldn't read any rules on {name}'s page, so its clips only get the usual caption.",
+                       f"Open {where}, copy the rules and send them to Claude.")
+
+
+def posting_platforms():
+    """Where the bot posts right now: YouTube, plus TikTok unless it's paused."""
+    from .common import load_config
+    from . import clipqueue
+    cfg = load_config()
+    return ["youtube"] + ([] if clipqueue.tiktok_paused(cfg) else ["tiktok"])
 
 
 def cr_overlay_text(r):
